@@ -1,0 +1,943 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Cognitia — University Learning Platform</title>
+		<link rel="icon" type="image/png" href="assets/icons/Logo-Icon-Red.png" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="theme-color" content="#7a0019" />
+		<meta
+			name="description"
+			content="Cognitia is a learning management system designed for university students to manage courses, track assignments, and monitor academic progress."
+		/>
+		<meta property="og:type" content="website" />
+		<meta
+			property="og:title"
+			content="Cognitia — University Learning Platform"
+		/>
+		<meta
+			property="og:description"
+			content="Manage courses, track assignments, and monitor academic progress in one place."
+		/>
+
+		<!-- Fonts: loaded here (not via @import in the CSS) so they don't block rendering.
+         Also delete the @import line at the top of landing.css. -->
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			rel="stylesheet"
+			href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,300&family=DM+Sans:wght@300;400;500;600&display=swap"
+		/>
+		<link
+			rel="stylesheet"
+			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+		/>
+		<link rel="stylesheet" href="styles/landing.css" />
+
+		<!-- If JavaScript is off, don't leave animated content invisible -->
+		<noscript>
+			<style>
+				.fade-up,
+				.fade-left,
+				.fade-right {
+					opacity: 1;
+					transform: none;
+				}
+			</style>
+		</noscript>
+	</head>
+
+	<body id="top">
+		<a href="#main" class="skip-link">Skip to content</a>
+
+		<!-- ─── HEADER ─── -->
+		<header class="header">
+			<div class="container">
+				<div class="header-inner fade-up">
+					<a href="#top" class="logo">
+						<img src="assets/icons/Header-Icon.png" alt="Cognitia logo" />
+					</a>
+
+					<div class="nav-right">
+						<nav class="nav-links" aria-label="Primary navigation">
+							<ul>
+								<li><a href="#top">Home</a></li>
+								<li><a href="#features">Features</a></li>
+								<li><a href="#how-it-works">How It Works</a></li>
+								<li><a href="#about">About</a></li>
+								<li><a href="#terms">Terms</a></li>
+							</ul>
+						</nav>
+
+						<a href="login.html" class="btn-nav">Get Started</a>
+
+						<!-- Hamburger -->
+						<button
+							class="nav-toggle"
+							aria-label="Toggle navigation"
+							aria-expanded="false"
+							aria-controls="mobile-nav"
+						>
+							<span></span>
+							<span></span>
+							<span></span>
+						</button>
+					</div>
+				</div>
+			</div>
+		</header>
+
+		<!-- Mobile nav drawer -->
+		<nav class="mobile-nav" id="mobile-nav" aria-label="Mobile navigation">
+			<a href="#top">Home</a>
+			<a href="#features">Features</a>
+			<a href="#how-it-works">How It Works</a>
+			<a href="#about">About</a>
+			<a href="#terms">Terms</a>
+			<a href="login.html" class="btn-nav-mobile">Get Started</a>
+		</nav>
+
+		<main id="main">
+			<!-- ─── HERO ─── -->
+			<section class="hero">
+				<div class="hero-bg-grid"></div>
+				<div class="hero-glow hero-glow--left"></div>
+				<div class="hero-glow hero-glow--right"></div>
+				<div class="container">
+					<div class="hero-container">
+						<!-- LEFT: Text -->
+						<div class="hero-text">
+							<span class="hero-eyebrow fade-up delay-1">
+								University Learning Platform
+							</span>
+
+							<h1 class="hero-title fade-up delay-2">
+								Where <em>knowledge</em><br />
+								meets clarity.
+							</h1>
+
+							<p class="hero-subtitle fade-up delay-3">
+								Cognitia empowers students and professors with tools that
+								streamline coursework, track performance, and bring academic
+								excellence within reach — all in one unified platform.
+							</p>
+
+							<div class="hero-cta fade-up delay-4">
+								<a
+									href="login.html?role=student"
+									class="btn-role btn-role--student"
+								>
+									<span class="btn-role__icon"
+										><i class="fa-solid fa-graduation-cap"></i
+									></span>
+									<span>
+										<span class="btn-role__label">For Students</span>
+										<span class="btn-role__sub">Track your progress</span>
+									</span>
+								</a>
+								<a
+									href="login.html?role=professor"
+									class="btn-role btn-role--professor"
+								>
+									<span class="btn-role__icon"
+										><i class="fa-solid fa-chalkboard-user"></i
+									></span>
+									<span>
+										<span class="btn-role__label">For Professors</span>
+										<span class="btn-role__sub">Manage your courses</span>
+									</span>
+								</a>
+							</div>
+						</div>
+
+						<!-- RIGHT: Visual card (decorative sample UI) -->
+						<div class="hero-visual fade-left delay-2">
+							<div class="hero-card-wrap" aria-hidden="true">
+								<div class="hero-accent-card">
+									<div class="hac-icon"><i class="fa-solid fa-check"></i></div>
+									<div class="hac-text">
+										<strong>Quiz submitted</strong>
+										<span>Stack &amp; Queues · 92/100</span>
+									</div>
+								</div>
+
+								<div class="hero-card">
+									<div class="card-header">
+										<div class="card-header-top">
+											<div class="hero-badge">
+												New semester live
+												<i class="fa-solid fa-circle-check"></i>
+											</div>
+										</div>
+
+										<div class="card-header-label">Current Course</div>
+										<div class="card-header-title">
+											Data Structures &amp; Algorithms
+										</div>
+
+										<div class="card-progress-row">
+											<div class="progress-bar">
+												<div class="progress-fill"></div>
+											</div>
+											<span class="progress-pct">68%</span>
+										</div>
+									</div>
+
+									<div class="card-body">
+										<div class="task-row">
+											<div class="task-dot due"></div>
+											<div class="task-info">
+												<div class="task-name">
+													Lab Exercise 4: Linked Lists
+												</div>
+												<div class="task-meta">Due Apr 14 · BSCS 2-A</div>
+											</div>
+											<span class="task-tag due">Due soon</span>
+										</div>
+
+										<div class="task-row">
+											<div class="task-dot prog"></div>
+											<div class="task-info">
+												<div class="task-name">Midterm Project Submission</div>
+												<div class="task-meta">Due Apr 20 · BSCS 2-A</div>
+											</div>
+											<span class="task-tag prog">In Progress</span>
+										</div>
+
+										<div class="task-row">
+											<div class="task-dot done"></div>
+											<div class="task-info">
+												<div class="task-name">Quiz 3: Stack &amp; Queues</div>
+												<div class="task-meta">Submitted · 92/100</div>
+											</div>
+											<span class="task-tag done">Done</span>
+										</div>
+									</div>
+								</div>
+
+								<div class="hero-score-badge">
+									<div class="hsb-label">Avg. Quiz Score</div>
+									<div class="hsb-score">94<span>%</span></div>
+									<div class="hsb-trend">
+										<i class="fa-solid fa-arrow-trend-up"></i> this semester
+									</div>
+								</div>
+							</div>
+
+							<div class="stat-chips">
+								<div class="chip">
+									<div class="chip-num">30+</div>
+									<div class="chip-label">Students</div>
+								</div>
+								<div class="chip">
+									<div class="chip-num">8</div>
+									<div class="chip-label">Courses</div>
+								</div>
+								<div class="chip">
+									<div class="chip-num">100+</div>
+									<div class="chip-label">Assignments</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- ─── PRODUCT SHOWCASE ─── -->
+			<section class="showcase-section" id="showcase">
+				<div class="container">
+					<p class="section-eyebrow fade-up">Inside Cognitia</p>
+					<h2 class="section-title fade-up delay-1">
+						Every tool your academics need,<br />thoughtfully designed.
+					</h2>
+
+					<div class="showcase-grid">
+						<!-- Dashboard -->
+						<div class="showcase-card showcase-card--wide fade-up delay-1">
+							<div class="showcase-screen" aria-hidden="true">
+								<div class="screen-bar">
+									<div class="screen-dot"></div>
+									<div class="screen-dot"></div>
+									<div class="screen-dot"></div>
+									<span class="screen-url">cognitia.edu/dashboard</span>
+								</div>
+								<div class="screen-body">
+									<div class="mock-dash">
+										<div class="mock-dash__sidebar">
+											<div class="mock-nav-item mock-nav-item--active">
+												<span><i class="fa-solid fa-gauge-high"></i></span>
+												Dashboard
+											</div>
+											<div class="mock-nav-item">
+												<span><i class="fa-solid fa-book-open"></i></span> My
+												Courses
+											</div>
+											<div class="mock-nav-item">
+												<span><i class="fa-solid fa-clipboard-list"></i></span>
+												Assignments
+											</div>
+											<div class="mock-nav-item">
+												<span><i class="fa-solid fa-bolt"></i></span> Quizzes
+											</div>
+											<div class="mock-nav-item">
+												<span><i class="fa-solid fa-chart-bar"></i></span>
+												Grades
+											</div>
+										</div>
+										<div class="mock-dash__main">
+											<div class="mock-welcome">
+												Good morning, Alex
+												<i
+													class="fa-solid fa-sun"
+													style="color: #f0a500; font-size: 10px"
+												></i>
+											</div>
+											<div class="mock-stats-row">
+												<div class="mock-stat">
+													<div class="ms-val">4</div>
+													<div class="ms-lbl">Courses</div>
+												</div>
+												<div class="mock-stat">
+													<div class="ms-val">2</div>
+													<div class="ms-lbl">Due Soon</div>
+												</div>
+												<div class="mock-stat">
+													<div class="ms-val">92%</div>
+													<div class="ms-lbl">Avg Score</div>
+												</div>
+											</div>
+											<div class="mock-course-row">
+												<div class="mock-course">
+													<div class="mc-title">Data Structures</div>
+													<div class="mc-bar">
+														<div class="mc-fill" style="width: 68%"></div>
+													</div>
+													<div class="mc-pct">68%</div>
+												</div>
+												<div class="mock-course">
+													<div class="mc-title">Web Systems</div>
+													<div class="mc-bar">
+														<div class="mc-fill" style="width: 82%"></div>
+													</div>
+													<div class="mc-pct">82%</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="showcase-info">
+								<div class="showcase-tag">Student Dashboard</div>
+								<h3>Your academic command center</h3>
+								<p>
+									See all active courses, upcoming deadlines, and performance at
+									a glance. The dashboard keeps you oriented every time you log
+									in.
+								</p>
+							</div>
+						</div>
+
+						<!-- Quiz -->
+						<div class="showcase-card fade-up delay-2">
+							<div class="showcase-screen" aria-hidden="true">
+								<div class="screen-bar">
+									<div class="screen-dot"></div>
+									<div class="screen-dot"></div>
+									<div class="screen-dot"></div>
+									<span class="screen-url">cognitia.edu/quiz</span>
+								</div>
+								<div class="screen-body">
+									<div class="mock-quiz">
+										<div class="mq-header">
+											<div class="mq-title">Quiz 3: Stack &amp; Queues</div>
+											<div class="mq-timer">
+												<i class="fa-regular fa-clock"></i> 12:43
+											</div>
+										</div>
+										<div class="mq-question">
+											<div class="mq-qnum">Question 2 of 5</div>
+											<div class="mq-qtext">
+												Which data structure follows LIFO order?
+											</div>
+											<div class="mq-options">
+												<div class="mq-opt">Queue</div>
+												<div class="mq-opt mq-opt--selected">Stack</div>
+												<div class="mq-opt">Linked List</div>
+												<div class="mq-opt">Tree</div>
+											</div>
+										</div>
+										<div class="mq-progress">
+											<div class="mq-prog-bar">
+												<div class="mq-prog-fill" style="width: 40%"></div>
+											</div>
+											<span>2 / 5</span>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="showcase-info">
+								<div class="showcase-tag">Quiz System</div>
+								<h3>Interactive quizzes with per-item scoring</h3>
+								<p>
+									Professors create timed quizzes; students answer with
+									immediate feedback and scores tracked per question.
+								</p>
+							</div>
+						</div>
+
+						<!-- Assignment System -->
+						<div class="showcase-card fade-up delay-3">
+							<div class="showcase-screen" aria-hidden="true">
+								<div class="screen-bar">
+									<div class="screen-dot"></div>
+									<div class="screen-dot"></div>
+									<div class="screen-dot"></div>
+									<span class="screen-url">cognitia.edu/assignments</span>
+								</div>
+								<div class="screen-body">
+									<div class="mock-assign">
+										<div class="ma-header">Assignments</div>
+										<div class="ma-item ma-item--due">
+											<div class="ma-dot due"></div>
+											<div class="ma-info">
+												<div class="ma-name">Lab 4: Linked Lists</div>
+												<div class="ma-meta">Due Apr 14</div>
+											</div>
+											<div class="ma-badge due">Due Soon</div>
+										</div>
+										<div class="ma-item">
+											<div class="ma-dot prog"></div>
+											<div class="ma-info">
+												<div class="ma-name">Midterm Project</div>
+												<div class="ma-meta">Due Apr 20</div>
+											</div>
+											<div class="ma-badge prog">In Progress</div>
+										</div>
+										<div class="ma-item">
+											<div class="ma-dot done"></div>
+											<div class="ma-info">
+												<div class="ma-name">Lab 3: Arrays</div>
+												<div class="ma-meta">Submitted · 95/100</div>
+											</div>
+											<div class="ma-badge done">Done</div>
+										</div>
+										<div class="ma-item">
+											<div class="ma-dot done"></div>
+											<div class="ma-info">
+												<div class="ma-name">Quiz 2: Big-O Notation</div>
+												<div class="ma-meta">Submitted · 88/100</div>
+											</div>
+											<div class="ma-badge done">Done</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="showcase-info">
+								<div class="showcase-tag">Assignment Tracker</div>
+								<h3>Never miss a deadline again</h3>
+								<p>
+									All tasks in one sorted list — colored by status. Students
+									always know what's due, in progress, or complete.
+								</p>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- ─── FEATURES ─── -->
+			<section class="features-section" id="features">
+				<div class="container">
+					<p class="section-eyebrow fade-up">What you get</p>
+					<h2 class="section-title fade-up delay-1">
+						System-specific tools,<br />not just generic features
+					</h2>
+
+					<div class="features-grid">
+						<div class="feature-card fade-up delay-1">
+							<div class="feature-icon">
+								<i class="fa-solid fa-clipboard-list"></i>
+							</div>
+							<h3 class="feature-title">Assignment Tracking</h3>
+							<p class="feature-desc">
+								Never miss a deadline. View all upcoming tasks, due dates, and
+								submission statuses in one organized dashboard.
+							</p>
+						</div>
+
+						<div class="feature-card fade-up delay-2">
+							<div class="feature-icon"><i class="fa-solid fa-users"></i></div>
+							<h3 class="feature-title">Enrollment Management</h3>
+							<p class="feature-desc">
+								Professors can track which students are enrolled per course and
+								section, with real-time enrollment status updates.
+							</p>
+						</div>
+
+						<div class="feature-card fade-up delay-3">
+							<div class="feature-icon"><i class="fa-solid fa-bolt"></i></div>
+							<h3 class="feature-title">Per-Item Quiz Scoring</h3>
+							<p class="feature-desc">
+								Each quiz question is scored individually. Students see exactly
+								where they excelled and where to improve.
+							</p>
+						</div>
+
+						<div class="feature-card fade-up delay-1">
+							<div class="feature-icon">
+								<i class="fa-solid fa-book-open"></i>
+							</div>
+							<h3 class="feature-title">Course Management</h3>
+							<p class="feature-desc">
+								Professors organize full courses — add lessons, set assessments,
+								and publish materials with full control over structure.
+							</p>
+						</div>
+
+						<div class="feature-card fade-up delay-2">
+							<div class="feature-icon">
+								<i class="fa-solid fa-chart-line"></i>
+							</div>
+							<h3 class="feature-title">Progress Monitoring</h3>
+							<p class="feature-desc">
+								Track academic performance with visual progress indicators and
+								real-time grade insights per course.
+							</p>
+						</div>
+
+						<div class="feature-card fade-up delay-3">
+							<div class="feature-icon"><i class="fa-solid fa-lock"></i></div>
+							<h3 class="feature-title">Secure Role Access</h3>
+							<p class="feature-desc">
+								Professors and students each access only what's relevant to
+								their role — clean, scoped, and secure by design.
+							</p>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- ─── HOW IT WORKS ─── -->
+			<section class="hiw-section" id="how-it-works">
+				<div class="container">
+					<p class="section-eyebrow fade-up">How Cognitia Works</p>
+					<h2 class="section-title fade-up delay-1">
+						From setup to insights,<br />in four steps.
+					</h2>
+
+					<div class="hiw-steps">
+						<div class="hiw-step fade-up delay-1">
+							<div class="hiw-num">01</div>
+							<div class="hiw-icon">
+								<i class="fa-solid fa-layer-group"></i>
+							</div>
+							<h3>Create Course</h3>
+							<p>
+								Professors set up courses with sections, descriptions, and
+								enrollment keys for their students.
+							</p>
+							<div class="hiw-connector"></div>
+						</div>
+
+						<div class="hiw-step fade-up delay-2">
+							<div class="hiw-num">02</div>
+							<div class="hiw-icon"><i class="fa-solid fa-users"></i></div>
+							<h3>Enroll Students</h3>
+							<p>
+								Students join using enrollment codes. Professors see their
+								roster update in real time.
+							</p>
+							<div class="hiw-connector"></div>
+						</div>
+
+						<div class="hiw-step fade-up delay-3">
+							<div class="hiw-num">03</div>
+							<div class="hiw-icon"><i class="fa-solid fa-file-pen"></i></div>
+							<h3>Assign Lessons &amp; Quizzes</h3>
+							<p>
+								Upload materials, create timed quizzes, and set assignment
+								deadlines per course.
+							</p>
+							<div class="hiw-connector"></div>
+						</div>
+
+						<div class="hiw-step fade-up delay-4">
+							<div class="hiw-num">04</div>
+							<div class="hiw-icon"><i class="fa-solid fa-chart-pie"></i></div>
+							<h3>Track Performance</h3>
+							<p>
+								Both professors and students get clear performance data —
+								scores, completion rates, and progress.
+							</p>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- ─── ROLE-BASED EXPERIENCE ─── -->
+			<section class="roles-section" id="roles">
+				<div class="container">
+					<p class="section-eyebrow fade-up">Built for everyone</p>
+					<h2 class="section-title fade-up delay-1">
+						A tailored experience<br />for each role
+					</h2>
+
+					<div class="roles-grid">
+						<!-- Professor side -->
+						<div class="role-card role-card--professor fade-up delay-1">
+							<div class="role-badge">
+								<i class="fa-solid fa-chalkboard-user"></i> For Professors
+							</div>
+							<h3>Lead with confidence.</h3>
+							<p>
+								Build, manage, and monitor your entire course in one place. From
+								creating quizzes to tracking student progress — Cognitia keeps
+								you in control.
+							</p>
+
+							<ul class="role-features">
+								<li>
+									<div class="rf-icon">
+										<i class="fa-solid fa-layer-group"></i>
+									</div>
+									<div>
+										<strong>Course Builder</strong>
+										<span
+											>Create structured courses with modules and sections</span
+										>
+									</div>
+								</li>
+								<li>
+									<div class="rf-icon"><i class="fa-solid fa-bolt"></i></div>
+									<div>
+										<strong>Quiz Creator</strong>
+										<span
+											>Set questions, time limits, and auto-scoring rules</span
+										>
+									</div>
+								</li>
+								<li>
+									<div class="rf-icon"><i class="fa-solid fa-users"></i></div>
+									<div>
+										<strong>Enrollment View</strong>
+										<span>See who's enrolled across all your sections</span>
+									</div>
+								</li>
+								<li>
+									<div class="rf-icon">
+										<i class="fa-solid fa-chart-pie"></i>
+									</div>
+									<div>
+										<strong>Grade Overview</strong>
+										<span>Monitor class performance at a glance</span>
+									</div>
+								</li>
+							</ul>
+
+							<div class="role-screen" aria-hidden="true">
+								<div class="rs-row rs-row--head">
+									<span>Student</span><span>Score</span><span>Status</span>
+								</div>
+								<div class="rs-row">
+									<span>Alex J.</span><span>92/100</span
+									><span class="rs-tag rs-done">Done</span>
+								</div>
+								<div class="rs-row">
+									<span>Maria R.</span><span>—</span
+									><span class="rs-tag rs-prog">Active</span>
+								</div>
+								<div class="rs-row">
+									<span>Kyle L.</span><span>88/100</span
+									><span class="rs-tag rs-done">Done</span>
+								</div>
+								<div class="rs-row">
+									<span>Sam P.</span><span>—</span
+									><span class="rs-tag rs-due">Pending</span>
+								</div>
+							</div>
+
+							<a
+								href="login.html?role=professor"
+								class="btn-role-cta btn-role-cta--prof"
+							>
+								Access Professor View <span>→</span>
+							</a>
+						</div>
+
+						<!-- Student side -->
+						<div class="role-card role-card--student fade-up delay-2">
+							<div class="role-badge">
+								<i class="fa-solid fa-graduation-cap"></i> For Students
+							</div>
+							<h3>Study smarter.</h3>
+							<p>
+								Stay on top of your coursework with a clear view of deadlines,
+								grades, and what's next — so you can focus on learning, not
+								logistics.
+							</p>
+
+							<ul class="role-features">
+								<li>
+									<div class="rf-icon">
+										<i class="fa-solid fa-calendar-days"></i>
+									</div>
+									<div>
+										<strong>Deadline Tracker</strong>
+										<span>See all upcoming tasks sorted by urgency</span>
+									</div>
+								</li>
+								<li>
+									<div class="rf-icon"><i class="fa-solid fa-bolt"></i></div>
+									<div>
+										<strong>Quiz Mode</strong>
+										<span>Take timed quizzes with instant feedback</span>
+									</div>
+								</li>
+								<li>
+									<div class="rf-icon">
+										<i class="fa-solid fa-chart-line"></i>
+									</div>
+									<div>
+										<strong>Progress Bars</strong>
+										<span>Visual completion status per course</span>
+									</div>
+								</li>
+								<li>
+									<div class="rf-icon"><i class="fa-solid fa-inbox"></i></div>
+									<div>
+										<strong>Submission Center</strong>
+										<span
+											>Submit assignments directly through the platform</span
+										>
+									</div>
+								</li>
+							</ul>
+
+							<div class="role-screen" aria-hidden="true">
+								<div class="rs-course-block">
+									<div class="rsc-title">Data Structures &amp; Algorithms</div>
+									<div class="rsc-bar">
+										<div class="rsc-fill" style="width: 68%"></div>
+									</div>
+									<div class="rsc-pct">68% complete</div>
+								</div>
+								<div class="rs-course-block">
+									<div class="rsc-title">Web Systems &amp; Technologies</div>
+									<div class="rsc-bar">
+										<div class="rsc-fill" style="width: 82%"></div>
+									</div>
+									<div class="rsc-pct">82% complete</div>
+								</div>
+							</div>
+
+							<a
+								href="login.html?role=student"
+								class="btn-role-cta btn-role-cta--student"
+							>
+								Access Student View <span>→</span>
+							</a>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- ─── ABOUT ─── -->
+			<section class="about-section" id="about">
+				<div class="container">
+					<p class="section-eyebrow fade-up">About the platform</p>
+
+					<h2 class="section-title fade-up delay-1">
+						Built for students,<br />by students.
+					</h2>
+
+					<div class="about-grid">
+						<article class="about-card fade-up delay-1">
+							<h3>What is Cognitia?</h3>
+							<p>
+								Cognitia is a learning management system built for university
+								students. It centralizes coursework, assignments, and progress
+								tracking so you can focus on what matters — learning.
+							</p>
+						</article>
+
+						<article class="about-card fade-up delay-2">
+							<h3>Features</h3>
+							<ul>
+								<li>Assignment tracking</li>
+								<li>Course organization</li>
+								<li>Progress monitoring</li>
+								<li>Centralized resources</li>
+							</ul>
+						</article>
+
+						<article class="about-card fade-up delay-3" id="contact">
+							<h3>Contact</h3>
+							<p>
+								Computer Science Department<br />
+								University of Caloocan City — South
+							</p>
+							<p style="margin-top: 12px">
+								<!-- Decoded from the Cloudflare-obfuscated link in your original.
+                     Replace with your real department/project email. -->
+								<a href="mailto:cognitia@email.com">cognitia@email.com</a>
+							</p>
+						</article>
+					</div>
+				</div>
+			</section>
+
+			<!-- ─── CTA STRIP ─── -->
+			<section class="cta-strip">
+				<div class="cta-strip__glow"></div>
+				<div class="container">
+					<p class="cta-eyebrow fade-up">Start today</p>
+					<h2 class="section-title fade-up delay-1">
+						Ready to take control<br />of your academics?
+					</h2>
+
+					<p class="fade-up delay-2">
+						Join your classmates on Cognitia and start your semester strong.
+					</p>
+
+					<div class="cta-buttons fade-up delay-3">
+						<a href="login.html" class="btn-primary">
+							Get Started <span class="arrow">→</span>
+						</a>
+						<a href="#how-it-works" class="btn-ghost">See how it works</a>
+					</div>
+				</div>
+			</section>
+
+			<!-- ─── TERMS ─── -->
+			<section class="terms-section" id="terms">
+				<div class="container">
+					<div class="terms-shell fade-up">
+						<div class="terms-copy">
+							<p class="section-eyebrow">Terms &amp; Conditions</p>
+							<h2 class="section-title terms-title">
+								Know the rules before you sign in.
+							</h2>
+							<p class="terms-intro">
+								By using Cognitia, students and faculty agree to keep their
+								account secure, use the platform for academic purposes only, and
+								respect the privacy of course materials and user data.
+							</p>
+						</div>
+
+						<div class="terms-points">
+							<article class="terms-point">
+								<h3>Proper Use</h3>
+								<p>
+									Use the platform only for official learning activities, course
+									communication, submissions, and academic tracking.
+								</p>
+							</article>
+
+							<article class="terms-point">
+								<h3>Account Responsibility</h3>
+								<p>
+									You are responsible for your login credentials and for all
+									activity performed under your account.
+								</p>
+							</article>
+
+							<article class="terms-point">
+								<h3>Privacy &amp; Conduct</h3>
+								<p>
+									Do not misuse class records, grades, or personal information,
+									and always follow your university's academic policies.
+								</p>
+							</article>
+						</div>
+
+						<div class="terms-actions">
+							<button
+								type="button"
+								class="btn-primary terms-open"
+								data-open-terms
+							>
+								Read Full Terms
+							</button>
+							<p class="terms-status" id="terms-status" aria-live="polite">
+								You have not marked the terms as read yet.
+							</p>
+						</div>
+					</div>
+				</div>
+			</section>
+		</main>
+
+		<!-- ─── FOOTER ─── -->
+		<footer class="footer">
+			<div class="container">
+				<p>© 2026 Cognitia Learning System · University of Caloocan City</p>
+			</div>
+		</footer>
+
+		<!-- ─── TERMS MODAL ─── -->
+		<div class="terms-modal" id="terms-modal" aria-hidden="true">
+			<div class="terms-modal__backdrop" data-close-terms></div>
+			<div
+				class="terms-modal__dialog"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="terms-modal-title"
+			>
+				<button
+					type="button"
+					class="terms-modal__close"
+					aria-label="Close terms and conditions"
+					data-close-terms
+				>
+					×
+				</button>
+
+				<p class="terms-modal__eyebrow">Cognitia Policy</p>
+				<h2 id="terms-modal-title">Terms &amp; Conditions</h2>
+
+				<div class="terms-modal__body">
+					<p>
+						By accessing Cognitia, you agree to use the platform only for
+						legitimate academic and university-related activities.
+					</p>
+					<p>
+						You must keep your account credentials confidential and must not
+						share your account with any other person.
+					</p>
+					<p>
+						Any grades, attendance records, course files, and personal details
+						viewed through the platform must be treated as confidential.
+					</p>
+					<p>
+						Users must not upload harmful, misleading, offensive, or
+						unauthorized content, and must follow institutional rules on
+						academic integrity.
+					</p>
+					<p>
+						Cognitia administrators may suspend access when misuse, security
+						risks, or policy violations are detected.
+					</p>
+				</div>
+
+				<div class="terms-modal__actions">
+					<button
+						type="button"
+						class="btn-ghost terms-modal__secondary"
+						data-close-terms
+					>
+						Close
+					</button>
+					<button
+						type="button"
+						class="btn-primary terms-modal__primary"
+						id="accept-terms-btn"
+					>
+						I Have Read the Terms
+					</button>
+				</div>
+			</div>
+		</div>
+
+		<script src="js/landing.js" defer></script>
+	</body>
+</html>
