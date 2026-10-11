@@ -1008,6 +1008,105 @@ ul {
 	color: var(--muted);
 }
 
+/* ─── Admin + Bulletin Mocks ─── */
+.mock-admin,
+.mock-bulletin {
+	padding: 4px;
+}
+/* Side-by-side cards share one row: let the screens absorb any height
+   difference so both info blocks start at the same line */
+.showcase-card:not(.showcase-card--wide) .showcase-screen {
+	flex: 1;
+}
+.mad-tabs {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	margin-bottom: 12px;
+}
+.mad-tab {
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--muted);
+	padding: 4px 10px;
+	border-radius: 999px;
+}
+.mad-tab--on {
+	color: var(--maroon);
+	background: rgba(122, 0, 25, 0.08);
+}
+.mad-row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 9px 0;
+	border-bottom: 1px solid var(--border);
+}
+.mad-row:last-child {
+	border-bottom: none;
+}
+.mad-av {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	flex-shrink: 0;
+	border-radius: 50%;
+	background: var(--maroon);
+	color: var(--white);
+	font-size: 11px;
+	font-weight: 700;
+}
+.mad-who {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	font-size: 12px;
+}
+.mad-who b {
+	font-weight: 600;
+	color: var(--text);
+}
+.mad-who small {
+	font-size: 10.5px;
+	color: var(--muted);
+}
+.mbl-head {
+	font-size: 12px;
+	font-weight: 700;
+	color: var(--text);
+	margin-bottom: 10px;
+}
+.mbl-item {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding: 9px 12px;
+	margin-bottom: 8px;
+	border: 1px solid var(--border);
+	border-left: 3px solid var(--border);
+	border-radius: 8px;
+	background: var(--off-white);
+	font-size: 12px;
+}
+.mbl-item:last-child {
+	margin-bottom: 0;
+}
+.mbl-item--new {
+	border-left-color: var(--maroon);
+	background: var(--white);
+}
+.mbl-item b {
+	font-weight: 600;
+	color: var(--text);
+}
+.mbl-item small {
+	font-size: 10.5px;
+	color: var(--muted);
+}
+
 /* ─── Assignment Mock ─── */
 .showcase-info {
 	padding: 8px 0 0;
