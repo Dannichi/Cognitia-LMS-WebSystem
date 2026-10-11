@@ -1012,76 +1012,6 @@ ul {
 }
 
 /* ─── Assignment Mock ─── */
-.mock-assign {
-	padding: 4px;
-}
-.ma-header {
-	font-size: 12px;
-	font-weight: 700;
-	color: var(--text);
-	margin-bottom: 10px;
-}
-.ma-item {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	padding: 8px 10px;
-	border-radius: 8px;
-	border: 1px solid var(--border);
-	background: var(--white);
-	margin-bottom: 6px;
-}
-.ma-dot {
-	width: 7px;
-	height: 7px;
-	border-radius: 50%;
-	flex-shrink: 0;
-}
-.ma-dot.due {
-	background: #e8572a;
-}
-.ma-dot.prog {
-	background: #f0a500;
-}
-.ma-dot.done {
-	background: #22c55e;
-}
-.ma-info {
-	flex: 1;
-	min-width: 0;
-}
-.ma-name {
-	font-size: 11px;
-	font-weight: 500;
-	color: var(--text);
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-.ma-meta {
-	font-size: 10px;
-	color: var(--muted);
-}
-.ma-badge {
-	font-size: 10px;
-	font-weight: 600;
-	padding: 2px 8px;
-	border-radius: 99px;
-	flex-shrink: 0;
-}
-.ma-badge.due {
-	background: rgba(232, 87, 42, 0.1);
-	color: #e8572a;
-}
-.ma-badge.prog {
-	background: rgba(240, 165, 0, 0.1);
-	color: #c08400;
-}
-.ma-badge.done {
-	background: rgba(34, 197, 94, 0.1);
-	color: #16a34a;
-}
-
 .showcase-info {
 	padding: 8px 0 0;
 }
@@ -1549,7 +1479,9 @@ ul {
 }
 .about-grid {
 	display: grid;
-	grid-template-columns: repeat(3, 1fr);
+	grid-template-columns: 1fr;
+	max-width: 720px;
+	margin: 0 auto;
 	gap: 20px;
 	position: relative;
 	z-index: 1;
@@ -1652,67 +1584,6 @@ ul {
 	flex-wrap: wrap;
 }
 
-.terms-section {
-	padding: 112px 0;
-	background: linear-gradient(180deg, #fff 0%, #faf5f6 100%);
-}
-
-.terms-shell {
-	border-radius: var(--radius-lg);
-	padding: 40px;
-	background: var(--white);
-	border: 1px solid var(--border);
-	box-shadow: var(--shadow);
-}
-
-.terms-title {
-	text-align: left;
-	margin-bottom: 18px;
-}
-
-.terms-intro {
-	max-width: 720px;
-	font-size: 15px;
-	line-height: 1.8;
-	color: var(--muted);
-}
-
-.terms-points {
-	display: grid;
-	grid-template-columns: repeat(3, 1fr);
-	gap: 18px;
-	margin-top: 32px;
-}
-
-.terms-point {
-	padding: 22px 20px;
-	border-radius: var(--radius);
-	background: var(--off-white);
-	border: 1px solid var(--border);
-}
-
-.terms-point h3 {
-	font-family: var(--font-display);
-	font-size: 18px;
-	margin-bottom: 10px;
-	color: var(--black);
-}
-
-.terms-point p {
-	font-size: 14px;
-	line-height: 1.7;
-	color: var(--muted);
-}
-
-.terms-actions {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 16px;
-	margin-top: 28px;
-	flex-wrap: wrap;
-}
-
 .terms-status {
 	font-size: 14px;
 	color: var(--muted);
@@ -1727,6 +1598,32 @@ ul {
 .footer p {
 	font-size: 13px;
 	color: rgba(255, 255, 255, 0.35);
+}
+.footer-links {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 8px 24px;
+	margin-bottom: 14px;
+}
+.footer-links a,
+.footer-link-btn {
+	font: inherit;
+	font-size: 13px;
+	color: rgba(255, 255, 255, 0.72);
+	background: none;
+	border: none;
+	padding: 4px 0;
+	cursor: pointer;
+	transition: color 0.2s;
+}
+.footer-links a:hover,
+.footer-link-btn:hover {
+	color: var(--white);
+}
+.footer .terms-status {
+	font-size: 12px;
+	margin-bottom: 8px;
 }
 
 .terms-modal {
@@ -1810,11 +1707,6 @@ ul {
 }
 
 .terms-modal__primary,
-.terms-open {
-	border: none;
-	cursor: pointer;
-}
-
 /* ─── ACCESSIBILITY ───────────────────────────── */
 a:focus-visible,
 button:focus-visible {
@@ -1858,94 +1750,6 @@ button:focus-visible {
 	transition-delay: 0.6s;
 }
 
-/* ─── MOBILE NAV (hamburger) ──────────────────── */
-.nav-toggle {
-	display: none;
-	flex-direction: column;
-	justify-content: center;
-	gap: 5px;
-	background: none;
-	border: none;
-	cursor: pointer;
-	padding: 6px;
-	z-index: 200;
-}
-.nav-toggle span {
-	display: block;
-	width: 22px;
-	height: 2px;
-	background: var(--text);
-	border-radius: 99px;
-	transition:
-		transform 0.3s ease,
-		opacity 0.3s ease;
-}
-
-/* Animate hamburger → X */
-.nav-toggle.open span:nth-child(1) {
-	transform: translateY(7px) rotate(45deg);
-}
-.nav-toggle.open span:nth-child(2) {
-	opacity: 0;
-}
-.nav-toggle.open span:nth-child(3) {
-	transform: translateY(-7px) rotate(-45deg);
-}
-
-/* Mobile drawer */
-.mobile-nav {
-	display: none;
-	position: fixed;
-	top: 68px;
-	left: 0;
-	right: 0;
-	background: rgba(255, 255, 255, 0.97);
-	backdrop-filter: blur(16px);
-	-webkit-backdrop-filter: blur(16px);
-	border-bottom: 1px solid var(--border);
-	padding: 20px 28px 28px;
-	z-index: 99;
-	flex-direction: column;
-	gap: 6px;
-	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-	transform: translateY(-10px);
-	opacity: 0;
-	transition:
-		transform 0.3s ease,
-		opacity 0.3s ease;
-}
-.mobile-nav.open {
-	transform: translateY(0);
-	opacity: 1;
-}
-.mobile-nav a {
-	font-size: 16px;
-	font-weight: 500;
-	color: var(--text);
-	padding: 12px 0;
-	border-bottom: 1px solid var(--border);
-	transition: color 0.2s;
-}
-.mobile-nav a:last-child {
-	border-bottom: none;
-}
-.mobile-nav a:hover {
-	color: var(--maroon);
-}
-.mobile-nav .btn-nav-mobile {
-	margin-top: 10px;
-	display: block;
-	text-align: center;
-	background: var(--maroon);
-	color: var(--white);
-	padding: 13px;
-	border-radius: 999px;
-	font-weight: 600;
-	font-size: 14px;
-	border-bottom: none;
-	box-shadow: 0 4px 14px rgba(122, 0, 25, 0.28);
-}
-
 /* ─── TABLET — max 1024px ─────────────────────── */
 @media (max-width: 1024px) {
 	.hero-container {
@@ -1957,13 +1761,6 @@ button:focus-visible {
 	.features-grid {
 		grid-template-columns: 1fr 1fr;
 		gap: 20px;
-	}
-	.about-grid {
-		grid-template-columns: 1fr 1fr;
-		gap: 16px;
-	}
-	.terms-points {
-		grid-template-columns: 1fr;
 	}
 	.hiw-steps {
 		grid-template-columns: repeat(2, 1fr);
@@ -2034,17 +1831,6 @@ button:focus-visible {
 		padding: 80px 0;
 	}
 
-	.about-grid {
-		grid-template-columns: 1fr;
-		max-width: 540px;
-		margin: 0 auto;
-	}
-	.terms-shell {
-		padding: 32px 28px;
-	}
-	.terms-actions {
-		align-items: flex-start;
-	}
 	.roles-grid {
 		grid-template-columns: 1fr;
 	}
@@ -2052,22 +1838,16 @@ button:focus-visible {
 
 /* ─── MOBILE LARGE — max 640px ───────────────── */
 @media (max-width: 640px) {
-	/* Show hamburger, hide desktop nav */
-	.nav-toggle {
-		display: flex;
-	}
-	.nav-links {
-		display: none;
-	}
-	.btn-nav {
-		display: none;
-	}
-	.mobile-nav {
-		display: flex;
-	}
-
 	.header-inner {
 		padding: 0;
+	}
+
+	/* Hero: drop decorative floaters + placeholder stats on phones */
+	.hero-accent-card,
+	.hero-score-badge,
+	.hero-badge,
+	.stat-chips {
+		display: none;
 	}
 
 	/* Hero */
@@ -2175,27 +1955,10 @@ button:focus-visible {
 	.about-section {
 		padding: 64px 0;
 	}
-	.about-grid {
-		gap: 14px;
-	}
 	.about-card {
 		padding: 24px 20px;
 	}
 
-	.terms-section {
-		padding: 64px 0;
-	}
-	.terms-shell {
-		padding: 24px 20px;
-	}
-	.terms-title {
-		text-align: left;
-	}
-	.terms-actions .btn-primary {
-		max-width: 320px;
-		width: 100%;
-		justify-content: center;
-	}
 	.terms-modal {
 		padding: 16px;
 	}
@@ -2265,37 +2028,11 @@ html {
 	scroll-padding-top: 76px;
 }
 
-/* 2. Closed mobile drawer was only transparent, so its links
-      still sat on top of the hero and swallowed taps/focus */
-.mobile-nav {
-	visibility: hidden;
-	pointer-events: none;
-	transition:
-		transform 0.3s ease,
-		opacity 0.3s ease,
-		visibility 0s linear 0.3s;
-}
-.mobile-nav.open {
-	visibility: visible;
-	pointer-events: auto;
-	transition:
-		transform 0.3s ease,
-		opacity 0.3s ease,
-		visibility 0s;
-}
-
-/* 3. Hamburger kicks in earlier: between ~641–760px the five
-      links + button + logo don't fit on one row */
+/* 3. Phones/small tablets: the page is one scroll, so the header keeps
+      only the logo + "Get Started" (section links live in the footer) */
 @media (max-width: 860px) {
-	.nav-toggle {
-		display: flex;
-	}
-	.nav-links,
-	.btn-nav {
+	.nav-links {
 		display: none;
-	}
-	.mobile-nav {
-		display: flex;
 	}
 }
 
@@ -2371,17 +2108,14 @@ html {
 .footer p {
 	color: rgba(255, 255, 255, 0.6);
 }
-.task-tag.due,
-.ma-badge.due {
+.task-tag.due {
 	color: #c2410c;
 }
 .task-tag.prog,
-.ma-badge.prog,
 .rs-prog {
 	color: #92400e;
 }
 .task-tag.done,
-.ma-badge.done,
 .rs-done {
 	color: #15803d;
 }
@@ -2429,37 +2163,11 @@ html {
 	scroll-padding-top: 76px;
 }
 
-/* 2. Closed mobile drawer was only transparent, so its links
-      still sat on top of the hero and swallowed taps/focus */
-.mobile-nav {
-	visibility: hidden;
-	pointer-events: none;
-	transition:
-		transform 0.3s ease,
-		opacity 0.3s ease,
-		visibility 0s linear 0.3s;
-}
-.mobile-nav.open {
-	visibility: visible;
-	pointer-events: auto;
-	transition:
-		transform 0.3s ease,
-		opacity 0.3s ease,
-		visibility 0s;
-}
-
-/* 3. Hamburger kicks in earlier: between ~641–760px the five
-      links + button + logo don't fit on one row */
+/* 3. Phones/small tablets: the page is one scroll, so the header keeps
+      only the logo + "Get Started" (section links live in the footer) */
 @media (max-width: 860px) {
-	.nav-toggle {
-		display: flex;
-	}
-	.nav-links,
-	.btn-nav {
+	.nav-links {
 		display: none;
-	}
-	.mobile-nav {
-		display: flex;
 	}
 }
 
@@ -2535,17 +2243,14 @@ html {
 .footer p {
 	color: rgba(255, 255, 255, 0.6);
 }
-.task-tag.due,
-.ma-badge.due {
+.task-tag.due {
 	color: #c2410c;
 }
 .task-tag.prog,
-.ma-badge.prog,
 .rs-prog {
 	color: #92400e;
 }
 .task-tag.done,
-.ma-badge.done,
 .rs-done {
 	color: #15803d;
 }
@@ -2588,8 +2293,7 @@ html {
    sits just under the header. */
 .features-section,
 .hiw-section,
-.about-section,
-.terms-section {
+.about-section {
 	scroll-margin-top: -56px;
 }
 
