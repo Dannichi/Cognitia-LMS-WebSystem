@@ -1,6 +1,6 @@
 /* ════════════════════════════════════════════════
    landing.js — Cognitia landing page
-   Include with:  <script src="scripts/landing.js" defer></script>
+   Include with:  <script src="js/landing.js" defer></script>
    (and delete the old inline <script> block)
    ════════════════════════════════════════════════ */
 (() => {
@@ -181,38 +181,6 @@
 		revealEls.forEach((el) => revealObserver.observe(el));
 	}
 
-	/* ─── Mobile nav ─── */
-	const toggle = document.querySelector(".nav-toggle");
-	const mobileNav = document.querySelector(".mobile-nav");
-
-	const setNav = (open) => {
-		if (!toggle || !mobileNav) return;
-		mobileNav.classList.toggle("open", open);
-		toggle.classList.toggle("open", open);
-		toggle.setAttribute("aria-expanded", String(open));
-		document.body.style.overflow = open ? "hidden" : "";
-	};
-
-	toggle?.addEventListener("click", () =>
-		setNav(!mobileNav.classList.contains("open")),
-	);
-
-	mobileNav
-		?.querySelectorAll("a")
-		.forEach((link) => link.addEventListener("click", () => setNav(false)));
-
-	document.addEventListener("keydown", (event) => {
-		if (event.key === "Escape" && mobileNav?.classList.contains("open")) {
-			setNav(false);
-			toggle?.focus();
-		}
-	});
-
-	// If the window grows past the hamburger breakpoint, reset the drawer
-	window.matchMedia("(min-width: 861px)").addEventListener("change", (e) => {
-		if (e.matches) setNav(false);
-	});
-
 	/* ─── Highlight the nav link of the section in view ─── */
 	const navLinks = [...document.querySelectorAll(".nav-links a")];
 	const setCurrent = (hash) => {
@@ -240,7 +208,7 @@
 		);
 		sections.forEach((s) => spy.observe(s));
 
-		// Back at the very top → Home
+		// Back at the very top → clear the highlight
 		window.addEventListener(
 			"scroll",
 			() => {
