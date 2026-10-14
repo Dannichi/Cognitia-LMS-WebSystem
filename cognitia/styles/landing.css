@@ -1151,16 +1151,17 @@ ul {
 
 .section-eyebrow {
 	text-align: center;
-	font-size: 11px;
+	font-size: 15px;
 	font-weight: 600;
 	letter-spacing: 0.14em;
 	text-transform: uppercase;
 	color: var(--maroon);
 	margin-bottom: 14px;
+	padding-bottom: 5px;
 }
 .section-title {
 	font-family: var(--font-display);
-	font-size: clamp(1.9rem, 3.5vw, 2.7rem);
+	font-size: clamp(calc(1.9rem + 3px), 3.5vw, calc(2.7rem + 3px));
 	font-weight: 700;
 	text-align: center;
 	letter-spacing: -0.02em;
@@ -1598,14 +1599,14 @@ ul {
 }
 .about-card h3 {
 	font-family: var(--font-display);
-	font-size: 18px;
+	font-size: 35px;
 	font-weight: 700;
 	color: var(--white);
 	margin-bottom: 16px;
 }
 .about-card p,
 .about-card li {
-	font-size: 14px;
+	font-size: 15px;
 	line-height: 1.75;
 	color: rgba(255, 255, 255, 0.72);
 }
@@ -2264,4 +2265,17 @@ html {
 	flex-wrap: wrap;
 	justify-content: center;
 	text-align: center;
+}
+
+.about-section {
+	min-height: 100vh; /* fallback */
+	min-height: 100svh;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	scroll-margin-top: -76px;
+	padding: calc(68px + clamp(24px, 5vh, 56px)) 0 clamp(32px, 6vh, 72px);
+}
+.about-section > .container {
+	width: 100%;
 }
