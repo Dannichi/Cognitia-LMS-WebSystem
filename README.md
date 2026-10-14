@@ -7,7 +7,7 @@
 
 ## 🚧 Project Status
 
-**Cognitia is still under active development.** It is being updated regularly: errors are being fixed, features are being refined, and some things may change or break along the way. If you run into a bug, please report it. It helps a lot!
+**Cognitia is still under active development.** It is being updated regularly: errors are being fixed, features are being refined, and some things may change or break along the way. 
 
 ### Currently in progress
 - [ ] Fixing known errors and bugs
