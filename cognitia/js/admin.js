@@ -2175,6 +2175,27 @@ document.addEventListener("DOMContentLoaded", () => {
 	})();
 
 	/* ═══════════════════════════════════════════
+		DASHBOARD GREETING — from signed-in user
+	═══════════════════════════════════════════ */
+	(function initGreeting() {
+		const el = document.getElementById("greetingTitle");
+		if (!el) return;
+		let user = null;
+		try {
+			user = JSON.parse(localStorage.getItem("cognitia_current_user") || "null");
+		} catch {
+			/* corrupt value — fall back to generic greeting */
+		}
+		const first = (
+			user?.firstname ||
+			user?.firstName ||
+			(user?.displayName || user?.name || "").split(" ")[0] ||
+			""
+		).trim();
+		if (first) el.textContent = `Welcome back, ${first}!`;
+	})();
+
+	/* ═══════════════════════════════════════════
 		PROFILE — Edit Profile Form
 	═══════════════════════════════════════════ */
 	(function initProfileForm() {
@@ -2283,6 +2304,7 @@ document.addEventListener("DOMContentLoaded", () => {
 				setText("sidebarName", display);
 				setText("profileAvatar", initials(first, last));
 				setText("sidebarAvatar", initials(first, last));
+				if (first) setText("greetingTitle", `Welcome back, ${first}!`);
 			}
 			if (email) setText("profileEmail", email);
 

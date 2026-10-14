@@ -1,9 +1,9 @@
 /* ═══════════════════════════════════════════
-   LOGIN — frontend demo only
-   DEMO LIMITATION: accounts live in localStorage and passwords are stored
-   and compared as PLAIN TEXT. This is NOT secure authentication.
-   Never enter a real password. Replace with backend authentication
-   (hashed passwords, server-side sessions) later.
+	LOGIN — frontend demo only
+	DEMO LIMITATION: accounts live in localStorage and passwords are stored
+	and compared as PLAIN TEXT. This is NOT secure authentication.
+	Never enter a real password. Replace with backend authentication
+	(hashed passwords, server-side sessions) later.
 ═══════════════════════════════════════════ */
 "use strict";
 
@@ -204,6 +204,8 @@
 		toggleBtn.setAttribute("aria-label", show ? "Hide password" : "Show password");
 		toggleBtn.setAttribute("aria-pressed", String(show));
 		toggleBtn.classList.toggle("active", show);
+		toggleBtn.querySelector(".icon-eye").style.display = show ? "block" : "none";
+		toggleBtn.querySelector(".icon-eye-off").style.display = show ? "none" : "block";
 	});
 
 	// ── Terms modal (keeps focus inside while open) ──

@@ -178,8 +178,6 @@ textarea {
 		var(--sidebar-top) 0%,
 		var(--sidebar-bg) 100%
 	);
-	border-top-right-radius: 15px;
-	border-bottom-right-radius: 15px;
 	border-right: 1px solid rgba(0, 0, 0, 0.12);
 	box-shadow: 2px 0 16px rgba(0, 0, 0, 0.12);
 	transition:
@@ -402,6 +400,34 @@ textarea {
 	transition: opacity 0.2s ease 0.18s;
 }
 
+/* Nav category labels */
+.navbar li.nav-label {
+	margin: 14px 0 4px;
+	padding: 0 12px;
+	font-size: 10.5px;
+	font-weight: 600;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: rgba(255, 255, 255, 0.45);
+	white-space: nowrap;
+	overflow: hidden;
+	pointer-events: none;
+	user-select: none;
+}
+.navbar li.nav-label:first-child {
+	margin-top: 0;
+}
+.sidebar.collapsed .navbar li.nav-label {
+	height: 1px;
+	margin: 10px 8px;
+	padding: 0;
+	background: var(--sidebar-bdr);
+}
+.sidebar.collapsed .navbar li.nav-label span,
+.sidebar.collapsed .navbar li.nav-label:first-child {
+	display: none;
+}
+
 /* Bottom */
 .sidebar-bottom {
 	margin-top: auto;
@@ -550,6 +576,55 @@ textarea {
 	font-size: 15px;
 	color: var(--text-3);
 	margin-top: 3px;
+}
+
+/* ─── DASHBOARD GREETING ─────────────────────────────────── */
+.page-header.greeting-header {
+	display: block;
+	padding: 22px 28px;
+	background: var(--brand);
+	background-image: linear-gradient(
+		135deg,
+		var(--brand) 0%,
+		var(--brand-dark) 100%
+	);
+	border: 1px solid var(--brand-dark);
+	border-radius: var(--r-lg);
+	box-shadow: 0 2px 8px var(--brand-glow);
+}
+.greeting-header .greeting-title {
+	font-size: 28px;
+	font-weight: 700;
+	letter-spacing: -0.02em;
+	line-height: 1.25;
+	color: #fff;
+	overflow-wrap: anywhere;
+}
+.greeting-header .greeting-sub {
+	margin-top: 6px;
+	font-size: 15px;
+	line-height: 1.5;
+	color: rgba(255, 255, 255, 0.85);
+}
+@media (max-width: 768px) {
+	.page-header.greeting-header {
+		padding: 18px 20px;
+	}
+	.greeting-header .greeting-title {
+		font-size: 24px;
+	}
+}
+@media (max-width: 480px) {
+	.page-header.greeting-header {
+		padding: 14px 16px;
+		margin-bottom: 14px;
+	}
+	.greeting-header .greeting-title {
+		font-size: 20px;
+	}
+	.greeting-header .greeting-sub {
+		font-size: 13px;
+	}
 }
 
 /* ─── BUTTONS ────────────────────────────────────────────── */
@@ -2445,6 +2520,16 @@ tbody tr:hover {
 	.sidebar .user-details {
 		opacity: 0;
 		pointer-events: none;
+	}
+	.navbar li.nav-label {
+		height: 1px;
+		margin: 10px 8px;
+		padding: 0;
+		background: var(--sidebar-bdr);
+	}
+	.navbar li.nav-label span,
+	.navbar li.nav-label:first-child {
+		display: none;
 	}
 	.sidebar .logo-full {
 		opacity: 0;

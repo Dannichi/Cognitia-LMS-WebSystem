@@ -693,3 +693,40 @@ input:focus-visible {
 		transition-duration: 0.01ms !important;
 	}
 }
+
+/* ─── TOUCH & SMALL-SCREEN USABILITY (login + register) ───────
+   - 16px text stops iOS Safari zooming the page when a field is focused
+   - 44px minimum touch targets for fields, eye toggle, checkboxes, links */
+@media (max-width: 900px), (pointer: coarse) {
+	.loginform input:not([type="checkbox"]):not([type="radio"]) {
+		font-size: 16px;
+		min-height: 44px;
+	}
+	.input-wrapper input {
+		padding-right: 52px;
+	}
+	.toggle-pw {
+		right: 2px;
+		padding: 14px;
+	}
+	.terms-check input {
+		width: 20px;
+		height: 20px;
+		margin-top: 0;
+	}
+	.terms-check {
+		align-items: center;
+		min-height: 44px;
+	}
+	.btn-login {
+		min-height: 48px;
+	}
+	.forgot-link {
+		padding: 10px 0;
+		margin: -10px 0;
+	}
+	.back-link,
+	.card-switch a {
+		padding: 10px 0;
+	}
+}
