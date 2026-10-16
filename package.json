@@ -1,0 +1,27 @@
+{
+  "name": "cognitia-lms-websystem",
+  "version": "1.0.0",
+  "description": "> A school Learning Management System (LMS) that helps students manage their workloads and helps professors manage their classes, all under the control of an admin.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dannichi/Cognitia-LMS-WebSystem.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Dannichi/Cognitia-LMS-WebSystem/issues"
+  },
+  "homepage": "https://github.com/Dannichi/Cognitia-LMS-WebSystem#readme",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "express": "^5.3.0",
+    "mysql2": "^3.24.5"
+  }
+}
