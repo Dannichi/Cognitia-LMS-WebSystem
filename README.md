@@ -11,7 +11,7 @@
 
 ## Steps to follow 
 
-- open Xammp, then press start for both SQL and Apache. After that click the admin along the row of SQL. It will open an localhost database and insert this query:
+- Open Xammp, then press start for both SQL and Apache. After that click the admin along the row of SQL. It will open an localhost database and insert this query:
 ```SQL
 # You can copy and paste the contents of your file here
 -- ═══════════════════════════════════════════════════════════
@@ -137,4 +137,8 @@ CREATE TABLE IF NOT EXISTS app_state (
   updated_at TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 ```
+- Then bash this in terminal
+```Node
+npm 
 
+```                 
