@@ -266,25 +266,98 @@ document.addEventListener("DOMContentLoaded", () => {
 			?.setAttribute("aria-expanded", String(open));
 	}
 
+	// ── Collapsed rail: Users flyout (reuses the existing .nav-sub links, so the
+	// Students / Professors navigation below is the single source of truth) ──
+	const usersGroup = document.getElementById("usersNavGroup");
+	const usersTrigger = usersGroup?.querySelector("[data-nav-toggle]");
+	const sidebarEl = document.getElementById("sidebar");
+	const isRailCollapsed = () => sidebarEl?.classList.contains("collapsed");
+	const flyoutIsOpen = () => usersGroup?.classList.contains("flyout-open");
+	let flyoutTimer;
+	let skipFocusOpen = false; // set while Escape hands focus back to the trigger
+
+	function openFlyout() {
+		if (!usersGroup || !isRailCollapsed()) return;
+		clearTimeout(flyoutTimer);
+		const sub = usersGroup.querySelector(".nav-sub");
+		const top = usersTrigger.getBoundingClientRect().top - 8;
+		// keep the flyout inside the viewport on short screens
+		const max = window.innerHeight - (sub.scrollHeight || 100) - 24;
+		usersGroup.style.setProperty("--flyout-top", `${Math.max(8, Math.min(top, max))}px`);
+		usersGroup.classList.add("flyout-open");
+		sidebarEl.classList.add("flyout-open");
+		usersTrigger.setAttribute("aria-expanded", "true");
+	}
+	function closeFlyout() {
+		clearTimeout(flyoutTimer);
+		usersGroup?.classList.remove("flyout-open");
+		sidebarEl?.classList.remove("flyout-open");
+		usersTrigger?.removeAttribute("aria-expanded");
+	}
+	const scheduleClose = () => {
+		clearTimeout(flyoutTimer);
+		flyoutTimer = setTimeout(closeFlyout, 150); // lets the pointer cross the gap
+	};
+	const firstFlyoutLink = () => usersGroup.querySelector(".nav-sub a");
+
+	if (usersGroup && usersTrigger) {
+		// Hover (mouse only) — covers the trigger and the flyout, which is its DOM child
+		usersGroup.addEventListener("pointerenter", (e) => {
+			if (e.pointerType === "mouse") openFlyout();
+		});
+		usersGroup.addEventListener("pointerleave", (e) => {
+			if (e.pointerType === "mouse" && flyoutIsOpen()) scheduleClose();
+		});
+		// Keyboard focus
+		usersGroup.addEventListener("focusin", (e) => {
+			if (
+				e.target === usersTrigger &&
+				!skipFocusOpen &&
+				usersTrigger.matches(":focus-visible")
+			)
+				openFlyout();
+		});
+		usersGroup.addEventListener("focusout", (e) => {
+			if (!usersGroup.contains(e.relatedTarget)) closeFlyout();
+		});
+		usersTrigger.addEventListener("keydown", (e) => {
+			if (!isRailCollapsed()) return;
+			if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+				e.preventDefault();
+				openFlyout();
+				firstFlyoutLink()?.focus();
+			}
+		});
+		// Outside click and Escape
+		document.addEventListener("click", (e) => {
+			if (flyoutIsOpen() && !usersGroup.contains(e.target)) closeFlyout();
+		});
+		document.addEventListener("keydown", (e) => {
+			if (e.key !== "Escape" || !flyoutIsOpen()) return;
+			const focusInside = usersGroup.contains(document.activeElement);
+			closeFlyout();
+			if (focusInside) {
+				skipFocusOpen = true;
+				usersTrigger.focus();
+				skipFocusOpen = false;
+			}
+		});
+		window.addEventListener("resize", closeFlyout);
+	}
+
 	navLinks.forEach((link) => {
 		link.addEventListener("click", (e) => {
 			e.preventDefault();
 			if (link.dataset.navToggle) {
-				// Collapsed rail hides the sub-list: expand the sidebar first so
-				// Students / Professors stay reachable.
-				const sb = document.getElementById("sidebar");
-				if (sb?.classList.contains("collapsed")) {
-					document.getElementById("sidebarToggle")?.click();
-					document.getElementById("usersNavGroup")?.classList.add("open");
-					document
-						.getElementById("usersNavCaret")
-						?.setAttribute("aria-expanded", "true");
-				} else {
-					toggleUsersGroup();
-				}
+				if (!isRailCollapsed()) return toggleUsersGroup();
+				// Collapsed: tap/click toggles the flyout (hover already opens it for mouse)
+				if (!flyoutIsOpen()) openFlyout();
+				else if (e.detail === 0) firstFlyoutLink()?.focus(); // keyboard Enter
+				else if (e.pointerType !== "mouse") closeFlyout(); // touch toggles off
 				return;
 			}
 			navigateTo(link.dataset.target, link.dataset.userFilter || "");
+			closeFlyout(); // sidebar stays collapsed
 		});
 	});
 

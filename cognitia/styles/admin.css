@@ -204,8 +204,8 @@ textarea {
 	transform: translateY(-50%);
 	width: 29px;
 	height: 29px;
-	background: var(--brand);
-	border: 2px solid var(--border);
+	background: var(--surface);
+	border: 1px solid var(--border);
 	border-radius: 50%;
 	display: flex;
 	align-items: center;
@@ -220,11 +220,11 @@ textarea {
 }
 .sidebar-toggle i {
 	font-size: 12px;
-	color: var(--brand-light);
+	color: var(--brand);
 	transition: transform var(--t-slow) var(--ease);
 }
 .sidebar-toggle:hover {
-	background: var(--brand-dark);
+	background: var(--brand-light);
 	box-shadow: var(--sh-md);
 }
 
@@ -294,7 +294,7 @@ textarea {
 	align-items: center;
 	gap: 15px;
 	padding: 9px 18px; /* 6px nav inset + 18px = icons stay 24px from the edge */
-	border-radius: var(--r-sm);
+	border-radius: var(--r-md);
 	color: var(--sidebar-text);
 	white-space: nowrap;
 	overflow: hidden;
@@ -391,6 +391,34 @@ textarea {
 .sidebar.collapsed .nav-caret,
 .sidebar.collapsed .nav-sub {
 	display: none;
+}
+
+/* Collapsed rail: Users flyout (position: fixed so the nav's overflow can't clip it) */
+.sidebar.flyout-open {
+	z-index: 70; /* above the sticky topbar */
+}
+.sidebar.collapsed .nav-group.flyout-open .nav-sub {
+	display: block;
+	position: fixed;
+	top: var(--flyout-top, 0);
+	left: calc(
+		var(--sidebar-collapsed-w) + 24px
+	); /* clears the 29px toggle that straddles the rail edge */
+	width: 176px;
+	max-height: none;
+	margin: 0;
+	padding: 8px;
+	background: var(--sidebar-bg);
+	border: 1px solid var(--sidebar-bdr);
+	border-radius: var(--r-md);
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+.sidebar.collapsed .nav-group.flyout-open .nav-sub li a {
+	padding: 9px 12px;
+}
+.sidebar.collapsed .nav-group.flyout-open .nav-sub .nav-text {
+	opacity: 1;
+	pointer-events: auto;
 }
 
 .nav-text {
