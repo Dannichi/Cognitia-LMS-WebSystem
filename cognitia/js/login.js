@@ -130,7 +130,7 @@
 
 	// Already logged in? Go straight to the dashboard.
 	try {
-		const current = JSON.parse(localStorage.getItem(SESSION_KEY) || "null");
+		const current = CognitiaSession.get();
 		if (current?.role) {
 			if (redirectForRole(current.role)) return;
 			// Unknown role (old or damaged data): forget it and show the form,
@@ -313,7 +313,7 @@
 				return;
 			}
 
-			localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+			CognitiaSession.set(user);
 			redirectForRole(user.role);
 		}, 420);
 	});

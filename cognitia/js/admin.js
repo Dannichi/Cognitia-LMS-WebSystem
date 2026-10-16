@@ -8,157 +8,97 @@ document.addEventListener("DOMContentLoaded", () => {
 	═══════════════════════════════════════════ */
 	const DB_KEY = "cognitia_state";
 
-	/* ── Multi-tab safety ───────────────────────────────────────────────
-		This tab keeps an in-memory copy (`state`) that can go stale when another
-		tab (e.g. a student registering) writes to localStorage. So we never
-		overwrite the stored collections with our copy. Instead every save is a
-		three-way merge of:
-		  base   – what this tab last saw in storage (snapshot)
-		  local  – this tab's `state` now
-		  stored – what is in localStorage right now
-		Only what THIS tab changed (local vs base) is applied on top of `stored`.
-		Limits: localStorage has no atomic read-modify-write, so two tabs saving
-		in the exact same instant can still race; a backend/DB is needed for that. */
-	const SHARED = ["programs", "sections", "courses", "users", "announcements"];
-	const clone = (v) => JSON.parse(JSON.stringify(v));
-	const asArray = (v) => (Array.isArray(v) ? v : []);
-	const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-	let base = {}; // last-synced snapshot of each shared collection
+	/* ── Keeping this tab in step with other tabs ──────────────────
+		This tab loads cognitia_state once and keeps its own copy in memory.
+		Meanwhile another tab (e.g. register.html) can add users. If we then
+		saved our old list, those new accounts would be erased.
 
-	function readStored() {
+		Fix: before every save we re-read storage and reconcile USERS by id.
+		`knownUserIds` = the user ids this tab has already seen in storage.
+		  • in storage, never seen here   → added elsewhere  → keep it
+		  • seen here, gone from storage  → deleted elsewhere → drop it
+		  • in this tab only, never saved → created here      → keep it
+		  • in both                       → this tab's copy wins (last write wins)
+		Limit: two tabs editing the SAME existing record still overwrite each
+		other; localStorage has no locks or transactions. A backend fixes that. */
+	let knownUserIds = new Set();
+
+	function readStoredState() {
 		try {
-			const r = localStorage.getItem(DB_KEY);
-			const o = r ? JSON.parse(r) : {};
-			return o && typeof o === "object" ? o : {};
+			const parsed = JSON.parse(localStorage.getItem(DB_KEY) || "{}");
+			return parsed && typeof parsed === "object" ? parsed : null;
 		} catch {
-			return {};
+			return null;
 		}
 	}
 
-	// Keys whose value differs between two records
-	function changedKeys(a, b) {
-		return [...new Set([...Object.keys(a), ...Object.keys(b)])].filter(
-			(k) => !same(a[k], b[k]),
-		);
-	}
+	// Returns true when the in-memory user list changed.
+	function syncUsersFromStorage(stored = readStoredState()) {
+		if (!stored) return false;
+		// nextId must never move backwards (ids are shared by every record type)
+		state.nextId = Math.max(state.nextId || 1, Number(stored.nextId) || 1);
+		// Unreadable or missing user list: change nothing rather than risk wiping data
+		if (!Array.isArray(stored.users)) return false;
 
-	// Apply this tab's changes (local vs base) on top of the freshest stored list
-	function mergeCollection(baseArr, localArr, storedArr) {
-		const key = (r) => String(r.id);
-		const baseMap = new Map(baseArr.map((r) => [key(r), r]));
-		const localMap = new Map(localArr.map((r) => [key(r), r]));
-		const out = new Map(storedArr.map((r) => [key(r), r]));
+		const storedIds = new Set(stored.users.map((u) => u.id));
+		const before = state.users.length;
+		let changed = false;
 
-		// 1. Records this tab deleted
-		for (const id of baseMap.keys()) if (!localMap.has(id)) out.delete(id);
-
-		// 2. Records this tab added or edited
-		for (const [id, rec] of localMap) {
-			const b = baseMap.get(id);
-			const s = out.get(id);
-			if (!b) {
-				// added here
-				if (!s) out.set(id, rec);
-				else if (changedKeys(s, rec).length) {
-					// same id, different record → another tab used this id first
-					const ids = [...out.values(), ...localMap.values()]
-						.map((r) => Number(r.id))
-						.filter(Number.isFinite);
-					rec.id = Math.max(0, ...ids) + 1;
-					out.set(key(rec), rec);
-					console.warn("Cognitia: id collision, record re-numbered", rec.id);
-				}
-				continue;
+		stored.users.forEach((u) => {
+			if (!knownUserIds.has(u.id) && !state.users.some((x) => x.id === u.id)) {
+				state.users.push(u);
+				changed = true;
 			}
-			const keys = changedKeys(b, rec);
-			if (!keys.length) continue; // untouched here → keep the stored version
-			if (!s) {
-				console.warn("Cognitia: edit dropped, record was deleted in another tab", id);
-				continue; // deleted elsewhere → the deletion wins
-			}
-			// field-level merge: our changed fields win, other tabs' other fields stay
-			const merged = { ...s };
-			for (const k of keys) {
-				if (k in rec) merged[k] = rec[k];
-				else delete merged[k];
-			}
-			out.set(id, merged);
-		}
-		return [...out.values()];
-	}
-
-	// Copy merged records into state IN PLACE (keeps object identity, so any
-	// record currently held by an open modal/handler stays valid)
-	function adopt(k, merged) {
-		const cur = state[k];
-		const byId = new Map(cur.map((r) => [String(r.id), r]));
-		const next = merged.map((m) => {
-			const o = byId.get(String(m.id));
-			if (!o) return m;
-			if (o !== m) {
-				for (const p of Object.keys(o)) if (!(p in m)) delete o[p];
-				Object.assign(o, m);
-			}
-			return o;
 		});
-		cur.splice(0, cur.length, ...next);
+		state.users = state.users.filter(
+			(u) => !(knownUserIds.has(u.id) && !storedIds.has(u.id)),
+		);
+		if (state.users.length !== before || changed) changed = true;
+
+		knownUserIds = storedIds;
+		return changed;
 	}
 
 	function persistState() {
 		try {
-			const stored = readStored();
-			// Start from the stored object so fields this panel doesn't own
-			// (activities, lessons, …) are never dropped
-			const merged = { ...stored };
-			for (const k of SHARED)
-				merged[k] = mergeCollection(base[k] || [], state[k], asArray(stored[k]));
-			const maxId = Math.max(
-				0,
-				...SHARED.flatMap((k) => merged[k].map((r) => Number(r.id))).filter(
-					Number.isFinite,
-				),
-			);
-			merged.nextId = Math.max(+stored.nextId || 1, +state.nextId || 1, maxId + 1);
-			// Professor content — admin panel never touches these
-			merged.lessons = stored.lessons || [];
-			merged.assignments = stored.assignments || [];
-			merged.quizzes = stored.quizzes || [];
-			merged.grades = stored.grades || [];
-			localStorage.setItem(DB_KEY, JSON.stringify(merged));
-			// The merged result is now both stored and our new baseline
-			for (const k of SHARED) {
-				adopt(k, merged[k]);
-				base[k] = clone(merged[k]);
+			const existing = (() => {
+				try {
+					const r = localStorage.getItem(DB_KEY);
+					return r ? JSON.parse(r) : {};
+				} catch {
+					return {};
+				}
+			})();
+			// Pull in users added/removed by other tabs BEFORE we overwrite them
+			if (syncUsersFromStorage(existing)) {
+				renderUsers();
+				updateStats();
 			}
-			state.nextId = merged.nextId;
+			localStorage.setItem(
+				DB_KEY,
+				JSON.stringify({
+					// Keep any key this panel doesn't own (professor content, activity log, …)
+					...existing,
+					programs: state.programs,
+					sections: state.sections,
+					courses: state.courses,
+					users: state.users,
+					announcements: state.announcements,
+					nextId: state.nextId,
+					// Preserve professor content — admin panel never touches these
+					lessons: existing.lessons || [],
+					assignments: existing.assignments || [],
+					quizzes: existing.quizzes || [],
+					grades: existing.grades || [],
+					// Activity log is written by js/activity.js — keep it as saved
+					activities: existing.activities || [],
+				}),
+			);
+			knownUserIds = new Set(state.users.map((u) => u.id));
 		} catch (e) {
 			console.warn("Cognitia: could not persist state", e);
 		}
 		setTimeout(() => window._syncGenDropdowns?.(), 0);
-	}
-
-	// Another tab saved: merge its data into this tab and redraw
-	function onStorageChange(e) {
-		if (e.storageArea !== localStorage || e.key !== DB_KEY) return;
-		try {
-			const stored = readStored();
-			for (const k of SHARED) {
-				const remote = asArray(stored[k]);
-				adopt(k, mergeCollection(base[k] || [], state[k], remote));
-				base[k] = clone(remote);
-			}
-			state.nextId = Math.max(state.nextId, +stored.nextId || 1);
-			renderPrograms();
-			renderSections();
-			renderCourses();
-			renderUsers();
-			renderAnnouncements();
-			syncProgramDropdowns();
-			updateStats();
-			window._syncGenDropdowns?.();
-		} catch (err) {
-			console.warn("Cognitia: could not sync from another tab", err);
-		}
 	}
 
 	function loadState() {
@@ -174,6 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
 				announcements: saved.announcements || [],
 				nextId: saved.nextId || 1,
 			});
+			knownUserIds = new Set(state.users.map((u) => u.id));
 		} catch (e) {
 			console.warn("Cognitia: could not load state", e);
 		}
@@ -191,8 +132,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	// Load persisted data immediately after state is declared
 	loadState();
-	for (const k of SHARED) base[k] = clone(state[k]); // baseline for merging
-	window.addEventListener("storage", onStorageChange);
 
 	window._cognitiaState = state;
 
@@ -200,17 +139,11 @@ document.addEventListener("DOMContentLoaded", () => {
 		UTILITIES
 	═══════════════════════════════════════════ */
 	function uid() {
-		// Take the highest counter any tab has stored, then reserve the id right
-		// away so another tab can't hand out the same one.
-		const stored = readStored();
-		state.nextId = Math.max(state.nextId, +stored.nextId || 1);
-		const id = state.nextId++;
-		try {
-			localStorage.setItem(DB_KEY, JSON.stringify({ ...stored, nextId: state.nextId }));
-		} catch (e) {
-			console.warn("Cognitia: could not reserve id", e);
-		}
-		return id;
+		// Another tab (e.g. registration) may have used ids since this tab loaded
+		const stored = readStoredState();
+		if (stored && Number(stored.nextId) > state.nextId)
+			state.nextId = Number(stored.nextId);
+		return state.nextId++;
 	}
 
 	function now() {
@@ -291,21 +224,235 @@ document.addEventListener("DOMContentLoaded", () => {
 		document.getElementById("stat-courses").textContent = courses;
 	}
 
-	function logActivity(msg) {
-		const list = document.getElementById("recent-activity-list");
-		const empty = list.querySelector(".empty-state");
-		if (empty) empty.remove();
-		const item = document.createElement("div");
-		item.className = "activity-item";
-		item.innerHTML = `
-			<div class="activity-dot"></div>
-			<span class="activity-text">${msg}</span>
-			<span class="activity-time">${now()}</span>
-		`;
-		list.prepend(item);
-		const items = list.querySelectorAll(".activity-item");
-		if (items.length > 10) items[items.length - 1].remove();
+	/* ═══════════════════════════════════════════
+		ACTIVITY LOG — admin UI
+		Data is saved by js/activity.js (ActivityLog). This block:
+		  1. records an event after an admin action succeeds (logActivity)
+		  2. draws a short preview on the dashboard card
+		  3. draws the full "Recent Activity" page
+	═══════════════════════════════════════════ */
+	const ACTIVITY_PREVIEW_LIMIT = 5; // dashboard card
+	const ACTIVITY_PAGE_SIZE = 50; // rows per "Show more" on the page
+	const activityView = { search: "", type: "", visible: ACTIVITY_PAGE_SIZE };
+
+	// Call only AFTER the action succeeded. Never throws.
+	function logActivity(event) {
+		if (typeof ActivityLog === "undefined") return;
+		ActivityLog.record(event);
 	}
+
+	function userName(u) {
+		return (
+			u?.displayName || `${u?.firstname || ""} ${u?.lastname || ""}`.trim() || "—"
+		);
+	}
+
+	function sectionLabel(sec) {
+		return sec
+			? `${getProgramName(sec.programId)} ${sec.year}-${sec.letter}`
+			: "";
+	}
+
+	function makeEl(tag, className, text) {
+		const n = document.createElement(tag);
+		if (className) n.className = className;
+		if (text != null) n.textContent = text; // textContent: never parsed as HTML
+		return n;
+	}
+
+	// Dashboard card: the newest few events. (A "View all" link can later
+	// point at data-target="activity" without any new logic.)
+	function renderRecentPreview() {
+		const list = document.getElementById("recent-activity-list");
+		if (!list || typeof ActivityLog === "undefined") return;
+		const items = ActivityLog.getRecent(ACTIVITY_PREVIEW_LIMIT);
+		if (!items.length) {
+			list.replaceChildren(makeEl("p", "empty-state", "No recent activity yet."));
+			return;
+		}
+		list.replaceChildren(
+			...items.map((rec) => {
+				const row = makeEl("div", "activity-item");
+				const time = makeEl(
+					"span",
+					"activity-time",
+					ActivityLog.timeAgo(rec.timestamp),
+				);
+				time.title = ActivityLog.formatFull(rec.timestamp);
+				row.append(
+					makeEl("div", "activity-dot"),
+					makeEl("span", "activity-text", rec.description),
+					time,
+				);
+				return row;
+			}),
+		);
+	}
+
+	function getFilteredActivities() {
+		const all = ActivityLog.getAll(); // newest first
+		const q = activityView.search.trim().toLowerCase();
+		const filtered = all.filter((r) => {
+			if (activityView.type && r.entityType !== activityView.type) return false;
+			if (!q) return true;
+			return [r.description, r.entityLabel, r.actor?.name, ActivityLog.ACTIONS[r.action]]
+				.filter(Boolean)
+				.some((v) => String(v).toLowerCase().includes(q));
+		});
+		return { all, filtered };
+	}
+
+	function buildActivityEmpty(icon, title, text, onClear) {
+		const box = makeEl("div", "act-empty");
+		const ic = makeEl("span", "act-empty-icon");
+		ic.innerHTML = `<i class="fas ${icon}"></i>`; // static markup, no user data
+		box.append(ic, makeEl("p", "act-empty-title", title), makeEl("p", "act-empty-text", text));
+		if (onClear) {
+			const btn = makeEl("button", "btn-cancel", "Clear filters");
+			btn.type = "button";
+			btn.addEventListener("click", onClear);
+			box.append(btn);
+		}
+		return box;
+	}
+
+	function buildActivityRow(rec) {
+		const entity = ActivityLog.ENTITIES[rec.entityType];
+		const row = makeEl("li", "act-item");
+
+		const icon = makeEl("span", "act-icon");
+		icon.innerHTML = `<i class="fas ${entity ? entity.icon : "fa-circle"}"></i>`; // static icon class only
+		icon.setAttribute("aria-hidden", "true");
+
+		const body = makeEl("div", "act-body");
+		const meta = makeEl("p", "act-meta");
+		meta.append(
+			makeEl(
+				"span",
+				`act-badge act-badge--${String(rec.action).replace(/[^a-z]/gi, "")}`,
+				ActivityLog.ACTIONS[rec.action] || rec.action,
+			),
+		);
+		[
+			entity ? entity.noun : null,
+			rec.entityType === "user" && rec.details?.role
+				? String(rec.details.role).charAt(0).toUpperCase() +
+				String(rec.details.role).slice(1)
+				: null,
+			rec.actor?.name ? `by ${rec.actor.name}` : null,
+		]
+			.filter(Boolean)
+			.forEach((part) => meta.append(makeEl("span", "act-meta-part", part)));
+		body.append(makeEl("p", "act-desc", rec.description), meta);
+
+		const time = makeEl("time", "act-time", ActivityLog.formatTime(rec.timestamp));
+		time.dateTime = rec.timestamp;
+		time.title = ActivityLog.formatFull(rec.timestamp);
+
+		row.append(icon, body, time);
+		return row;
+	}
+
+	// Rebuilds the whole feed from storage every time, so repeated renders
+	// (refresh, revisiting the page, other tabs) can never stack duplicates.
+	function renderActivityPage() {
+		const feed = document.getElementById("activity-feed");
+		if (!feed || typeof ActivityLog === "undefined") return;
+		const count = document.getElementById("activityCount");
+		const moreBtn = document.getElementById("activityMoreBtn");
+		const { all, filtered } = getFilteredActivities();
+
+		if (!all.length) {
+			feed.replaceChildren(
+				buildActivityEmpty(
+					"fa-history",
+					"No activity recorded yet",
+					"Adding, editing or deleting users, programs, sections, courses and announcements will show up here from now on.",
+				),
+			);
+			count.textContent = "";
+			moreBtn.hidden = true;
+			return;
+		}
+
+		count.textContent = `${filtered.length} of ${all.length} activit${all.length === 1 ? "y" : "ies"}`;
+
+		if (!filtered.length) {
+			feed.replaceChildren(
+				buildActivityEmpty(
+					"fa-search",
+					"No activity matches your filters",
+					"Try a different search or choose another type.",
+					() => {
+						activityView.search = "";
+						activityView.type = "";
+						activityView.visible = ACTIVITY_PAGE_SIZE;
+						document.getElementById("activity-search").value = "";
+						document.getElementById("activity-type-filter").value = "";
+						renderActivityPage();
+					},
+				),
+			);
+			moreBtn.hidden = true;
+			return;
+		}
+
+		const shown = filtered.slice(0, activityView.visible);
+		const groups = [];
+		shown.forEach((rec) => {
+			const key = ActivityLog.dayKey(rec.timestamp);
+			const last = groups[groups.length - 1];
+			if (last && last.key === key) last.items.push(rec);
+			else groups.push({ key, label: ActivityLog.dayLabel(rec.timestamp), items: [rec] });
+		});
+
+		feed.replaceChildren(
+			...groups.map((g) => {
+				const day = makeEl("section", "act-day");
+				const list = makeEl("ul", "act-list");
+				list.append(...g.items.map(buildActivityRow));
+				day.append(makeEl("h3", "act-day-title", g.label), list);
+				return day;
+			}),
+		);
+
+		const remaining = filtered.length - shown.length;
+		moreBtn.hidden = remaining <= 0;
+		moreBtn.textContent = `Show more (${remaining} left)`;
+	}
+
+	document.getElementById("activity-search")?.addEventListener("input", (e) => {
+		activityView.search = e.target.value;
+		activityView.visible = ACTIVITY_PAGE_SIZE;
+		renderActivityPage();
+	});
+	document.getElementById("activity-type-filter")?.addEventListener("change", (e) => {
+		activityView.type = e.target.value;
+		activityView.visible = ACTIVITY_PAGE_SIZE;
+		renderActivityPage();
+	});
+	document.getElementById("activityMoreBtn")?.addEventListener("click", () => {
+		activityView.visible += ACTIVITY_PAGE_SIZE;
+		renderActivityPage();
+	});
+
+	// Keep both views current when an event is saved here, or by another tab
+	// (e.g. a student registering in register.html).
+	function refreshActivityViews() {
+		renderRecentPreview();
+		if (document.getElementById("activity")?.classList.contains("active"))
+			renderActivityPage();
+	}
+	window.addEventListener("cognitia:activity-recorded", refreshActivityViews);
+	window.addEventListener("storage", (e) => {
+		if (e.key !== null && e.key !== DB_KEY) return;
+		// A user registered (or was removed) in another tab: show it here too
+		if (syncUsersFromStorage()) {
+			renderUsers();
+			updateStats();
+		}
+		refreshActivityViews();
+	});
 
 	function syncProgramDropdowns() {
 		const selectors = [
@@ -369,6 +516,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		programs: "Programs",
 		sections: "Sections",
 		courses: "Courses",
+		activity: "Recent Activity",
 		profile: "Account",
 	};
 	let sectionCrumbLabel = ""; // set by openSectionDetails()
@@ -435,6 +583,8 @@ document.addEventListener("DOMContentLoaded", () => {
 		);
 		pages.forEach((p) => p.classList.toggle("active", p.id === target));
 		if (target === "bulletin") renderAnnouncements();
+		if (target === "activity") renderActivityPage();
+		if (target === "dashboard") renderRecentPreview(); // refresh "x min ago"
 		closeMobileMore();
 		window.scrollTo({ top: 0, behavior: "smooth" });
 	}
@@ -827,7 +977,13 @@ document.addEventListener("DOMContentLoaded", () => {
 				status,
 				color,
 			});
-			logActivity(`Updated program: ${prog.code}`);
+			logActivity({
+				entityType: "program",
+				action: "updated",
+				entityId: prog.id,
+				entityLabel: prog.code,
+				description: `Updated program ${prog.code} (${prog.name})`,
+			});
 			showToast(`Program "${prog.code}" updated.`);
 		} else {
 			const prog = {
@@ -839,7 +995,13 @@ document.addEventListener("DOMContentLoaded", () => {
 				color,
 			};
 			state.programs.push(prog);
-			logActivity(`Added new program: ${prog.code}`);
+			logActivity({
+				entityType: "program",
+				action: "created",
+				entityId: prog.id,
+				entityLabel: prog.code,
+				description: `Added program ${prog.code} (${prog.name})`,
+			});
 			showToast(`Program "${prog.code}" added.`);
 		}
 
@@ -1002,11 +1164,24 @@ document.addEventListener("DOMContentLoaded", () => {
 		if (state.editTarget?.type === "section") {
 			const sec = state.sections.find((s) => s.id === state.editTarget.id);
 			Object.assign(sec, { programId, year, letter, capacity });
-			logActivity(`Updated section: ${label}`);
+			logActivity({
+				entityType: "section",
+				action: "updated",
+				entityId: sec.id,
+				entityLabel: label,
+				description: `Updated section ${label}`,
+			});
 			showToast(`Section "${label}" updated.`);
 		} else {
-			state.sections.push({ id: uid(), programId, year, letter, capacity });
-			logActivity(`Created section: ${label}`);
+			const newSec = { id: uid(), programId, year, letter, capacity };
+			state.sections.push(newSec);
+			logActivity({
+				entityType: "section",
+				action: "created",
+				entityId: newSec.id,
+				entityLabel: label,
+				description: `Created section ${label}`,
+			});
 			showToast(`Section "${label}" created.`);
 		}
 
@@ -1214,7 +1389,13 @@ document.addEventListener("DOMContentLoaded", () => {
 				units,
 				status,
 			});
-			logActivity(`Updated course: ${c.code}`);
+			logActivity({
+				entityType: "course",
+				action: "updated",
+				entityId: c.id,
+				entityLabel: c.code,
+				description: `Updated course ${c.code} (${c.name})`,
+			});
 			showToast(`Course "${c.code}" updated.`);
 		} else {
 			const c = {
@@ -1229,7 +1410,13 @@ document.addEventListener("DOMContentLoaded", () => {
 				status,
 			};
 			state.courses.push(c);
-			logActivity(`Added course: ${c.code}`);
+			logActivity({
+				entityType: "course",
+				action: "created",
+				entityId: c.id,
+				entityLabel: c.code,
+				description: `Added course ${c.code} (${c.name})`,
+			});
 			showToast(`Course "${c.code}" added.`);
 		}
 
@@ -1654,6 +1841,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 		if (!vFirst || !vLast || !vEmail || !vPw || !vProfSection) return;
 
+		// Validate against the latest saved users, not this tab's older copy
+		syncUsersFromStorage();
+
 		// ── Duplicate email check ──
 		const currentId = isEdit ? state.editTarget.id : null;
 		const dupEmail = state.users.find(
@@ -1675,6 +1865,13 @@ document.addEventListener("DOMContentLoaded", () => {
 		if (isEdit) {
 			// ── Update existing user ──
 			const u = state.users.find((u) => u.id === state.editTarget.id);
+			if (!u) {
+				showToast("This user was removed in another tab.", true);
+				renderUsers();
+				updateStats();
+				closeAllModals();
+				return;
+			}
 			Object.assign(u, {
 				firstname: first.trim(),
 				middlename: middle,
@@ -1696,7 +1893,14 @@ document.addEventListener("DOMContentLoaded", () => {
 			} else if (role !== "student") {
 				delete u.studentId;
 			}
-			logActivity(`Updated user: ${displayName}`);
+			logActivity({
+				entityType: "user",
+				action: "updated",
+				entityId: u.id,
+				entityLabel: displayName,
+				description: `Updated ${role} account: ${displayName}`,
+				details: { role, studentId: u.studentId },
+			});
 			showToast(`User "${displayName}" updated.`);
 		} else {
 			// ── Create new user ──
@@ -1720,7 +1924,14 @@ document.addEventListener("DOMContentLoaded", () => {
 				u.studentId = StudentIDManager.getNextStudentID();
 			}
 			state.users.push(u);
-			logActivity(`Registered new ${role}: ${displayName}`);
+			logActivity({
+				entityType: "user",
+				action: "created",
+				entityId: u.id,
+				entityLabel: displayName,
+				description: `Added ${role} account: ${displayName}`,
+				details: { role, studentId: u.studentId },
+			});
 			showToast(
 				`${role.charAt(0).toUpperCase() + role.slice(1)} "${displayName}" added.`,
 			);
@@ -2048,7 +2259,16 @@ document.addEventListener("DOMContentLoaded", () => {
 			const lbl = sec
 				? `${prog?.code || ""} ${sec.year}${sec.letter}`
 				: "no section";
-			logActivity(`Assigned ${u.firstname} ${u.lastname} → ${lbl}`);
+			logActivity({
+				entityType: "user",
+				action: "assigned",
+				entityId: u.id,
+				entityLabel: userName(u),
+				description: sec
+					? `Assigned student ${userName(u)} to section ${sectionLabel(sec)}`
+					: `Updated assignment for student ${userName(u)}: no section`,
+				details: { role: "student" },
+			});
 			showToast(`${u.firstname} assigned to ${lbl || "program"}.`);
 		} else if (u.role === "professor") {
 			const ids = [
@@ -2059,9 +2279,16 @@ document.addEventListener("DOMContentLoaded", () => {
 				.map((id) => state.courses.find((c) => c.id === id)?.code)
 				.filter(Boolean)
 				.join(", ");
-			logActivity(
-				`Assigned ${u.firstname} ${u.lastname} → courses: ${codes || "none"}`,
-			);
+			logActivity({
+				entityType: "user",
+				action: "assigned",
+				entityId: u.id,
+				entityLabel: userName(u),
+				description: codes
+					? `Assigned professor ${userName(u)} to courses: ${codes}`
+					: `Updated course assignments for professor ${userName(u)}: none`,
+				details: { role: "professor" },
+			});
 			showToast(`${u.firstname} assigned to ${ids.length} course(s).`);
 		}
 
@@ -2203,7 +2430,18 @@ document.addEventListener("DOMContentLoaded", () => {
 			};
 
 			state.announcements.unshift(ann);
-			logActivity(`Posted announcement: "${ann.title}"`);
+			logActivity({
+				entityType: "announcement",
+				action: "created",
+				entityId: ann.id,
+				entityLabel: ann.title,
+				description: `Posted announcement "${ann.title}"`,
+				details: {
+					type: ann.type,
+					audience: ann.audience,
+					scheduledDate: ann.scheduledDate,
+				},
+			});
 
 			const successMsg = scheduledDate
 				? `Announcement scheduled for ${scheduledDate}.`
@@ -2241,7 +2479,7 @@ document.addEventListener("DOMContentLoaded", () => {
 					: filterValue === "past"
 						? "No past events found."
 						: "No announcements yet. Post the first one!";
-			grid.innerHTML = `<p class="empty-state full-span">${msg}</p>`;
+			grid.appendChild(makeEl("p", "empty-state full-span", msg));
 			return;
 		}
 
@@ -2261,39 +2499,63 @@ document.addEventListener("DOMContentLoaded", () => {
 				});
 			}
 
-			card.innerHTML = `
-				<div class="ann-card-top">
-					<span class="ann-type-badge ${a.type}">${a.type}</span>
-					${a.scheduledDate
-					? `<span class="ann-scheduled-badge"><i class="fas fa-calendar-check"></i> Scheduled</span>`
-					: ""
-				}
-					${a.eventDate
-					? `<span class="ann-event-date-badge"><i class="fas fa-calendar-day"></i> ${eventDateDisplay}</span>`
-					: ""
-				}
-				</div>
-				<div class="ann-title">${a.title}</div>
-				<div class="ann-body">${a.body}</div>
-				<div class="ann-footer">
-					<div style="display:flex; flex-direction:column; gap:3px;">
-						<span><i class="fas fa-users" style="margin-right:5px;"></i>${a.audience}</span>
-						${a.scheduledDate
-					? `<span class="ann-scheduled-date"><i class="fas fa-calendar-day" style="margin-right:5px;"></i>${a.scheduledDate}</span>`
-					: `<span style="font-size:11.5px; color:var(--text-4);">${a.date}</span>`
-				}
-					</div>
-					<div class="ann-actions">
-						<button class="icon-btn delete" title="Delete"><i class="fas fa-trash"></i></button>
-					</div>
-				</div>
-			`;
+			// Built with textContent (never innerHTML): title, body, audience and
+			// dates are user-controlled and must show as literal text.
+			const iconText = (iconClass, text, iconStyle) => {
+				const i = makeEl("i", iconClass);
+				if (iconStyle) i.style.marginRight = iconStyle;
+				return [i, document.createTextNode(` ${text}`)];
+			};
+			const typeClass = String(a.type ?? "").replace(/[^a-z0-9_-]/gi, "");
 
-			card
-				.querySelector(".delete")
-				.addEventListener("click", () =>
-					confirmDelete("announcement", a.id, `announcement "${a.title}"`),
-				);
+			const top = makeEl("div", "ann-card-top");
+			top.appendChild(
+				makeEl("span", `ann-type-badge ${typeClass}`.trim(), String(a.type ?? "")),
+			);
+			if (a.scheduledDate) {
+				const badge = makeEl("span", "ann-scheduled-badge");
+				badge.append(...iconText("fas fa-calendar-check", "Scheduled"));
+				top.appendChild(badge);
+			}
+			if (a.eventDate) {
+				const badge = makeEl("span", "ann-event-date-badge");
+				badge.append(...iconText("fas fa-calendar-day", eventDateDisplay));
+				top.appendChild(badge);
+			}
+
+			const meta = makeEl("div");
+			meta.style.cssText = "display:flex; flex-direction:column; gap:3px;";
+			const aud = makeEl("span");
+			aud.append(...iconText("fas fa-users", String(a.audience ?? ""), "5px"));
+			meta.appendChild(aud);
+			if (a.scheduledDate) {
+				const sd = makeEl("span", "ann-scheduled-date");
+				sd.append(...iconText("fas fa-calendar-day", String(a.scheduledDate), "5px"));
+				meta.appendChild(sd);
+			} else {
+				const d = makeEl("span", "", String(a.date ?? ""));
+				d.style.cssText = "font-size:11.5px; color:var(--text-4);";
+				meta.appendChild(d);
+			}
+
+			const delBtn = makeEl("button", "icon-btn delete");
+			delBtn.title = "Delete";
+			delBtn.appendChild(makeEl("i", "fas fa-trash"));
+			const actions = makeEl("div", "ann-actions");
+			actions.appendChild(delBtn);
+			const footer = makeEl("div", "ann-footer");
+			footer.append(meta, actions);
+
+			card.append(
+				top,
+				makeEl("div", "ann-title", String(a.title ?? "")),
+				makeEl("div", "ann-body", String(a.body ?? "")),
+				footer,
+			);
+
+			delBtn.addEventListener("click", () =>
+				confirmDelete("announcement", a.id, `announcement "${a.title}"`),
+			);
 			grid.appendChild(card);
 		});
 	}
@@ -2314,9 +2576,41 @@ document.addEventListener("DOMContentLoaded", () => {
 		openModal("confirmModal");
 	}
 
+	// Name + description of the item about to be deleted (null if not found)
+	function describeForDelete(type, id) {
+		if (type === "program") {
+			const p = state.programs.find((x) => x.id === id);
+			return p && { label: p.code, text: `program ${p.code} (${p.name})` };
+		}
+		if (type === "section") {
+			const s = state.sections.find((x) => x.id === id);
+			return s && { label: sectionLabel(s), text: `section ${sectionLabel(s)}` };
+		}
+		if (type === "course") {
+			const c = state.courses.find((x) => x.id === id);
+			return c && { label: c.code, text: `course ${c.code} (${c.name})` };
+		}
+		if (type === "user") {
+			const u = state.users.find((x) => x.id === id);
+			return (
+				u && {
+					label: userName(u),
+					text: `${u.role} account: ${userName(u)}`,
+					details: { role: u.role, studentId: u.studentId },
+				}
+			);
+		}
+		if (type === "announcement") {
+			const a = state.announcements.find((x) => x.id === id);
+			return a && { label: a.title, text: `announcement "${a.title}"` };
+		}
+		return null;
+	}
+
 	document.getElementById("confirmDeleteBtn")?.addEventListener("click", () => {
 		if (!pendingDelete) return;
 		const { type, id } = pendingDelete;
+		const deleted = describeForDelete(type, id); // read the name before it is gone
 		const map = {
 			program: () => {
 				state.programs = state.programs.filter((p) => p.id !== id);
@@ -2341,7 +2635,15 @@ document.addEventListener("DOMContentLoaded", () => {
 			},
 		};
 		map[type]?.();
-		logActivity(`Deleted ${type} (id: ${id})`);
+		if (deleted)
+			logActivity({
+				entityType: type,
+				action: "deleted",
+				entityId: id,
+				entityLabel: deleted.label,
+				description: `Deleted ${deleted.text}`,
+				details: deleted.details,
+			});
 		showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted.`);
 		updateStats();
 		persistState();
@@ -2487,7 +2789,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		if (!el) return;
 		let user = null;
 		try {
-			user = JSON.parse(localStorage.getItem("cognitia_current_user") || "null");
+			user = CognitiaSession.get();
 		} catch {
 			/* corrupt value — fall back to generic greeting */
 		}
@@ -2510,11 +2812,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
 		// Populate read-only password display from current user
 		(function () {
-			const _cu = JSON.parse(
-				localStorage.getItem("cognitia_current_user") || "null",
-			);
+			const _cu = CognitiaSession.get();
 			const _pwdView = document.getElementById("prof-view-password");
-			if (_pwdView && _cu?.password) _pwdView.value = _cu.password;
+			const _storedPwd = CognitiaSession.getStoredPassword(_cu?.id);
+			if (_pwdView && _storedPwd) _pwdView.value = _storedPwd;
 		})();
 
 		const original = {
@@ -2985,7 +3286,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		// Signed-in user (same storage key as the dashboard greeting)
 		let user = null;
 		try {
-			user = JSON.parse(localStorage.getItem("cognitia_current_user") || "null");
+			user = CognitiaSession.get();
 		} catch {
 			/* corrupt value — keep defaults */
 		}
@@ -3074,6 +3375,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	renderPrograms();
 	renderSections();
 	renderAnnouncements();
+	renderRecentPreview();
 	syncProgramDropdowns();
 	syncCourseProgramChecklist([]);
 	updateStats();
@@ -3118,7 +3420,12 @@ document.addEventListener("DOMContentLoaded", () => {
 					persistState();
 					renderUsers();
 					updateStats();
-					logActivity(`CSV import: ${result.count} user(s) added.`);
+					logActivity({
+						entityType: "user",
+						action: "imported",
+						description: `Imported ${result.count} user(s) from CSV`,
+						details: { count: result.count },
+					});
 				} else {
 					showBulkMsg(
 						msgEl,
@@ -3266,7 +3573,12 @@ document.addEventListener("DOMContentLoaded", () => {
 				persistState();
 				renderUsers();
 				updateStats();
-				logActivity(`Generated ${added} student(s) for ${label}.`);
+				logActivity({
+					entityType: "user",
+					action: "generated",
+					description: `Generated ${added} student(s) for ${label}`,
+					details: { count: added, section: label },
+				});
 				showBulkMsg(
 					msgEl,
 					`✓ Generated ${added} student(s) for ${label}.`,

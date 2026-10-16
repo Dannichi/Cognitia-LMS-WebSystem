@@ -5,14 +5,14 @@
 	let calYear, calMonth;
 	let selectedCalDate = null;
 
-	const calDays          = document.getElementById("calDays");
-	const calMonthLabel    = document.getElementById("calMonthLabel");
-	const calPrev          = document.getElementById("calPrev");
-	const calNext          = document.getElementById("calNext");
-	const annDateBadge     = document.getElementById("annDateBadge");
+	const calDays = document.getElementById("calDays");
+	const calMonthLabel = document.getElementById("calMonthLabel");
+	const calPrev = document.getElementById("calPrev");
+	const calNext = document.getElementById("calNext");
+	const annDateBadge = document.getElementById("annDateBadge");
 	const annDateBadgeText = document.getElementById("annDateBadgeText");
-	const annDateClear     = document.getElementById("annDateClear");
-	const upcomingList     = document.getElementById("upcoming-list");
+	const annDateClear = document.getElementById("annDateClear");
+	const upcomingList = document.getElementById("upcoming-list");
 
 	if (!calDays) return;
 
@@ -53,12 +53,12 @@
 
 	/* ─── Render calendar ─────────────────────────────── */
 	function renderCalendar() {
-		const today    = new Date();
+		const today = new Date();
 		const todayISO = toISO(today.getFullYear(), today.getMonth(), today.getDate());
 
 		const datesWithAnns = getDatesWithAnnouncements();
-		const firstDay      = new Date(calYear, calMonth, 1).getDay();
-		const daysInMonth   = new Date(calYear, calMonth + 1, 0).getDate();
+		const firstDay = new Date(calYear, calMonth, 1).getDay();
+		const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
 
 		calMonthLabel.textContent = new Date(calYear, calMonth, 1).toLocaleDateString("en-PH", {
 			month: "long", year: "numeric",
@@ -73,20 +73,20 @@
 		}
 
 		for (let d = 1; d <= daysInMonth; d++) {
-			const iso  = toISO(calYear, calMonth, d);
+			const iso = toISO(calYear, calMonth, d);
 			const cell = document.createElement("div");
-			cell.className   = "cal-day";
+			cell.className = "cal-day";
 			cell.dataset.iso = iso;
 
-			const hasAnns    = datesWithAnns.has(iso);
-			const isToday    = iso === todayISO;
+			const hasAnns = datesWithAnns.has(iso);
+			const isToday = iso === todayISO;
 			const isSelected = iso === selectedCalDate;
-			const isPast     = isoIsPast(iso);
+			const isPast = isoIsPast(iso);
 
-			if (isToday)               cell.classList.add("cal-day--today");
+			if (isToday) cell.classList.add("cal-day--today");
 			if (isSelected && !isPast) cell.classList.add("cal-day--selected");
-			if (hasAnns)               cell.classList.add("cal-day--has-ann");
-			if (isPast)                cell.classList.add("cal-day--past");
+			if (hasAnns) cell.classList.add("cal-day--has-ann");
+			if (isPast) cell.classList.add("cal-day--past");
 
 			cell.innerHTML = `
 				<span class="cal-day-num">${d}</span>
@@ -111,18 +111,18 @@
 	function handleDateClick(iso) {
 		if (isoIsPast(iso)) return;
 
-		selectedCalDate              = iso;
+		selectedCalDate = iso;
 		window._calendarSelectedDate = iso;
 		renderCalendar();
 
 		// Reset modal fields
-		const titleEl    = document.getElementById("m-annTitle");
-		const bodyEl     = document.getElementById("m-annBody");
-		const typeEl     = document.getElementById("m-annType");
+		const titleEl = document.getElementById("m-annTitle");
+		const bodyEl = document.getElementById("m-annBody");
+		const typeEl = document.getElementById("m-annType");
 		const audienceEl = document.getElementById("m-annAudience");
-		if (titleEl)    titleEl.value    = "";
-		if (bodyEl)     bodyEl.value     = "";
-		if (typeEl)     typeEl.value     = "info";
+		if (titleEl) titleEl.value = "";
+		if (bodyEl) bodyEl.value = "";
+		if (typeEl) typeEl.value = "info";
 		if (audienceEl) audienceEl.value = "all";
 
 		["m-annTitleErr", "m-annBodyErr", "m-annScheduledDateErr"].forEach((id) => {
@@ -133,7 +133,7 @@
 		// Show the date badge (source of truth when coming from calendar)
 		if (annDateBadge && annDateBadgeText) {
 			annDateBadgeText.textContent = `Scheduled for ${formatDateLabel(iso)}`;
-			annDateBadge.style.display   = "flex";
+			annDateBadge.style.display = "flex";
 		}
 
 		// Check the checkbox but HIDE the picker — the badge is enough
@@ -148,9 +148,9 @@
 		if (picker) picker.value = iso;
 
 		const modalTitle = document.getElementById("announcementModalTitle");
-		const saveBtn    = document.getElementById("saveAnnouncementBtn");
+		const saveBtn = document.getElementById("saveAnnouncementBtn");
 		if (modalTitle) modalTitle.textContent = "Schedule Announcement";
-		if (saveBtn)    saveBtn.textContent    = "Schedule Announcement";
+		if (saveBtn) saveBtn.textContent = "Schedule Announcement";
 
 		if (window._cognitiaState) window._cognitiaState.editTarget = null;
 
@@ -160,7 +160,7 @@
 
 	/* ─── Clear selected date ─────────────────────────── */
 	annDateClear?.addEventListener("click", () => {
-		selectedCalDate              = null;
+		selectedCalDate = null;
 		window._calendarSelectedDate = null;
 
 		if (annDateBadge) annDateBadge.style.display = "none";
@@ -177,9 +177,9 @@
 		setError("m-annScheduledDateErr", "");
 
 		const modalTitle = document.getElementById("announcementModalTitle");
-		const saveBtn    = document.getElementById("saveAnnouncementBtn");
+		const saveBtn = document.getElementById("saveAnnouncementBtn");
 		if (modalTitle) modalTitle.textContent = "New Announcement";
-		if (saveBtn)    saveBtn.textContent    = "Post Announcement";
+		if (saveBtn) saveBtn.textContent = "Post Announcement";
 
 		renderCalendar();
 	});
@@ -197,7 +197,7 @@
 		new MutationObserver((mutations) => {
 			mutations.forEach((mu) => {
 				if (mu.attributeName === "class" && !annModal.classList.contains("active")) {
-					selectedCalDate              = null;
+					selectedCalDate = null;
 					window._calendarSelectedDate = null;
 					if (annDateBadge) annDateBadge.style.display = "none";
 					renderCalendar();
@@ -231,19 +231,30 @@
 		upcomingList.innerHTML = "";
 		upcoming.forEach((a) => {
 			const [y, m, d] = a.scheduledDate.split("-").map(Number);
-			const dateObj   = new Date(y, m - 1, d);
-			const item      = document.createElement("div");
-			item.className  = "upcoming-item";
-			item.innerHTML  = `
-				<div class="upcoming-date-pill">
-					<span class="upcoming-month">${dateObj.toLocaleDateString("en-PH", { month: "short" })}</span>
-					<span class="upcoming-day">${d}</span>
-				</div>
-				<div class="upcoming-info">
-					<div class="upcoming-title">${a.title}</div>
-					<span class="ann-type-badge ${a.type}" style="font-size:9px; padding:2px 6px;">${a.type}</span>
-				</div>
-			`;
+			const dateObj = new Date(y, m - 1, d);
+			const item = document.createElement("div");
+			item.className = "upcoming-item";
+			// DOM + textContent: the title is user-controlled text, not HTML.
+			const el = (tag, cls, text) => {
+				const n = document.createElement(tag);
+				if (cls) n.className = cls;
+				if (text != null) n.textContent = text;
+				return n;
+			};
+			const pill = el("div", "upcoming-date-pill");
+			pill.append(
+				el("span", "upcoming-month", dateObj.toLocaleDateString("en-PH", { month: "short" })),
+				el("span", "upcoming-day", String(d)),
+			);
+			const badge = el(
+				"span",
+				`ann-type-badge ${String(a.type ?? "").replace(/[^a-z0-9_-]/gi, "")}`.trim(),
+				String(a.type ?? ""),
+			);
+			badge.style.cssText = "font-size:9px; padding:2px 6px;";
+			const info = el("div", "upcoming-info");
+			info.append(el("div", "upcoming-title", String(a.title ?? "")), badge);
+			item.append(pill, info);
 			item.addEventListener("click", () => {
 				document.querySelector('[data-target="bulletin"]')?.click();
 			});
@@ -271,16 +282,16 @@
 
 	/* ─── Init ────────────────────────────────────────── */
 	const now = new Date();
-	calYear   = now.getFullYear();
-	calMonth  = now.getMonth();
+	calYear = now.getFullYear();
+	calMonth = now.getMonth();
 	renderCalendar();
 
 	/* ─── Expose setError for annDateClear ────────────── */
 	function setError(id, msg) {
 		const el = document.getElementById(id);
 		if (!el) return;
-		el.textContent    = msg;
-		el.style.display  = msg ? "block" : "none";
+		el.textContent = msg;
+		el.style.display = msg ? "block" : "none";
 	}
 
 })();

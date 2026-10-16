@@ -30,9 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 	})();
 
-	let profUser = JSON.parse(
-		localStorage.getItem("cognitia_current_user") || "null",
-	) || {
+	let profUser = CognitiaSession.get() || {
 		id: 1,
 		firstname: "Professor",
 		lastname: "Demo",
@@ -71,12 +69,12 @@ document.addEventListener("DOMContentLoaded", () => {
 			return r
 				? JSON.parse(r)
 				: {
-						programs: [],
-						sections: [],
-						courses: [],
-						users: [],
-						announcements: [],
-					};
+					programs: [],
+					sections: [],
+					courses: [],
+					users: [],
+					announcements: [],
+				};
 		} catch {
 			return {
 				programs: [],
@@ -145,8 +143,8 @@ document.addEventListener("DOMContentLoaded", () => {
 			(u) => u.id === profUser.id && u.role === "professor",
 		);
 		if (latestProfUser) {
-			profUser = { ...profUser, ...latestProfUser };
-			localStorage.setItem("cognitia_current_user", JSON.stringify(profUser));
+			profUser = CognitiaSession.toSession({ ...profUser, ...latestProfUser });
+			CognitiaSession.set(profUser);
 		}
 		const myIds = profUser.courseIds || [];
 
@@ -380,11 +378,11 @@ document.addEventListener("DOMContentLoaded", () => {
 		return Array.from(byStudentCourse.values()).map((record) => {
 			const assignmentGrade = record.assignmentScores.length
 				? record.assignmentScores.reduce((sum, score) => sum + score, 0) /
-					record.assignmentScores.length
+				record.assignmentScores.length
 				: null;
 			const quizScore = record.quizScores.length
 				? record.quizScores.reduce((sum, score) => sum + score, 0) /
-					record.quizScores.length
+				record.quizScores.length
 				: null;
 			const total = (assignmentGrade || 0) + (quizScore || 0);
 			return {
@@ -688,12 +686,11 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="deadline-title">${entry.title}</div>
           <div class="deadline-sub">${entry.subtitle}</div>
         </div>
-        ${
-					entry.type === "bulletin"
-						? `<span class="deadline-badge bulletin">${entry.badge}</span>`
-						: diff <= 3
-							? `<span class="deadline-badge ${diff <= 1 ? "due-soon" : "in-progress"}">${diff === 0 ? "Today" : diff === 1 ? "Tomorrow" : `${diff}d`}</span>`
-							: ""
+        ${entry.type === "bulletin"
+					? `<span class="deadline-badge bulletin">${entry.badge}</span>`
+					: diff <= 3
+						? `<span class="deadline-badge ${diff <= 1 ? "due-soon" : "in-progress"}">${diff === 0 ? "Today" : diff === 1 ? "Tomorrow" : `${diff}d`}</span>`
+						: ""
 				}`;
 			list.appendChild(item);
 		});
@@ -708,8 +705,9 @@ document.addEventListener("DOMContentLoaded", () => {
 		setText("sidebarName", `${profUser.firstname} ${profUser.lastname}`);
 		setText("profileEmail", profUser.email);
 		const _pwdView = document.getElementById("prof-view-password");
-		if (_pwdView && profUser.password) {
-			_pwdView.value = profUser.password;
+		const _storedPwd = CognitiaSession.getStoredPassword(profUser.id);
+		if (_pwdView && _storedPwd) {
+			_pwdView.value = _storedPwd;
 			_pwdView.type = "password";
 		}
 		setText("profileCourseCount", `${pState.myCourses.length} course(s)`);
@@ -740,7 +738,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		clearErrors("prof-firstnameErr", "prof-lastnameErr");
 		profUser.firstname = fn;
 		profUser.lastname = ln;
-		localStorage.setItem("cognitia_current_user", JSON.stringify(profUser));
+		CognitiaSession.set(profUser);
 		loadProfile();
 		showToast("Profile updated successfully.");
 	});
@@ -853,12 +851,12 @@ document.addEventListener("DOMContentLoaded", () => {
 		);
 		const sectionText = sections.length
 			? sections
-					.map((s) =>
-						program
-							? `${program.code} ${s.year}${s.letter}`
-							: `Section ${s.id}`,
-					)
-					.join(" � ")
+				.map((s) =>
+					program
+						? `${program.code} ${s.year}${s.letter}`
+						: `Section ${s.id}`,
+				)
+				.join(" � ")
 			: "No section assigned";
 		const students = pState.allStudents.filter(
 			(s) =>
@@ -883,21 +881,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
 		const studentRows = students.length
 			? students
-					.slice(0, 10)
-					.map((student) => {
-						const fullName =
-							`${student.firstname || ""} ${student.lastname || ""}`.trim();
-						const section = db.sections.find((s) => s.id === student.sectionId);
-						const sectionLabel =
-							section && program
-								? `${program.code} ${section.year}${section.letter}`
-								: "N/A";
-						// FIX: Use getStudentProgress() which reads from cognitia_student_data
-						// student.progress is never set on the user object — it lives in stuDB
-						const progress = getStudentProgress(student.id, course.id);
-						const initialsText =
-							`${(student.firstname || "S")[0] || "S"}${(student.lastname || "")[0] || ""}`.toUpperCase();
-						return `
+				.slice(0, 10)
+				.map((student) => {
+					const fullName =
+						`${student.firstname || ""} ${student.lastname || ""}`.trim();
+					const section = db.sections.find((s) => s.id === student.sectionId);
+					const sectionLabel =
+						section && program
+							? `${program.code} ${section.year}${section.letter}`
+							: "N/A";
+					// FIX: Use getStudentProgress() which reads from cognitia_student_data
+					// student.progress is never set on the user object — it lives in stuDB
+					const progress = getStudentProgress(student.id, course.id);
+					const initialsText =
+						`${(student.firstname || "S")[0] || "S"}${(student.lastname || "")[0] || ""}`.toUpperCase();
+					return `
 				<div class="ov-student-row">
 					<div class="ov-student-avatar">${initialsText}</div>
 					<div class="ov-student-info">
@@ -909,8 +907,8 @@ document.addEventListener("DOMContentLoaded", () => {
 						<span class="ov-progress-pct">${Math.round(progress)}%</span>
 					</div>
 				</div>`;
-					})
-					.join("")
+				})
+				.join("")
 			: `<div class="empty-state" style="padding: 16px 0;">No students enrolled in this course yet.</div>`;
 
 		body.classList.add("course-overview-modal-body");
@@ -1093,8 +1091,8 @@ document.addEventListener("DOMContentLoaded", () => {
 		// normalise selectedValues: accept string (legacy) or array
 		const selArr = Array.isArray(selectedValues)
 			? selectedValues.map((v) =>
-					typeof v === "object" ? v.label || v.program + " " + v.section : v,
-				)
+				typeof v === "object" ? v.label || v.program + " " + v.section : v,
+			)
 			: selectedValues
 				? [selectedValues]
 				: [];
@@ -1813,15 +1811,15 @@ document.addEventListener("DOMContentLoaded", () => {
         <p style="font-size:12px;color:var(--text-4);margin-bottom:8px;">Options — mark the correct answer:</p>
         <div class="options-list" id="q-options-${idx}">
           ${["A", "B", "C", "D"]
-						.map(
-							(opt) => `
+					.map(
+						(opt) => `
             <div class="option-row">
               <input class="option-radio" type="radio" name="correct-${idx}" value="${opt}" id="opt-${idx}-${opt}">
               <span class="option-label">${opt}.</span>
               <input class="option-input" type="text" id="q-opt-${idx}-${opt}" placeholder="Option ${opt}" />
             </div>`,
-						)
-						.join("")}
+					)
+					.join("")}
         </div>${pointsHtml}`;
 		}
 		if (type === "identification") {
@@ -2547,25 +2545,44 @@ document.addEventListener("DOMContentLoaded", () => {
 		list.innerHTML = "";
 		announcements.forEach((ann) => {
 			const card = document.createElement("div");
-			const type = String(ann.type || "info").toLowerCase();
+			const type =
+				String(ann.type || "info").toLowerCase().replace(/[^a-z0-9_-]/g, "") || "info";
 			card.className = `bulletin-card ${type}`;
 			const dateStr = ann.date
 				? new Date(ann.date).toLocaleDateString("en-PH", {
-						year: "numeric",
-						month: "short",
-						day: "numeric",
-					})
+					year: "numeric",
+					month: "short",
+					day: "numeric",
+				})
 				: ann.createdAt || "";
-			card.innerHTML = `
-        <div class="bulletin-card-top">
-            <span class="bulletin-type-badge ${type}">${type}</span>
-            <span class="bulletin-card-meta bulletin-card-meta--top"><i class="fas fa-calendar-alt"></i> ${dateStr}</span>
-        </div>
-        <div class="bulletin-card-header">
-            <span class="bulletin-card-title">${ann.title || "Announcement"}</span>
-        </div>
-        <p class="bulletin-card-body">${ann.body || ann.message || ann.content || ""}</p>
-        ${ann.tag ? `<div><span class="bulletin-badge"><i class="fas fa-tag"></i> ${ann.tag}</span></div>` : ""}`;
+			// DOM + textContent: announcement fields are user-controlled text.
+			const el = (tag, cls, text) => {
+				const n = document.createElement(tag);
+				if (cls) n.className = cls;
+				if (text != null) n.textContent = text;
+				return n;
+			};
+			const icon = (cls) => el("i", cls);
+			const top = el("div", "bulletin-card-top");
+			const meta = el("span", "bulletin-card-meta bulletin-card-meta--top");
+			meta.append(icon("fas fa-calendar-alt"), document.createTextNode(` ${dateStr}`));
+			top.append(el("span", `bulletin-type-badge ${type}`, type), meta);
+			const header = el("div", "bulletin-card-header");
+			header.appendChild(
+				el("span", "bulletin-card-title", String(ann.title || "Announcement")),
+			);
+			card.append(
+				top,
+				header,
+				el("p", "bulletin-card-body", String(ann.body || ann.message || ann.content || "")),
+			);
+			if (ann.tag) {
+				const tagBadge = el("span", "bulletin-badge");
+				tagBadge.append(icon("fas fa-tag"), document.createTextNode(` ${ann.tag}`));
+				const wrap = el("div");
+				wrap.appendChild(tagBadge);
+				card.appendChild(wrap);
+			}
 			list.appendChild(card);
 		});
 	}

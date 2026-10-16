@@ -1298,41 +1298,109 @@
 						<i class="fas fa-times"></i>
 					</button>
 				</div>
-				<div class="modal-body" style="padding:20px 24px;display:flex;flex-direction:column;gap:16px;max-height:78vh;overflow-y:auto;">
+				<div
+					class="modal-body"
+					style="
+						padding: 20px 24px;
+						display: flex;
+						flex-direction: column;
+						gap: 16px;
+						max-height: 78vh;
+						overflow-y: auto;
+					"
+				>
 					<!-- Student info row -->
-					<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-						<div class="form-group" style="margin:0;">
+					<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px">
+						<div class="form-group" style="margin: 0">
 							<label>Student</label>
 							<input type="text" id="essay-grade-student" disabled />
 						</div>
-						<div class="form-group" style="margin:0;">
+						<div class="form-group" style="margin: 0">
 							<label>Progress</label>
 							<input type="text" id="essay-grade-qnum" disabled />
 						</div>
 					</div>
 					<!-- Question -->
-					<div class="form-group" style="margin:0;">
+					<div class="form-group" style="margin: 0">
 						<label>Question</label>
-						<p id="essay-grade-question" style="font-size:14px;margin:0;padding:10px 14px;background:var(--surface-2,#f8fafc);border:1px solid var(--border-1,#e2e8f0);border-radius:6px;line-height:1.7;color:var(--text-1);"></p>
-						<p id="essay-grade-rubric" style="font-size:12px;color:var(--text-4);font-style:italic;margin:6px 0 0;display:none;"></p>
+						<p
+							id="essay-grade-question"
+							style="
+								font-size: 14px;
+								margin: 0;
+								padding: 10px 14px;
+								background: var(--surface-2, #f8fafc);
+								border: 1px solid var(--border-1, #e2e8f0);
+								border-radius: 6px;
+								line-height: 1.7;
+								color: var(--text-1);
+							"
+						></p>
+						<p
+							id="essay-grade-rubric"
+							style="
+								font-size: 12px;
+								color: var(--text-4);
+								font-style: italic;
+								margin: 6px 0 0;
+								display: none;
+							"
+						></p>
 					</div>
 					<!-- Student's Answer -->
-					<div class="form-group" style="margin:0;">
+					<div class="form-group" style="margin: 0">
 						<label>Student's Answer</label>
-						<p id="essay-grade-answer" style="font-size:13.5px;margin:0;padding:14px;background:var(--surface-2,#f8fafc);border:1px solid var(--border-1,#e2e8f0);border-radius:6px;min-height:140px;max-height:280px;overflow-y:auto;line-height:1.75;white-space:pre-wrap;color:var(--text-1);"></p>
+						<p
+							id="essay-grade-answer"
+							style="
+								font-size: 13.5px;
+								margin: 0;
+								padding: 14px;
+								background: var(--surface-2, #f8fafc);
+								border: 1px solid var(--border-1, #e2e8f0);
+								border-radius: 6px;
+								min-height: 140px;
+								max-height: 280px;
+								overflow-y: auto;
+								line-height: 1.75;
+								white-space: pre-wrap;
+								color: var(--text-1);
+							"
+						></p>
 					</div>
 					<!-- Score + Feedback side by side -->
-					<div style="display:grid;grid-template-columns:180px 1fr;gap:12px;align-items:start;">
-						<div class="form-group" style="margin:0;">
-							<label for="essay-grade-score">Score <span class="req">*</span>
-								<small style="font-weight:400;color:var(--text-4)">(out of <span id="essay-grade-max">10</span>)</small>
+					<div
+						style="
+							display: grid;
+							grid-template-columns: 180px 1fr;
+							gap: 12px;
+							align-items: start;
+						"
+					>
+						<div class="form-group" style="margin: 0">
+							<label for="essay-grade-score"
+								>Score <span class="req">*</span>
+								<small style="font-weight: 400; color: var(--text-4)"
+									>(out of <span id="essay-grade-max">10</span>)</small
+								>
 							</label>
-							<input type="number" id="essay-grade-score" min="0" placeholder="Enter score" />
+							<input
+								type="number"
+								id="essay-grade-score"
+								min="0"
+								placeholder="Enter score"
+							/>
 							<span class="error-text" id="essay-grade-scoreErr"></span>
 						</div>
-						<div class="form-group" style="margin:0;">
-							<label for="essay-grade-feedback">Feedback <span class="optional">(optional)</span></label>
-							<textarea id="essay-grade-feedback" rows="3" placeholder="Write feedback for the student…"></textarea>
+						<div class="form-group" style="margin: 0">
+							<label for="essay-grade-feedback"
+								>Feedback <span class="optional">(optional)</span></label
+							>
+							<textarea
+								id="essay-grade-feedback"
+								rows="3"
+								placeholder="Write feedback for the student…"
+							></textarea>
 						</div>
 					</div>
 				</div>
@@ -1345,6 +1413,7 @@
 			</div>
 		</div>
 
+		<script src="js/session.js"></script>
 		<script src="js/professor.js"></script>
 		<script src="js/prof-calendar.js"></script>
 	</body>

@@ -5,9 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	const PROF_KEY = "cognitia_prof_data";
 	const STUDENT_KEY = "cognitia_student_data";
 
-	let studentUser = JSON.parse(
-		localStorage.getItem("cognitia_current_user") || "null",
-	) || {
+	let studentUser = CognitiaSession.get() || {
 		id: 10,
 		firstname: "Maria",
 		lastname: "Santos",
@@ -192,11 +190,11 @@ document.addEventListener("DOMContentLoaded", () => {
 		return Array.from(byCourse.values()).map((record) => {
 			const assignmentGrade = record.assignmentScores.length
 				? record.assignmentScores.reduce((sum, score) => sum + score, 0) /
-					record.assignmentScores.length
+				record.assignmentScores.length
 				: null;
 			const quizScore = record.quizScores.length
 				? record.quizScores.reduce((sum, score) => sum + score, 0) /
-					record.quizScores.length
+				record.quizScores.length
 				: null;
 			const total = (assignmentGrade || 0) + (quizScore || 0);
 			return {
@@ -221,11 +219,8 @@ document.addEventListener("DOMContentLoaded", () => {
 			(u) => u.id === studentUser.id && u.role === "student",
 		);
 		if (latestStudentUser) {
-			studentUser = { ...studentUser, ...latestStudentUser };
-			localStorage.setItem(
-				"cognitia_current_user",
-				JSON.stringify(studentUser),
-			);
+			studentUser = CognitiaSession.toSession({ ...studentUser, ...latestStudentUser });
+			CognitiaSession.set(studentUser);
 		}
 
 		const myProgramId = studentUser.programId;
@@ -444,8 +439,9 @@ document.addEventListener("DOMContentLoaded", () => {
 		setText("sidebarName", `${studentUser.firstname} ${studentUser.lastname}`);
 		setText("profileEmail", studentUser.email);
 		const _pwdView = document.getElementById("stu-view-password");
-		if (_pwdView && studentUser.password) {
-			_pwdView.value = studentUser.password;
+		const _storedPwd = CognitiaSession.getStoredPassword(studentUser.id);
+		if (_pwdView && _storedPwd) {
+			_pwdView.value = _storedPwd;
 			_pwdView.type = "password";
 		}
 		setText("profileCourseCount", `${sState.myCourses.length} course(s)`);
@@ -495,7 +491,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		clearErrors("student-firstnameErr", "student-lastnameErr");
 		studentUser.firstname = fn;
 		studentUser.lastname = ln;
-		localStorage.setItem("cognitia_current_user", JSON.stringify(studentUser));
+		CognitiaSession.set(studentUser);
 		loadProfile();
 		showToast("Profile updated.");
 	});
@@ -1082,11 +1078,10 @@ document.addEventListener("DOMContentLoaded", () => {
         <td><span class="status ${status}">${status.charAt(0).toUpperCase() + status.slice(1)}</span></td>
         <td>${grade}</td>
         <td>
-          ${
-						canSubmit
-							? `<button class="btn-primary btn-submit-asgn" style="font-size:12px;padding:5px 12px;"><i class="fas fa-upload"></i> Submit</button>`
-							: `<span style="font-size:12px;color:var(--text-4);">${status === "submitted" ? "Awaiting grade" : status === "graded" ? "Graded ✓" : "Overdue"}</span>`
-					}
+          ${canSubmit
+					? `<button class="btn-primary btn-submit-asgn" style="font-size:12px;padding:5px 12px;"><i class="fas fa-upload"></i> Submit</button>`
+					: `<span style="font-size:12px;color:var(--text-4);">${status === "submitted" ? "Awaiting grade" : status === "graded" ? "Graded ✓" : "Overdue"}</span>`
+				}
           ${canSubmit ? "" : done ? "" : `<button class="btn-done-sm" style="margin-left:6px;" title="Mark Done"><i class="fas fa-check"></i></button>`}
         </td>`;
 			if (canSubmit)
@@ -1616,11 +1611,10 @@ document.addEventListener("DOMContentLoaded", () => {
         ${q.dueDate ? `<div class="quiz-due-row">${dueDateBadge(q.dueDate)}</div>` : ""}
         ${scoreRow}
         <div class="quiz-card-footer">
-          ${
-						!attempted
-							? `<button class="btn-primary btn-start-quiz"><i class="fas fa-play"></i> Start Quiz</button>`
-							: `<button class="btn-secondary btn-view-quiz" style="font-size:12.5px;padding:6px 14px;"><i class="fas fa-eye"></i> View Results</button>`
-					}
+          ${!attempted
+					? `<button class="btn-primary btn-start-quiz"><i class="fas fa-play"></i> Start Quiz</button>`
+					: `<button class="btn-secondary btn-view-quiz" style="font-size:12.5px;padding:6px 14px;"><i class="fas fa-eye"></i> View Results</button>`
+				}
         </div>`;
 			if (!attempted)
 				card
@@ -1709,25 +1703,44 @@ document.addEventListener("DOMContentLoaded", () => {
 		container.innerHTML = "";
 		sorted.forEach((ann) => {
 			const card = document.createElement("div");
-			const type = String(ann.type || "info").toLowerCase();
+			const type =
+				String(ann.type || "info").toLowerCase().replace(/[^a-z0-9_-]/g, "") || "info";
 			card.className = `bulletin-card ${type}`;
 			const dateStr = ann.date
 				? new Date(ann.date).toLocaleDateString("en-PH", {
-						year: "numeric",
-						month: "short",
-						day: "numeric",
-					})
+					year: "numeric",
+					month: "short",
+					day: "numeric",
+				})
 				: ann.createdAt || "";
-			card.innerHTML = `
-        <div class="bulletin-card-top">
-            <span class="bulletin-type-badge ${type}">${type}</span>
-            <span class="bulletin-card-meta bulletin-card-meta--top"><i class="fas fa-calendar-alt"></i> ${dateStr}</span>
-        </div>
-        <div class="bulletin-card-header">
-            <span class="bulletin-card-title">${ann.title || "Announcement"}</span>
-        </div>
-        <p class="bulletin-card-body">${ann.body || ann.message || ann.content || ""}</p>
-        ${ann.tag ? `<div><span class="bulletin-badge"><i class="fas fa-tag"></i> ${ann.tag}</span></div>` : ""}`;
+			// DOM + textContent: announcement fields are user-controlled text.
+			const el = (tag, cls, text) => {
+				const n = document.createElement(tag);
+				if (cls) n.className = cls;
+				if (text != null) n.textContent = text;
+				return n;
+			};
+			const icon = (cls) => el("i", cls);
+			const top = el("div", "bulletin-card-top");
+			const meta = el("span", "bulletin-card-meta bulletin-card-meta--top");
+			meta.append(icon("fas fa-calendar-alt"), document.createTextNode(` ${dateStr}`));
+			top.append(el("span", `bulletin-type-badge ${type}`, type), meta);
+			const header = el("div", "bulletin-card-header");
+			header.appendChild(
+				el("span", "bulletin-card-title", String(ann.title || "Announcement")),
+			);
+			card.append(
+				top,
+				header,
+				el("p", "bulletin-card-body", String(ann.body || ann.message || ann.content || "")),
+			);
+			if (ann.tag) {
+				const tagBadge = el("span", "bulletin-badge");
+				tagBadge.append(icon("fas fa-tag"), document.createTextNode(` ${ann.tag}`));
+				const wrap = el("div");
+				wrap.appendChild(tagBadge);
+				card.appendChild(wrap);
+			}
 			container.appendChild(card);
 		});
 	}
