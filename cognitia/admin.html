@@ -86,7 +86,7 @@
 						</li>
 						<li class="nav-label"><span>User Management</span></li>
 						<li class="nav-group" id="usersNavGroup">
-							<a href="#" data-target="manage-users" data-user-filter="">
+							<a href="#" data-nav-toggle="usersNavGroup">
 								<i class="fas fa-users"></i><span class="nav-text">Users</span>
 							</a>
 							<button
@@ -122,16 +122,102 @@
 								</li>
 							</ul>
 						</li>
-						<li class="nav-label"><span>Personal</span></li>
-						<li>
-							<a href="#" data-target="profile">
-								<i class="fas fa-user-circle"></i
-								><span class="nav-text">Account</span>
-							</a>
-						</li>
 					</ul>
 				</nav>
+
+				<!-- Bottom: Profile (left) + Log out (right) -->
+				<div class="sidebar-bottom">
+					<div class="sidebar-section-label">Profile</div>
+					<div class="sidebar-profile-row">
+						<a
+							href="#"
+							class="sidebar-profile"
+							data-target="profile"
+							aria-label="Profile"
+							title="Profile"
+						>
+							<span class="avatar" id="sidebarAvatar">AD</span>
+							<span class="user-details">
+								<span class="user-name" id="sidebarName">Admin</span>
+								<span class="user-role">Administrator</span>
+							</span>
+						</a>
+						<button
+							class="logout-btn"
+							id="sidebarLogoutBtn"
+							type="button"
+							aria-label="Log out"
+							title="Log out"
+						>
+							<i class="fas fa-sign-out-alt"></i>
+						</button>
+					</div>
+				</div>
 			</aside>
+
+			<!-- ─── TOP BAR ─── -->
+			<header class="topbar" id="topbar">
+				<h1 class="topbar-title">Admin – Dashboard</h1>
+				<div class="topbar-actions">
+					<div class="topbar-dd" id="notifDropdown">
+						<button
+							class="topbar-btn"
+							id="notifBtn"
+							type="button"
+							aria-label="Notifications"
+							aria-haspopup="true"
+							aria-expanded="false"
+							aria-controls="notifMenu"
+						>
+							<i class="fas fa-bell"></i>
+						</button>
+						<div class="topbar-menu topbar-menu-notif" id="notifMenu" hidden>
+							<div class="topbar-menu-head">Latest announcements</div>
+							<ul class="notif-list" id="notifList"></ul>
+							<button class="topbar-menu-foot" id="notifViewAll" type="button">
+								View all announcements
+							</button>
+						</div>
+					</div>
+					<div class="topbar-dd" id="profileDropdown">
+						<button
+							class="topbar-avatar"
+							id="profileMenuBtn"
+							type="button"
+							aria-label="Account menu"
+							aria-haspopup="true"
+							aria-expanded="false"
+							aria-controls="profileMenu"
+						>
+							<span id="topbarAvatar">AD</span>
+						</button>
+						<div
+							class="topbar-menu topbar-menu-profile"
+							id="profileMenu"
+							hidden
+						>
+							<div class="topbar-menu-user">
+								<strong id="topbarMenuName">Admin</strong>
+								<span id="topbarMenuEmail"></span>
+							</div>
+							<button
+								class="topbar-menu-item"
+								id="topbarAccountBtn"
+								type="button"
+							>
+								<i class="fas fa-user-circle"></i> Account
+							</button>
+							<button
+								class="topbar-menu-item danger"
+								id="topbarLogoutBtn"
+								type="button"
+							>
+								<i class="fas fa-sign-out-alt"></i> Sign out
+							</button>
+						</div>
+					</div>
+				</div>
+			</header>
 
 			<!--═══════════════════════════════════
 			MAIN CONTENT
@@ -146,10 +232,24 @@
 								Here's an overview of your learning management system.
 							</p>
 						</div>
+						<img
+							class="greeting-logo"
+							src="assets/icons/Logo-Icon-White.png"
+							alt=""
+							aria-hidden="true"
+						/>
 					</div>
 
 					<div class="stat-grid">
-						<div class="stat-card" data-stat="students">
+						<div
+							class="stat-card"
+							data-stat="students"
+							role="link"
+							tabindex="0"
+							data-target="manage-users"
+							data-user-filter="student"
+							title="View students"
+						>
 							<div class="stat-top">
 								<div class="stat-icon">
 									<i class="fas fa-user-graduate"></i>
@@ -159,7 +259,15 @@
 							<p class="stat-value" id="stat-students">0</p>
 							<p class="stat-hint">Enrolled users</p>
 						</div>
-						<div class="stat-card" data-stat="professors">
+						<div
+							class="stat-card"
+							data-stat="professors"
+							role="link"
+							tabindex="0"
+							data-target="manage-users"
+							data-user-filter="professor"
+							title="View professors"
+						>
 							<div class="stat-top">
 								<div class="stat-icon">
 									<i class="fas fa-chalkboard-teacher"></i>
@@ -169,7 +277,14 @@
 							<p class="stat-value" id="stat-professors">0</p>
 							<p class="stat-hint">Teaching staff</p>
 						</div>
-						<div class="stat-card" data-stat="programs">
+						<div
+							class="stat-card"
+							data-stat="programs"
+							role="link"
+							tabindex="0"
+							data-target="programs"
+							title="View programs"
+						>
 							<div class="stat-top">
 								<div class="stat-icon"><i class="fas fa-sitemap"></i></div>
 								<span class="stat-label">Programs</span>
@@ -177,7 +292,14 @@
 							<p class="stat-value" id="stat-programs">0</p>
 							<p class="stat-hint">Active programs</p>
 						</div>
-						<div class="stat-card" data-stat="sections">
+						<div
+							class="stat-card"
+							data-stat="sections"
+							role="link"
+							tabindex="0"
+							data-target="sections"
+							title="View sections"
+						>
 							<div class="stat-top">
 								<div class="stat-icon"><i class="fas fa-layer-group"></i></div>
 								<span class="stat-label">Sections</span>
@@ -185,7 +307,14 @@
 							<p class="stat-value" id="stat-sections">0</p>
 							<p class="stat-hint">Class sections</p>
 						</div>
-						<div class="stat-card" data-stat="courses">
+						<div
+							class="stat-card"
+							data-stat="courses"
+							role="link"
+							tabindex="0"
+							data-target="courses"
+							title="View courses"
+						>
 							<div class="stat-top">
 								<div class="stat-icon"><i class="fas fa-book-open"></i></div>
 								<span class="stat-label">Courses</span>
@@ -516,7 +645,7 @@
 				<section id="manage-users" class="page">
 					<div class="page-header">
 						<div>
-							<h2 id="usersPageTitle">Users</h2>
+							<h2 id="usersPageTitle">Students</h2>
 							<p class="page-sub" id="usersPageSub">User Management</p>
 						</div>
 					</div>
@@ -535,7 +664,7 @@
 							<option value="inactive">Inactive</option>
 						</select>
 						<button id="openAddUserBtn" class="btn-add">
-							<i class="fas fa-plus"></i> Add User
+							<i class="fas fa-plus"></i> Add Student
 						</button>
 					</div>
 
@@ -1389,7 +1518,11 @@
 				<i class="fas fa-bullhorn"></i>
 				<span>Bulletin</span>
 			</button>
-			<button class="mobile-nav-item" data-target="manage-users">
+			<button
+				class="mobile-nav-item"
+				data-target="manage-users"
+				data-user-filter="student"
+			>
 				<i class="fas fa-users"></i>
 				<span>Users</span>
 			</button>
@@ -1431,6 +1564,15 @@
 				</button>
 			</div>
 			<div class="mobile-more-list">
+				<button
+					class="mobile-more-item"
+					data-target="manage-users"
+					data-user-filter="professor"
+					role="menuitem"
+				>
+					<i class="fas fa-chalkboard-teacher"></i>
+					<span>Professors</span>
+				</button>
 				<button class="mobile-more-item" data-target="programs" role="menuitem">
 					<i class="fas fa-sitemap"></i>
 					<span>Programs</span>
@@ -1442,6 +1584,7 @@
 			</div>
 		</div>
 
+		<script src="js/sidebar.js"></script>
 		<script src="js/admin.js"></script>
 		<script src="js/calendar.js"></script>
 	</body>

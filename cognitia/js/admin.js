@@ -204,23 +204,21 @@ document.addEventListener("DOMContentLoaded", () => {
 	/* ═══════════════════════════════════════════
 		SIDEBAR TOGGLE
 	═══════════════════════════════════════════ */
-	document.getElementById("sidebarToggle")?.addEventListener("click", () => {
-		document.getElementById("sidebar").classList.toggle("collapsed");
-	});
 
 	/* ═══════════════════════════════════════════
 		SPA NAVIGATION
 	═══════════════════════════════════════════ */
-	const navLinks = document.querySelectorAll(".navbar a");
+	// .sidebar-profile sits outside .navbar but reuses the same nav handler + active state
+	const navLinks = document.querySelectorAll(".navbar a, .sidebar-profile");
 	const mobileItems = document.querySelectorAll(
 		".mobile-nav-item:not(.mobile-nav-more)",
 	);
 	const moreItems = document.querySelectorAll(".mobile-more-item");
 	const pages = document.querySelectorAll(".page");
 
-	// Current Users-page role view: "" (all) | "student" | "professor".
-	// Set by the sidebar (Users / Students / Professors) via setUserView().
-	let userRoleView = "";
+	// Current Users-page role view: "student" | "professor" (there is no "all" view).
+	// Set by the sidebar (Students / Professors) via setUserView().
+	let userRoleView = "student";
 
 	// Sidebar links may carry data-user-filter (Users → Students / Professors)
 	function isNavActive(l, target, userFilter) {
@@ -232,6 +230,9 @@ document.addEventListener("DOMContentLoaded", () => {
 	}
 
 	function navigateTo(target, userFilter = "") {
+		// No general Users page: manage-users always opens Students unless Professors is asked for
+		if (target === "manage-users" && userFilter !== "professor")
+			userFilter = "student";
 		navLinks.forEach((l) =>
 			l.classList.toggle("active", isNavActive(l, target, userFilter)),
 		);
@@ -239,8 +240,15 @@ document.addEventListener("DOMContentLoaded", () => {
 		mobileItems.forEach((b) =>
 			b.classList.toggle("active", b.dataset.target === target),
 		);
+		// More-menu items: Professors shares the manage-users target, so match its filter too
 		moreItems.forEach((b) =>
-			b.classList.toggle("active", b.dataset.target === target),
+			b.classList.toggle(
+				"active",
+				b.dataset.target === target &&
+				(target !== "manage-users" ||
+					(b.dataset.userFilter || "student") ===
+					(userFilter === "professor" ? "professor" : "student")),
+			),
 		);
 		pages.forEach((p) => p.classList.toggle("active", p.id === target));
 		if (target === "bulletin") renderAnnouncements();
@@ -248,26 +256,52 @@ document.addEventListener("DOMContentLoaded", () => {
 		window.scrollTo({ top: 0, behavior: "smooth" });
 	}
 
+	// Expand/collapse the Users group (header and caret never navigate)
+	function toggleUsersGroup() {
+		const group = document.getElementById("usersNavGroup");
+		if (!group) return;
+		const open = group.classList.toggle("open");
+		document
+			.getElementById("usersNavCaret")
+			?.setAttribute("aria-expanded", String(open));
+	}
+
 	navLinks.forEach((link) => {
 		link.addEventListener("click", (e) => {
 			e.preventDefault();
+			if (link.dataset.navToggle) {
+				// Collapsed rail hides the sub-list: expand the sidebar first so
+				// Students / Professors stay reachable.
+				const sb = document.getElementById("sidebar");
+				if (sb?.classList.contains("collapsed")) {
+					document.getElementById("sidebarToggle")?.click();
+					document.getElementById("usersNavGroup")?.classList.add("open");
+					document
+						.getElementById("usersNavCaret")
+						?.setAttribute("aria-expanded", "true");
+				} else {
+					toggleUsersGroup();
+				}
+				return;
+			}
 			navigateTo(link.dataset.target, link.dataset.userFilter || "");
 		});
 	});
 
-	// Expand/collapse the Users sub-list (caret click doesn't navigate)
 	document.getElementById("usersNavCaret")?.addEventListener("click", (e) => {
 		e.preventDefault();
 		e.stopPropagation();
-		const group = document.getElementById("usersNavGroup");
-		const open = group.classList.toggle("open");
-		e.currentTarget.setAttribute("aria-expanded", String(open));
+		toggleUsersGroup();
 	});
 	mobileItems.forEach((btn) =>
-		btn.addEventListener("click", () => navigateTo(btn.dataset.target)),
+		btn.addEventListener("click", () =>
+			navigateTo(btn.dataset.target, btn.dataset.userFilter || ""),
+		),
 	);
 	moreItems.forEach((btn) =>
-		btn.addEventListener("click", () => navigateTo(btn.dataset.target)),
+		btn.addEventListener("click", () =>
+			navigateTo(btn.dataset.target, btn.dataset.userFilter || ""),
+		),
 	);
 
 	// ── Hamburger / More menu ──
@@ -297,6 +331,19 @@ document.addEventListener("DOMContentLoaded", () => {
 	document
 		.getElementById("logoDashboard")
 		?.addEventListener("click", () => navigateTo("dashboard"));
+
+	// Dashboard stat cards: click / Enter / Space opens the matching page
+	const statGrid = document.querySelector(".stat-grid");
+	const openStatCard = (e) => {
+		const card = e.target.closest(".stat-card[data-target]");
+		if (!card) return;
+		e.preventDefault(); // stop Space from scrolling the page
+		navigateTo(card.dataset.target, card.dataset.userFilter || "");
+	};
+	statGrid?.addEventListener("click", openStatCard);
+	statGrid?.addEventListener("keydown", (e) => {
+		if (e.key === "Enter" || e.key === " ") openStatCard(e);
+	});
 
 	document.querySelectorAll(".qa-btn").forEach((btn) => {
 		btn.addEventListener("click", () => {
@@ -1274,7 +1321,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			const el = document.getElementById(id);
 			if (el) el.value = "";
 		});
-		document.getElementById("m-userRole").value = "student";
+		document.getElementById("m-userRole").value = userRoleView;
 		document.getElementById("m-userProgram").value = "";
 		document.getElementById("m-userStatus").value = "active";
 
@@ -1286,7 +1333,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 
 		// Reset assignment fields
-		applyRoleUI("student");
+		applyRoleUI(userRoleView);
 		syncSectionChecklist([]);
 		syncCourseChecklist([]);
 		clearErrors(
@@ -1777,17 +1824,23 @@ document.addEventListener("DOMContentLoaded", () => {
 		.getElementById("user-program-filter")
 		?.addEventListener("change", renderUsers);
 	// Set the role view from the sidebar, update heading, then re-render.
-	// role: "" (all) | "student" | "professor"
+	// role: "student" | "professor" (anything else falls back to "student")
 	function setUserView(role) {
-		userRoleView = role === "student" || role === "professor" ? role : "";
+		userRoleView = role === "professor" ? "professor" : "student";
 		const title = document.getElementById("usersPageTitle");
 		if (title)
 			title.textContent =
-				userRoleView === "student"
-					? "Students"
-					: userRoleView === "professor"
-						? "Professors"
-						: "Users";
+				userRoleView === "professor" ? "Professors" : "Students";
+		const addBtn = document.getElementById("openAddUserBtn");
+		if (addBtn)
+			addBtn.innerHTML = `<i class="fas fa-plus"></i> Add ${userRoleView === "professor" ? "Professor" : "Student"
+				}`;
+		// Program filter applies to students only — hide (and clear) it for professors
+		const progFilter = document.getElementById("user-program-filter");
+		if (progFilter) {
+			if (userRoleView === "professor") progFilter.value = "";
+			progFilter.style.display = userRoleView === "professor" ? "none" : "";
+		}
 		// Student ID applies to students only — hide that column in Professors view
 		document
 			.querySelector(".users-table")
@@ -2304,9 +2357,12 @@ document.addEventListener("DOMContentLoaded", () => {
 				setText("sidebarName", display);
 				setText("profileAvatar", initials(first, last));
 				setText("sidebarAvatar", initials(first, last));
+				setText("topbarAvatar", initials(first, last));
+				setText("topbarMenuName", display);
 				if (first) setText("greetingTitle", `Welcome back, ${first}!`);
 			}
 			if (email) setText("profileEmail", email);
+			if (email) setText("topbarMenuEmail", email);
 
 			original.firstname = first;
 			original.lastname = last;
@@ -2644,13 +2700,121 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 	});
 
-	// ── Admin Profile Sign-out button ──
-	document.getElementById("profileLogoutBtn")?.addEventListener("click", () => {
-		if (confirm("Are you sure you want to sign out?")) {
-			localStorage.removeItem("cognitia_current_user");
-			window.location.href = "login.html";
+	// ── Sign-out: Account page button + sidebar Log out share one handler ──
+	document
+		.querySelectorAll("#profileLogoutBtn, #sidebarLogoutBtn")
+		.forEach((btn) =>
+			btn.addEventListener("click", () => {
+				if (confirm("Are you sure you want to sign out?")) {
+					localStorage.removeItem("cognitia_current_user");
+					window.location.href = "login.html";
+				}
+			}),
+		);
+
+	// ── Top bar: notification + profile dropdowns ──
+	(function initTopbar() {
+		const dds = [
+			["notifBtn", "notifMenu"],
+			["profileMenuBtn", "profileMenu"],
+		].map(([b, m]) => ({
+			btn: document.getElementById(b),
+			menu: document.getElementById(m),
+		}));
+		if (dds.some((d) => !d.btn || !d.menu)) return;
+
+		const setOpen = (d, open) => {
+			d.menu.hidden = !open;
+			d.btn.setAttribute("aria-expanded", String(open));
+		};
+		const closeAll = () => dds.forEach((d) => setOpen(d, false));
+
+		// Signed-in user (same storage key as the dashboard greeting)
+		let user = null;
+		try {
+			user = JSON.parse(localStorage.getItem("cognitia_current_user") || "null");
+		} catch {
+			/* corrupt value — keep defaults */
 		}
-	});
+		const first = (user?.firstname || user?.firstName || "").trim();
+		const last = (user?.lastname || user?.lastName || "").trim();
+		const display =
+			`${first} ${last}`.trim() || user?.displayName || user?.name || "";
+		if (first || last) setText("topbarAvatar", initials(first, last));
+		if (display) setText("topbarMenuName", display);
+		if (first || last) setText("sidebarAvatar", initials(first, last));
+		if (display) setText("sidebarName", display);
+		if (user?.email) setText("topbarMenuEmail", user.email);
+
+		// Notifications = latest saved announcements (state.announcements)
+		function renderNotifs() {
+			const list = document.getElementById("notifList");
+			list.replaceChildren();
+			const items = (state.announcements || []).slice(0, 5);
+			if (!items.length) {
+				const li = document.createElement("li");
+				li.className = "notif-empty";
+				li.textContent = "No announcements yet.";
+				list.appendChild(li);
+				return;
+			}
+			items.forEach((a) => {
+				const li = document.createElement("li");
+				const btn = document.createElement("button");
+				btn.type = "button";
+				btn.className = "notif-item";
+				const t = document.createElement("strong");
+				t.textContent = a.title;
+				const m = document.createElement("span");
+				m.textContent = a.eventDate
+					? `Event: ${a.eventDate}`
+					: `${a.type ? a.type + " · " : ""}${a.date}`;
+				btn.append(t, m);
+				btn.addEventListener("click", () => {
+					closeAll();
+					navigateTo("bulletin");
+				});
+				li.appendChild(btn);
+				list.appendChild(li);
+			});
+		}
+
+		dds.forEach((d) => {
+			d.btn.addEventListener("click", () => {
+				const wasOpen = !d.menu.hidden;
+				closeAll();
+				if (wasOpen) return;
+				if (d.btn.id === "notifBtn") renderNotifs();
+				setOpen(d, true);
+			});
+		});
+
+		// Click outside closes; Escape closes and returns focus to the button
+		document.addEventListener("click", (e) => {
+			if (!e.target.closest(".topbar-dd")) closeAll();
+		});
+		document.addEventListener("keydown", (e) => {
+			if (e.key !== "Escape") return;
+			const open = dds.find((d) => !d.menu.hidden);
+			if (!open) return;
+			closeAll();
+			open.btn.focus();
+		});
+
+		document.getElementById("notifViewAll")?.addEventListener("click", () => {
+			closeAll();
+			navigateTo("bulletin");
+		});
+		document.getElementById("topbarAccountBtn")?.addEventListener("click", () => {
+			closeAll();
+			navigateTo("profile");
+		});
+		// Reuse the existing sign-out handler (confirm + clear session + redirect)
+		document.getElementById("topbarLogoutBtn")?.addEventListener("click", () => {
+			closeAll();
+			document.getElementById("profileLogoutBtn")?.click();
+		});
+	})();
 
 	renderUsers();
 	renderCourses();

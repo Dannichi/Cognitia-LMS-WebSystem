@@ -62,6 +62,7 @@ textarea {
 	--surface-2: #fafaf7;
 	--surface-3: #f5f4ef;
 	--border: #e6e5df;
+	--border-strong: #d4d2ca; /* top bar bottom edge */
 	--divider: #eeede8;
 
 	/* Text */
@@ -75,6 +76,7 @@ textarea {
 	/* Sidebar */
 	--sidebar-w: 224px;
 	--sidebar-collapsed-w: 64px;
+	--sidebar-expanded-w: 224px; /* ≤768px overlay width */
 	--sidebar-bg: #6b1010;
 	--sidebar-top: #7a1212;
 	--sidebar-act: rgba(255, 255, 255, 0.18);
@@ -189,17 +191,21 @@ textarea {
 	width: var(--sidebar-collapsed-w);
 	padding: 20px 10px;
 }
+.sidebar.no-anim,
+.sidebar.no-anim * {
+	transition: none !important; /* set by sidebar.js for the initial state only */
+}
 
 /* Toggle */
 .sidebar-toggle {
 	position: absolute;
 	top: 50%;
-	right: -18px;
+	right: -15.5px; /* centre on the edge: half of 29px + 1px border */
 	transform: translateY(-50%);
 	width: 29px;
 	height: 29px;
-	background: var(--surface);
-	border: 1px solid var(--border);
+	background: var(--brand);
+	border: 2px solid var(--border);
 	border-radius: 50%;
 	display: flex;
 	align-items: center;
@@ -214,15 +220,12 @@ textarea {
 }
 .sidebar-toggle i {
 	font-size: 12px;
-	color: var(--brand);
+	color: var(--brand-light);
 	transition: transform var(--t-slow) var(--ease);
 }
 .sidebar-toggle:hover {
-	background: var(--brand-light);
+	background: var(--brand-dark);
 	box-shadow: var(--sh-md);
-}
-.sidebar.collapsed .sidebar-toggle {
-	transform: translateY(-50%) rotate(180deg);
 }
 
 /* Logo */
@@ -258,15 +261,19 @@ textarea {
 	opacity: 0;
 	max-width: 0;
 }
+.sidebar.collapsed .logo {
+	gap: 0;
+}
 .sidebar.collapsed .logo-icon {
 	display: block;
-	margin-right: 8px;
 }
 
 /* Nav */
 .sidebar nav {
 	flex: 1;
-	width: 100%;
+	width: calc(100% + 24px); /* bleed through .sidebar's 12px side padding */
+	margin: 0 -12px;
+	padding: 0 6px; /* small inset on each side */
 	overflow-y: auto;
 	overflow-x: hidden;
 	scrollbar-width: none;
@@ -279,15 +286,15 @@ textarea {
 	width: 100%;
 }
 .navbar li {
-	margin-bottom: 5px;
+	margin-bottom: 6px;
 }
 
 .navbar li a {
 	display: flex;
 	align-items: center;
 	gap: 15px;
-	padding: 9px 12px;
-	border-radius: var(--r-md);
+	padding: 9px 18px; /* 6px nav inset + 18px = icons stay 24px from the edge */
+	border-radius: var(--r-sm);
 	color: var(--sidebar-text);
 	white-space: nowrap;
 	overflow: hidden;
@@ -338,7 +345,7 @@ textarea {
 .navbar .nav-caret {
 	position: absolute;
 	top: 5px;
-	right: 6px;
+	right: 8px;
 	width: 30px;
 	height: 30px;
 	display: flex;
@@ -376,7 +383,7 @@ textarea {
 	margin-bottom: 3px;
 }
 .navbar .nav-sub li a {
-	padding: 7px 12px 7px 28px;
+	padding: 7px 18px 7px 34px;
 }
 .navbar .nav-sub .nav-text {
 	font-size: 14px;
@@ -403,7 +410,7 @@ textarea {
 /* Nav category labels */
 .navbar li.nav-label {
 	margin: 14px 0 4px;
-	padding: 0 12px;
+	padding: 0 18px;
 	font-size: 10.5px;
 	font-weight: 600;
 	letter-spacing: 0.08em;
@@ -416,6 +423,15 @@ textarea {
 }
 .navbar li.nav-label:first-child {
 	margin-top: 0;
+}
+.sidebar.collapsed nav {
+	width: calc(100% + 20px);
+	margin: 0 -10px;
+	padding: 0 6px;
+}
+.sidebar.collapsed .navbar li a {
+	padding-left: 17px; /* (52px link - 18px icon) / 2 */
+	padding-right: 0;
 }
 .sidebar.collapsed .navbar li.nav-label {
 	height: 1px;
@@ -433,11 +449,115 @@ textarea {
 	margin-top: auto;
 	padding-top: 14px;
 	border-top: 1px solid var(--sidebar-bdr);
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
 	width: 100%;
 	flex-shrink: 0;
+}
+/* One full-width row: the <a> (with the active background) spans it all and
+   the Log out button is a sibling overlaid on its right end — no nesting. */
+.sidebar-profile-row {
+	position: relative;
+}
+.sidebar-profile {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	padding: 8px 52px 8px 12px; /* right padding reserves room for Log out */
+	border-radius: var(--r-md);
+	color: var(--sidebar-text);
+	text-decoration: none;
+	overflow: hidden;
+	position: relative;
+	transition:
+		background var(--t-fast),
+		color var(--t-fast);
+}
+.sidebar-profile .avatar {
+	margin-left: 0;
+}
+.sidebar-profile .user-details {
+	min-width: 0;
+}
+/* "Profile" category label — sits above the row, outside the link, styled like .nav-label */
+.sidebar-section-label {
+	margin: 0 0 4px;
+	padding: 0 12px;
+	font-size: 10.5px;
+	font-weight: 600;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: rgba(255, 255, 255, 0.45);
+	white-space: nowrap;
+	overflow: hidden;
+	pointer-events: none;
+	user-select: none;
+}
+.sidebar.collapsed .sidebar-section-label {
+	display: none;
+}
+.sidebar-profile .user-name {
+	font-size: 13.5px;
+	font-weight: 600;
+	line-height: 1.25;
+	color: #fff;
+}
+.sidebar-profile .user-name,
+.sidebar-profile .user-role {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.sidebar-profile-row:hover .sidebar-profile {
+	background: var(--sidebar-hover);
+	color: #fff;
+}
+.sidebar-profile.active {
+	background: var(--sidebar-act);
+	color: #fff;
+}
+.sidebar-profile.active::before {
+	content: "";
+	position: absolute;
+	left: 0;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 3px;
+	height: 20px;
+	background: rgba(255, 255, 255, 0.8);
+	border-radius: 0 3px 3px 0;
+}
+.sidebar-profile:focus-visible,
+.sidebar-bottom .logout-btn:focus-visible {
+	box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
+}
+.sidebar-bottom .logout-btn {
+	position: absolute;
+	top: 50%;
+	right: 8px;
+	transform: translateY(-50%);
+	width: 34px;
+	height: 34px;
+	padding: 0;
+	justify-content: center;
+}
+/* Collapsed rail: avatar + Log out icons only, stacked, full rail width */
+.sidebar.collapsed .sidebar-profile-row {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+}
+.sidebar.collapsed .sidebar-profile {
+	padding: 6px 0;
+	justify-content: center;
+	gap: 0;
+}
+.sidebar.collapsed .sidebar-profile .user-details {
+	display: none;
+}
+.sidebar.collapsed .sidebar-bottom .logout-btn {
+	position: static;
+	transform: none;
 }
 .user-info {
 	display: flex;
@@ -591,6 +711,26 @@ textarea {
 	border: 1px solid var(--brand-dark);
 	border-radius: var(--r-lg);
 	box-shadow: 0 2px 8px var(--brand-glow);
+	position: relative;
+	overflow: hidden; /* clips the logo watermark at the card edge */
+}
+.greeting-header .greeting {
+	position: relative;
+	z-index: 1; /* text stays above the logo */
+	max-width: calc(100% - 140px);
+}
+/* Decorative logo on the right, tilted -10° */
+.greeting-header .greeting-logo {
+	position: absolute;
+	right: 28px;
+	top: 50%;
+	height: 120%;
+	width: auto;
+	max-height: 150px;
+	transform: translateY(-50%) rotate(-10deg);
+	opacity: 0.18;
+	pointer-events: none;
+	user-select: none;
 }
 .greeting-header .greeting-title {
 	font-size: 28px;
@@ -612,6 +752,13 @@ textarea {
 	}
 	.greeting-header .greeting-title {
 		font-size: 24px;
+	}
+	.greeting-header .greeting {
+		max-width: calc(100% - 90px);
+	}
+	.greeting-header .greeting-logo {
+		right: 16px;
+		max-height: 110px;
 	}
 }
 @media (max-width: 480px) {
@@ -873,6 +1020,19 @@ textarea {
 .stat-card:hover {
 	transform: translateY(-2px);
 	box-shadow: var(--sh-md);
+}
+/* Clickable cards (navigate to their management page) */
+.stat-card[data-target] {
+	cursor: pointer;
+}
+.stat-card[data-target]:hover,
+.stat-card[data-target]:focus-visible {
+	border-color: var(--brand-mid);
+}
+.stat-card[data-target]:focus-visible {
+	transform: translateY(-2px);
+	box-shadow: var(--sh-md), var(--ring);
+	border-radius: var(--r-lg); /* global :focus-visible would shrink it */
 }
 .stat-top {
 	display: flex;
@@ -2512,31 +2672,12 @@ tbody tr:hover {
 		--sidebar-w: var(--sidebar-collapsed-w);
 	}
 
-	.sidebar {
-		width: var(--sidebar-collapsed-w);
-		padding: 18px 10px;
-	}
-	.sidebar .nav-text,
-	.sidebar .user-details {
-		opacity: 0;
-		pointer-events: none;
-	}
-	.navbar li.nav-label {
-		height: 1px;
-		margin: 10px 8px;
-		padding: 0;
-		background: var(--sidebar-bdr);
-	}
-	.navbar li.nav-label span,
-	.navbar li.nav-label:first-child {
-		display: none;
-	}
-	.sidebar .logo-full {
-		opacity: 0;
-		max-width: 0;
-	}
-	.sidebar .logo-icon {
-		display: block;
+	/* Rail look comes from .sidebar.collapsed; expanded is an overlay that
+	   does not shift .main (its margin stays at the rail width). */
+	.sidebar:not(.collapsed) {
+		width: var(--sidebar-expanded-w);
+		z-index: 80; /* above the top bar */
+		box-shadow: var(--sh-xl);
 	}
 
 	.main {
@@ -4284,5 +4425,216 @@ tbody tr:hover {
 	.btn-bulk-action {
 		width: 100%;
 		justify-content: center;
+	}
+}
+
+/* ============================================================
+    TOP BAR — title, notifications, profile (desktop)
+============================================================ */
+.topbar {
+	position: sticky; /* stays pinned at the top while .main scrolls; z-index keeps dropdowns above content */
+	top: 0;
+	z-index: 60;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--sp-md);
+	height: 56px;
+	margin-left: var(--sidebar-w);
+	width: calc(100% - var(--sidebar-w));
+	padding: 0 var(--sp-xl);
+	background: var(--surface);
+	border-bottom: 1px solid var(--border-strong);
+	transition:
+		margin-left var(--t-slow) var(--ease),
+		width var(--t-slow) var(--ease);
+}
+.sidebar.collapsed ~ .topbar {
+	margin-left: var(--sidebar-collapsed-w);
+	width: calc(100% - var(--sidebar-collapsed-w));
+}
+/* Sidebar is fixed (out of flow); stack top bar and .main as normal blocks */
+.app-shell {
+	display: block;
+}
+.topbar + .main {
+	min-height: calc(100vh - 56px);
+}
+.topbar-title {
+	font-size: 18px;
+	font-weight: 700;
+	letter-spacing: -0.01em;
+	color: var(--brand);
+	white-space: nowrap;
+}
+.topbar-actions {
+	display: flex;
+	align-items: center;
+	gap: var(--sp-sm);
+}
+.topbar-dd {
+	position: relative;
+}
+.topbar-btn,
+.topbar-avatar {
+	width: 38px;
+	height: 38px;
+	border: 1px solid var(--border);
+	border-radius: 50%;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	transition:
+		background var(--t-fast) var(--ease),
+		color var(--t-fast) var(--ease),
+		box-shadow var(--t-fast) var(--ease);
+}
+.topbar-btn {
+	background: var(--surface-3);
+	color: var(--text-2);
+	font-size: 16px;
+}
+.topbar-btn:hover,
+.topbar-btn[aria-expanded="true"] {
+	background: var(--brand-light);
+	color: var(--brand);
+}
+.topbar-avatar {
+	background: var(--brand);
+	border-color: var(--brand-dark);
+	color: #fff;
+	font-size: 13px;
+	font-weight: 700;
+}
+.topbar-avatar:hover,
+.topbar-avatar[aria-expanded="true"] {
+	background: var(--brand-dark);
+}
+.topbar-btn:focus-visible,
+.topbar-avatar:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--brand-glow);
+}
+
+.topbar-menu {
+	position: absolute;
+	top: calc(100% + 8px);
+	right: 0;
+	z-index: 70;
+	width: 220px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-md);
+	box-shadow: var(--sh-lg);
+	overflow: hidden;
+}
+.topbar-menu[hidden] {
+	display: none;
+}
+.topbar-menu-notif {
+	width: 320px;
+}
+.topbar-menu-head {
+	padding: 12px 16px;
+	font-size: 12px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--text-3);
+	border-bottom: 1px solid var(--divider);
+}
+.notif-list {
+	list-style: none;
+	max-height: 320px;
+	overflow-y: auto;
+}
+.notif-item {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	width: 100%;
+	padding: 10px 16px;
+	text-align: left;
+	background: none;
+	border: 0;
+	border-bottom: 1px solid var(--divider);
+	cursor: pointer;
+	color: var(--text-1);
+}
+.notif-item strong {
+	font-size: 14px;
+	font-weight: 600;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.notif-item span {
+	font-size: 12px;
+	color: var(--text-3);
+}
+.notif-item:hover,
+.notif-item:focus-visible {
+	background: var(--brand-light);
+	outline: none;
+}
+.notif-empty {
+	padding: 20px 16px;
+	font-size: 14px;
+	color: var(--text-3);
+	text-align: center;
+}
+.topbar-menu-foot,
+.topbar-menu-item {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	padding: 10px 16px;
+	background: none;
+	border: 0;
+	cursor: pointer;
+	font-size: 14px;
+	color: var(--text-2);
+	text-align: left;
+}
+.topbar-menu-foot {
+	justify-content: center;
+	font-weight: 600;
+	color: var(--brand);
+	background: var(--surface-2);
+}
+.topbar-menu-foot:hover,
+.topbar-menu-item:hover,
+.topbar-menu-foot:focus-visible,
+.topbar-menu-item:focus-visible {
+	background: var(--brand-light);
+	color: var(--brand);
+	outline: none;
+}
+.topbar-menu-item.danger {
+	color: var(--red-fg);
+	border-top: 1px solid var(--divider);
+}
+.topbar-menu-user {
+	display: flex;
+	flex-direction: column;
+	padding: 12px 16px;
+	border-bottom: 1px solid var(--divider);
+}
+.topbar-menu-user strong {
+	font-size: 14px;
+	color: var(--text-1);
+}
+.topbar-menu-user span {
+	font-size: 12px;
+	color: var(--text-3);
+	overflow-wrap: anywhere;
+}
+
+/* Mobile already has .mobile-header; desktop-only top bar for now */
+@media (max-width: 480px) {
+	.topbar {
+		display: none;
 	}
 }
