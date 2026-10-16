@@ -3,9 +3,10 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Cognitia — Admin</title>
+		<title>Cognitia - Admin</title>
 		<link rel="stylesheet" href="styles/admin.css" />
 		<script src="js/student-id.js"></script>
+		<script src="js/activity.js"></script>
 		<link rel="icon" type="image/png" href="assets/icons/Logo-Icon-Red.png" />
 		<link
 			rel="stylesheet"
@@ -21,6 +22,7 @@
 				alt="Cognitia"
 				class="mobile-header-logo"
 			/>
+			<span class="mobile-header-title" id="mobileHeaderTitle">Dashboard</span>
 		</header>
 
 		<div class="app-shell">
@@ -63,6 +65,12 @@
 							<a href="#" data-target="bulletin">
 								<i class="fas fa-bullhorn"></i
 								><span class="nav-text">Bulletin</span>
+							</a>
+						</li>
+						<li>
+							<a href="#" data-target="activity">
+								<i class="fas fa-history"></i
+								><span class="nav-text">Recent Activity</span>
 							</a>
 						</li>
 						<li class="nav-label"><span>Academic Management</span></li>
@@ -157,7 +165,11 @@
 
 			<!-- ─── TOP BAR ─── -->
 			<header class="topbar" id="topbar">
-				<h1 class="topbar-title">Admin – Dashboard</h1>
+				<nav class="breadcrumb" id="breadcrumb" aria-label="Breadcrumb">
+					<ol id="breadcrumbList">
+						<li><span aria-current="page">Dashboard</span></li>
+					</ol>
+				</nav>
 				<div class="topbar-actions">
 					<div class="topbar-dd" id="notifDropdown">
 						<button
@@ -225,7 +237,7 @@
 			<main class="main" id="mainContent">
 				<!-- ─── DASHBOARD (TOP) ─── -->
 				<section id="dashboard" class="page active">
-					<div class="page-header greeting-header">
+					<div class="greeting-header">
 						<div class="greeting">
 							<h2 class="greeting-title" id="greetingTitle">Welcome back!</h2>
 							<p class="greeting-sub">
@@ -250,6 +262,17 @@
 							data-user-filter="student"
 							title="View students"
 						>
+							<span class="stat-go" aria-hidden="true"
+								><svg
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2.6"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								>
+									<path d="M7 17L17 7M8 7h9v9" /></svg
+							></span>
 							<div class="stat-top">
 								<div class="stat-icon">
 									<i class="fas fa-user-graduate"></i>
@@ -268,6 +291,17 @@
 							data-user-filter="professor"
 							title="View professors"
 						>
+							<span class="stat-go" aria-hidden="true"
+								><svg
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2.6"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								>
+									<path d="M7 17L17 7M8 7h9v9" /></svg
+							></span>
 							<div class="stat-top">
 								<div class="stat-icon">
 									<i class="fas fa-chalkboard-teacher"></i>
@@ -285,6 +319,17 @@
 							data-target="programs"
 							title="View programs"
 						>
+							<span class="stat-go" aria-hidden="true"
+								><svg
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2.6"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								>
+									<path d="M7 17L17 7M8 7h9v9" /></svg
+							></span>
 							<div class="stat-top">
 								<div class="stat-icon"><i class="fas fa-sitemap"></i></div>
 								<span class="stat-label">Programs</span>
@@ -300,6 +345,17 @@
 							data-target="sections"
 							title="View sections"
 						>
+							<span class="stat-go" aria-hidden="true"
+								><svg
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2.6"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								>
+									<path d="M7 17L17 7M8 7h9v9" /></svg
+							></span>
 							<div class="stat-top">
 								<div class="stat-icon"><i class="fas fa-layer-group"></i></div>
 								<span class="stat-label">Sections</span>
@@ -315,6 +371,17 @@
 							data-target="courses"
 							title="View courses"
 						>
+							<span class="stat-go" aria-hidden="true"
+								><svg
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2.6"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								>
+									<path d="M7 17L17 7M8 7h9v9" /></svg
+							></span>
 							<div class="stat-top">
 								<div class="stat-icon"><i class="fas fa-book-open"></i></div>
 								<span class="stat-label">Courses</span>
@@ -440,13 +507,6 @@
 
 				<!-- ─── BULLETIN ─── -->
 				<section id="bulletin" class="page">
-					<div class="page-header">
-						<div>
-							<h2>Campus Bulletin</h2>
-							<p class="page-sub">Announcements &amp; Notices</p>
-						</div>
-					</div>
-
 					<!-- Toolbar row: filter + add button -->
 					<div class="bulletin-toolbar">
 						<select id="ann-filter" class="bulletin-filter">
@@ -466,14 +526,49 @@
 					</div>
 				</section>
 
+				<!-- ─── RECENT ACTIVITY ─── -->
+				<section id="activity" class="page">
+					<div class="toolbar">
+						<div class="search-box">
+							<i class="fas fa-search"></i>
+							<input
+								type="text"
+								id="activity-search"
+								placeholder="Search activity…"
+								aria-label="Search activity"
+							/>
+						</div>
+						<select
+							id="activity-type-filter"
+							class="toolbar-select"
+							aria-label="Filter by type"
+						>
+							<option value="">All Activity</option>
+							<option value="user">Users</option>
+							<option value="program">Programs</option>
+							<option value="section">Sections</option>
+							<option value="course">Courses</option>
+							<option value="announcement">Announcements</option>
+						</select>
+					</div>
+
+					<p class="results-count" id="activityCount" aria-live="polite"></p>
+
+					<div class="card act-card">
+						<div id="activity-feed" class="act-feed"></div>
+						<button
+							type="button"
+							class="btn-cancel act-more"
+							id="activityMoreBtn"
+							hidden
+						>
+							Show more
+						</button>
+					</div>
+				</section>
+
 				<!-- ─── PROGRAMS ─── -->
 				<section id="programs" class="page">
-					<div class="page-header">
-						<div>
-							<h2>Programs</h2>
-							<p class="page-sub">Program Management</p>
-						</div>
-					</div>
 					<div class="toolbar">
 						<div class="search-box">
 							<i class="fas fa-search"></i>
@@ -501,12 +596,6 @@
 
 				<!-- ─── SECTIONS ─── -->
 				<section id="sections" class="page">
-					<div class="page-header">
-						<div>
-							<h2>Sections</h2>
-							<p class="page-sub">Manage class sections per program</p>
-						</div>
-					</div>
 					<div class="toolbar">
 						<div class="search-box">
 							<i class="fas fa-search"></i>
@@ -539,14 +628,11 @@
 
 				<!-- ─── SECTION DETAILS ─── -->
 				<section id="section-details" class="page">
-					<div class="page-header">
-						<div class="section-details-breadcrumb">
-							<button class="btn-back" id="backToSectionsBtn">
-								<i class="fas fa-arrow-left"></i> Back to Sections
-							</button>
-							<h2 id="sectionDetailsTitle">Section Details</h2>
-							<p class="page-sub" id="sectionDetailsSub">Loading...</p>
-						</div>
+					<div class="section-details-toolbar">
+						<button class="btn-back" id="backToSectionsBtn">
+							<i class="fas fa-arrow-left"></i> Back to Sections
+						</button>
+						<p class="page-sub" id="sectionDetailsSub">Loading...</p>
 					</div>
 
 					<!-- Stats row -->
@@ -607,12 +693,6 @@
 
 				<!-- ─── COURSES ─── -->
 				<section id="courses" class="page">
-					<div class="page-header">
-						<div>
-							<h2>Courses</h2>
-							<p class="page-sub">Course Management</p>
-						</div>
-					</div>
 					<div class="toolbar">
 						<div class="search-box">
 							<i class="fas fa-search"></i>
@@ -643,13 +723,6 @@
 
 				<!-- ─── USERS ─── -->
 				<section id="manage-users" class="page">
-					<div class="page-header">
-						<div>
-							<h2 id="usersPageTitle">Students</h2>
-							<p class="page-sub" id="usersPageSub">User Management</p>
-						</div>
-					</div>
-
 					<div class="toolbar">
 						<div class="search-box">
 							<i class="fas fa-search"></i>
@@ -667,6 +740,8 @@
 							<i class="fas fa-plus"></i> Add Student
 						</button>
 					</div>
+
+					<p class="results-count" id="usersPageSub" aria-live="polite"></p>
 
 					<div class="users-table-wrap">
 						<table class="users-table">
@@ -692,13 +767,6 @@
 
 				<!-- ─── PROFILE ─── -->
 				<section id="profile" class="page">
-					<div class="page-header">
-						<div>
-							<h2>Account</h2>
-							<p class="page-sub">Your profile & settings</p>
-						</div>
-					</div>
-
 					<div class="profile-unified">
 						<!-- ── Left: Sidebar Card ── -->
 						<div class="profile-sidebar">
@@ -1580,6 +1648,10 @@
 				<button class="mobile-more-item" data-target="sections" role="menuitem">
 					<i class="fas fa-layer-group"></i>
 					<span>Sections</span>
+				</button>
+				<button class="mobile-more-item" data-target="activity" role="menuitem">
+					<i class="fas fa-history"></i>
+					<span>Recent Activity</span>
 				</button>
 			</div>
 		</div>

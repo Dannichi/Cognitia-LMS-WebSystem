@@ -32,6 +32,8 @@ document.addEventListener("DOMContentLoaded", () => {
 					assignments: existing.assignments || [],
 					quizzes: existing.quizzes || [],
 					grades: existing.grades || [],
+					// Activity log is written by js/activity.js — keep it as saved
+					activities: existing.activities || [],
 				}),
 			);
 		} catch (e) {
@@ -158,21 +160,229 @@ document.addEventListener("DOMContentLoaded", () => {
 		document.getElementById("stat-courses").textContent = courses;
 	}
 
-	function logActivity(msg) {
-		const list = document.getElementById("recent-activity-list");
-		const empty = list.querySelector(".empty-state");
-		if (empty) empty.remove();
-		const item = document.createElement("div");
-		item.className = "activity-item";
-		item.innerHTML = `
-			<div class="activity-dot"></div>
-			<span class="activity-text">${msg}</span>
-			<span class="activity-time">${now()}</span>
-		`;
-		list.prepend(item);
-		const items = list.querySelectorAll(".activity-item");
-		if (items.length > 10) items[items.length - 1].remove();
+	/* ═══════════════════════════════════════════
+		ACTIVITY LOG — admin UI
+		Data is saved by js/activity.js (ActivityLog). This block:
+		  1. records an event after an admin action succeeds (logActivity)
+		  2. draws a short preview on the dashboard card
+		  3. draws the full "Recent Activity" page
+	═══════════════════════════════════════════ */
+	const ACTIVITY_PREVIEW_LIMIT = 5; // dashboard card
+	const ACTIVITY_PAGE_SIZE = 50; // rows per "Show more" on the page
+	const activityView = { search: "", type: "", visible: ACTIVITY_PAGE_SIZE };
+
+	// Call only AFTER the action succeeded. Never throws.
+	function logActivity(event) {
+		if (typeof ActivityLog === "undefined") return;
+		ActivityLog.record(event);
 	}
+
+	function userName(u) {
+		return (
+			u?.displayName || `${u?.firstname || ""} ${u?.lastname || ""}`.trim() || "—"
+		);
+	}
+
+	function sectionLabel(sec) {
+		return sec
+			? `${getProgramName(sec.programId)} ${sec.year}-${sec.letter}`
+			: "";
+	}
+
+	function makeEl(tag, className, text) {
+		const n = document.createElement(tag);
+		if (className) n.className = className;
+		if (text != null) n.textContent = text; // textContent: never parsed as HTML
+		return n;
+	}
+
+	// Dashboard card: the newest few events. (A "View all" link can later
+	// point at data-target="activity" without any new logic.)
+	function renderRecentPreview() {
+		const list = document.getElementById("recent-activity-list");
+		if (!list || typeof ActivityLog === "undefined") return;
+		const items = ActivityLog.getRecent(ACTIVITY_PREVIEW_LIMIT);
+		if (!items.length) {
+			list.replaceChildren(makeEl("p", "empty-state", "No recent activity yet."));
+			return;
+		}
+		list.replaceChildren(
+			...items.map((rec) => {
+				const row = makeEl("div", "activity-item");
+				const time = makeEl(
+					"span",
+					"activity-time",
+					ActivityLog.timeAgo(rec.timestamp),
+				);
+				time.title = ActivityLog.formatFull(rec.timestamp);
+				row.append(
+					makeEl("div", "activity-dot"),
+					makeEl("span", "activity-text", rec.description),
+					time,
+				);
+				return row;
+			}),
+		);
+	}
+
+	function getFilteredActivities() {
+		const all = ActivityLog.getAll(); // newest first
+		const q = activityView.search.trim().toLowerCase();
+		const filtered = all.filter((r) => {
+			if (activityView.type && r.entityType !== activityView.type) return false;
+			if (!q) return true;
+			return [r.description, r.entityLabel, r.actor?.name, ActivityLog.ACTIONS[r.action]]
+				.filter(Boolean)
+				.some((v) => String(v).toLowerCase().includes(q));
+		});
+		return { all, filtered };
+	}
+
+	function buildActivityEmpty(icon, title, text, onClear) {
+		const box = makeEl("div", "act-empty");
+		const ic = makeEl("span", "act-empty-icon");
+		ic.innerHTML = `<i class="fas ${icon}"></i>`; // static markup, no user data
+		box.append(ic, makeEl("p", "act-empty-title", title), makeEl("p", "act-empty-text", text));
+		if (onClear) {
+			const btn = makeEl("button", "btn-cancel", "Clear filters");
+			btn.type = "button";
+			btn.addEventListener("click", onClear);
+			box.append(btn);
+		}
+		return box;
+	}
+
+	function buildActivityRow(rec) {
+		const entity = ActivityLog.ENTITIES[rec.entityType];
+		const row = makeEl("li", "act-item");
+
+		const icon = makeEl("span", "act-icon");
+		icon.innerHTML = `<i class="fas ${entity ? entity.icon : "fa-circle"}"></i>`; // static icon class only
+		icon.setAttribute("aria-hidden", "true");
+
+		const body = makeEl("div", "act-body");
+		const meta = makeEl("p", "act-meta");
+		meta.append(
+			makeEl(
+				"span",
+				`act-badge act-badge--${String(rec.action).replace(/[^a-z]/gi, "")}`,
+				ActivityLog.ACTIONS[rec.action] || rec.action,
+			),
+		);
+		[
+			entity ? entity.noun : null,
+			rec.entityType === "user" && rec.details?.role
+				? String(rec.details.role).charAt(0).toUpperCase() +
+				String(rec.details.role).slice(1)
+				: null,
+			rec.actor?.name ? `by ${rec.actor.name}` : null,
+		]
+			.filter(Boolean)
+			.forEach((part) => meta.append(makeEl("span", "act-meta-part", part)));
+		body.append(makeEl("p", "act-desc", rec.description), meta);
+
+		const time = makeEl("time", "act-time", ActivityLog.formatTime(rec.timestamp));
+		time.dateTime = rec.timestamp;
+		time.title = ActivityLog.formatFull(rec.timestamp);
+
+		row.append(icon, body, time);
+		return row;
+	}
+
+	// Rebuilds the whole feed from storage every time, so repeated renders
+	// (refresh, revisiting the page, other tabs) can never stack duplicates.
+	function renderActivityPage() {
+		const feed = document.getElementById("activity-feed");
+		if (!feed || typeof ActivityLog === "undefined") return;
+		const count = document.getElementById("activityCount");
+		const moreBtn = document.getElementById("activityMoreBtn");
+		const { all, filtered } = getFilteredActivities();
+
+		if (!all.length) {
+			feed.replaceChildren(
+				buildActivityEmpty(
+					"fa-history",
+					"No activity recorded yet",
+					"Adding, editing or deleting users, programs, sections, courses and announcements will show up here from now on.",
+				),
+			);
+			count.textContent = "";
+			moreBtn.hidden = true;
+			return;
+		}
+
+		count.textContent = `${filtered.length} of ${all.length} activit${all.length === 1 ? "y" : "ies"}`;
+
+		if (!filtered.length) {
+			feed.replaceChildren(
+				buildActivityEmpty(
+					"fa-search",
+					"No activity matches your filters",
+					"Try a different search or choose another type.",
+					() => {
+						activityView.search = "";
+						activityView.type = "";
+						activityView.visible = ACTIVITY_PAGE_SIZE;
+						document.getElementById("activity-search").value = "";
+						document.getElementById("activity-type-filter").value = "";
+						renderActivityPage();
+					},
+				),
+			);
+			moreBtn.hidden = true;
+			return;
+		}
+
+		const shown = filtered.slice(0, activityView.visible);
+		const groups = [];
+		shown.forEach((rec) => {
+			const key = ActivityLog.dayKey(rec.timestamp);
+			const last = groups[groups.length - 1];
+			if (last && last.key === key) last.items.push(rec);
+			else groups.push({ key, label: ActivityLog.dayLabel(rec.timestamp), items: [rec] });
+		});
+
+		feed.replaceChildren(
+			...groups.map((g) => {
+				const day = makeEl("section", "act-day");
+				const list = makeEl("ul", "act-list");
+				list.append(...g.items.map(buildActivityRow));
+				day.append(makeEl("h3", "act-day-title", g.label), list);
+				return day;
+			}),
+		);
+
+		const remaining = filtered.length - shown.length;
+		moreBtn.hidden = remaining <= 0;
+		moreBtn.textContent = `Show more (${remaining} left)`;
+	}
+
+	document.getElementById("activity-search")?.addEventListener("input", (e) => {
+		activityView.search = e.target.value;
+		activityView.visible = ACTIVITY_PAGE_SIZE;
+		renderActivityPage();
+	});
+	document.getElementById("activity-type-filter")?.addEventListener("change", (e) => {
+		activityView.type = e.target.value;
+		activityView.visible = ACTIVITY_PAGE_SIZE;
+		renderActivityPage();
+	});
+	document.getElementById("activityMoreBtn")?.addEventListener("click", () => {
+		activityView.visible += ACTIVITY_PAGE_SIZE;
+		renderActivityPage();
+	});
+
+	// Keep both views current when an event is saved here, or by another tab
+	// (e.g. a student registering in register.html).
+	function refreshActivityViews() {
+		renderRecentPreview();
+		if (document.getElementById("activity")?.classList.contains("active"))
+			renderActivityPage();
+	}
+	window.addEventListener("cognitia:activity-recorded", refreshActivityViews);
+	window.addEventListener("storage", (e) => {
+		if (e.key === null || e.key === DB_KEY) refreshActivityViews();
+	});
 
 	function syncProgramDropdowns() {
 		const selectors = [
@@ -229,6 +439,56 @@ document.addEventListener("DOMContentLoaded", () => {
 		);
 	}
 
+	// ── Top-bar breadcrumbs: Admin › [group ›] page ──
+	const CRUMB_LABELS = {
+		dashboard: "Dashboard",
+		bulletin: "Bulletin",
+		programs: "Programs",
+		sections: "Sections",
+		courses: "Courses",
+		activity: "Recent Activity",
+		profile: "Account",
+	};
+	let sectionCrumbLabel = ""; // set by openSectionDetails()
+
+	function updateBreadcrumb(target, userFilter = "") {
+		const crumbs = [{ label: "Admin", target: "dashboard" }];
+		if (target === "manage-users") {
+			crumbs.push({ label: "User Management" }); // group only, no page of its own
+			crumbs.push({ label: userFilter === "professor" ? "Professors" : "Students" });
+		} else if (target === "section-details") {
+			crumbs.push({ label: "Sections", target: "sections" });
+			crumbs.push({ label: sectionCrumbLabel || "Section Details" });
+		} else {
+			crumbs.push({ label: CRUMB_LABELS[target] || target });
+		}
+		const list = document.getElementById("breadcrumbList");
+		if (list) {
+			list.replaceChildren(
+				...crumbs.map((c, i) => {
+					const li = document.createElement("li");
+					const isLast = i === crumbs.length - 1;
+					const el = document.createElement(c.target && !isLast ? "button" : "span");
+					el.textContent = c.label;
+					if (isLast) el.setAttribute("aria-current", "page");
+					else if (c.target) {
+						el.type = "button";
+						el.className = "breadcrumb-link";
+						el.dataset.target = c.target;
+					}
+					li.appendChild(el);
+					return li;
+				}),
+			);
+		}
+		setText("mobileHeaderTitle", crumbs[crumbs.length - 1].label);
+	}
+	document.getElementById("breadcrumbList")?.addEventListener("click", (e) => {
+		const link = e.target.closest("[data-target]");
+		if (link) navigateTo(link.dataset.target);
+	});
+	updateBreadcrumb("dashboard"); // initial page
+
 	function navigateTo(target, userFilter = "") {
 		// No general Users page: manage-users always opens Students unless Professors is asked for
 		if (target === "manage-users" && userFilter !== "professor")
@@ -237,6 +497,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			l.classList.toggle("active", isNavActive(l, target, userFilter)),
 		);
 		if (target === "manage-users") setUserView(userFilter);
+		updateBreadcrumb(target, userFilter);
 		mobileItems.forEach((b) =>
 			b.classList.toggle("active", b.dataset.target === target),
 		);
@@ -252,6 +513,8 @@ document.addEventListener("DOMContentLoaded", () => {
 		);
 		pages.forEach((p) => p.classList.toggle("active", p.id === target));
 		if (target === "bulletin") renderAnnouncements();
+		if (target === "activity") renderActivityPage();
+		if (target === "dashboard") renderRecentPreview(); // refresh "x min ago"
 		closeMobileMore();
 		window.scrollTo({ top: 0, behavior: "smooth" });
 	}
@@ -644,7 +907,13 @@ document.addEventListener("DOMContentLoaded", () => {
 				status,
 				color,
 			});
-			logActivity(`Updated program: ${prog.code}`);
+			logActivity({
+				entityType: "program",
+				action: "updated",
+				entityId: prog.id,
+				entityLabel: prog.code,
+				description: `Updated program ${prog.code} (${prog.name})`,
+			});
 			showToast(`Program "${prog.code}" updated.`);
 		} else {
 			const prog = {
@@ -656,7 +925,13 @@ document.addEventListener("DOMContentLoaded", () => {
 				color,
 			};
 			state.programs.push(prog);
-			logActivity(`Added new program: ${prog.code}`);
+			logActivity({
+				entityType: "program",
+				action: "created",
+				entityId: prog.id,
+				entityLabel: prog.code,
+				description: `Added program ${prog.code} (${prog.name})`,
+			});
 			showToast(`Program "${prog.code}" added.`);
 		}
 
@@ -819,11 +1094,24 @@ document.addEventListener("DOMContentLoaded", () => {
 		if (state.editTarget?.type === "section") {
 			const sec = state.sections.find((s) => s.id === state.editTarget.id);
 			Object.assign(sec, { programId, year, letter, capacity });
-			logActivity(`Updated section: ${label}`);
+			logActivity({
+				entityType: "section",
+				action: "updated",
+				entityId: sec.id,
+				entityLabel: label,
+				description: `Updated section ${label}`,
+			});
 			showToast(`Section "${label}" updated.`);
 		} else {
-			state.sections.push({ id: uid(), programId, year, letter, capacity });
-			logActivity(`Created section: ${label}`);
+			const newSec = { id: uid(), programId, year, letter, capacity };
+			state.sections.push(newSec);
+			logActivity({
+				entityType: "section",
+				action: "created",
+				entityId: newSec.id,
+				entityLabel: label,
+				description: `Created section ${label}`,
+			});
 			showToast(`Section "${label}" created.`);
 		}
 
@@ -868,20 +1156,20 @@ document.addEventListener("DOMContentLoaded", () => {
 			card.className = "section-card";
 			card.style.setProperty("--section-color", prog?.color || "#9b1c1c");
 			card.innerHTML = `
-                <div class="program-top">
-                    <div class="section-name">${label}</div>
-                    <div class="program-actions">
-                        <button class="icon-btn edit sec-edit-btn" title="Edit"><i class="fas fa-edit"></i></button>
-                        <button class="icon-btn delete sec-delete-btn" title="Delete"><i class="fas fa-trash"></i></button>
-                    </div>
-                </div>
-                <div class="section-meta">
-                    <span><i class="fas fa-sitemap"></i> ${prog?.name || "Unknown"}</span>
-                    <span><i class="fas fa-layer-group"></i> ${yearLabel}</span>
-                    <span><i class="fas fa-users"></i> Cap: ${s.capacity}</span>
-                </div>
-                <div class="section-click-hint"><i class="fas fa-eye"></i> Click to view details</div>
-            `;
+				<div class="program-top">
+					<div class="section-name">${label}</div>
+					<div class="program-actions">
+						<button class="icon-btn edit sec-edit-btn" title="Edit"><i class="fas fa-edit"></i></button>
+						<button class="icon-btn delete sec-delete-btn" title="Delete"><i class="fas fa-trash"></i></button>
+					</div>
+				</div>
+				<div class="section-meta">
+					<span><i class="fas fa-sitemap"></i> ${prog?.name || "Unknown"}</span>
+					<span><i class="fas fa-layer-group"></i> ${yearLabel}</span>
+					<span><i class="fas fa-users"></i> Cap: ${s.capacity}</span>
+				</div>
+				<div class="section-click-hint"><i class="fas fa-eye"></i> Click to view details</div>
+			`;
 			card.querySelector(".sec-edit-btn").addEventListener("click", (e) => {
 				e.stopPropagation();
 				editSection(s.id);
@@ -1031,7 +1319,13 @@ document.addEventListener("DOMContentLoaded", () => {
 				units,
 				status,
 			});
-			logActivity(`Updated course: ${c.code}`);
+			logActivity({
+				entityType: "course",
+				action: "updated",
+				entityId: c.id,
+				entityLabel: c.code,
+				description: `Updated course ${c.code} (${c.name})`,
+			});
 			showToast(`Course "${c.code}" updated.`);
 		} else {
 			const c = {
@@ -1046,7 +1340,13 @@ document.addEventListener("DOMContentLoaded", () => {
 				status,
 			};
 			state.courses.push(c);
-			logActivity(`Added course: ${c.code}`);
+			logActivity({
+				entityType: "course",
+				action: "created",
+				entityId: c.id,
+				entityLabel: c.code,
+				description: `Added course ${c.code} (${c.name})`,
+			});
 			showToast(`Course "${c.code}" added.`);
 		}
 
@@ -1513,7 +1813,14 @@ document.addEventListener("DOMContentLoaded", () => {
 			} else if (role !== "student") {
 				delete u.studentId;
 			}
-			logActivity(`Updated user: ${displayName}`);
+			logActivity({
+				entityType: "user",
+				action: "updated",
+				entityId: u.id,
+				entityLabel: displayName,
+				description: `Updated ${role} account: ${displayName}`,
+				details: { role, studentId: u.studentId },
+			});
 			showToast(`User "${displayName}" updated.`);
 		} else {
 			// ── Create new user ──
@@ -1537,7 +1844,14 @@ document.addEventListener("DOMContentLoaded", () => {
 				u.studentId = StudentIDManager.getNextStudentID();
 			}
 			state.users.push(u);
-			logActivity(`Registered new ${role}: ${displayName}`);
+			logActivity({
+				entityType: "user",
+				action: "created",
+				entityId: u.id,
+				entityLabel: displayName,
+				description: `Added ${role} account: ${displayName}`,
+				details: { role, studentId: u.studentId },
+			});
 			showToast(
 				`${role.charAt(0).toUpperCase() + role.slice(1)} "${displayName}" added.`,
 			);
@@ -1579,7 +1893,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			const total = state.users.filter(
 				(u) => u.role === "student" || u.role === "professor",
 			).length;
-			sub.textContent = `User Management · ${filtered.length} shown of ${total} total`;
+			sub.textContent = `${filtered.length} shown of ${total} total`;
 		}
 
 		if (filtered.length === 0) {
@@ -1865,7 +2179,16 @@ document.addEventListener("DOMContentLoaded", () => {
 			const lbl = sec
 				? `${prog?.code || ""} ${sec.year}${sec.letter}`
 				: "no section";
-			logActivity(`Assigned ${u.firstname} ${u.lastname} → ${lbl}`);
+			logActivity({
+				entityType: "user",
+				action: "assigned",
+				entityId: u.id,
+				entityLabel: userName(u),
+				description: sec
+					? `Assigned student ${userName(u)} to section ${sectionLabel(sec)}`
+					: `Updated assignment for student ${userName(u)}: no section`,
+				details: { role: "student" },
+			});
 			showToast(`${u.firstname} assigned to ${lbl || "program"}.`);
 		} else if (u.role === "professor") {
 			const ids = [
@@ -1876,9 +2199,16 @@ document.addEventListener("DOMContentLoaded", () => {
 				.map((id) => state.courses.find((c) => c.id === id)?.code)
 				.filter(Boolean)
 				.join(", ");
-			logActivity(
-				`Assigned ${u.firstname} ${u.lastname} → courses: ${codes || "none"}`,
-			);
+			logActivity({
+				entityType: "user",
+				action: "assigned",
+				entityId: u.id,
+				entityLabel: userName(u),
+				description: codes
+					? `Assigned professor ${userName(u)} to courses: ${codes}`
+					: `Updated course assignments for professor ${userName(u)}: none`,
+				details: { role: "professor" },
+			});
 			showToast(`${u.firstname} assigned to ${ids.length} course(s).`);
 		}
 
@@ -1900,10 +2230,6 @@ document.addEventListener("DOMContentLoaded", () => {
 	// role: "student" | "professor" (anything else falls back to "student")
 	function setUserView(role) {
 		userRoleView = role === "professor" ? "professor" : "student";
-		const title = document.getElementById("usersPageTitle");
-		if (title)
-			title.textContent =
-				userRoleView === "professor" ? "Professors" : "Students";
 		const addBtn = document.getElementById("openAddUserBtn");
 		if (addBtn)
 			addBtn.innerHTML = `<i class="fas fa-plus"></i> Add ${userRoleView === "professor" ? "Professor" : "Student"
@@ -2024,7 +2350,18 @@ document.addEventListener("DOMContentLoaded", () => {
 			};
 
 			state.announcements.unshift(ann);
-			logActivity(`Posted announcement: "${ann.title}"`);
+			logActivity({
+				entityType: "announcement",
+				action: "created",
+				entityId: ann.id,
+				entityLabel: ann.title,
+				description: `Posted announcement "${ann.title}"`,
+				details: {
+					type: ann.type,
+					audience: ann.audience,
+					scheduledDate: ann.scheduledDate,
+				},
+			});
 
 			const successMsg = scheduledDate
 				? `Announcement scheduled for ${scheduledDate}.`
@@ -2135,9 +2472,41 @@ document.addEventListener("DOMContentLoaded", () => {
 		openModal("confirmModal");
 	}
 
+	// Name + description of the item about to be deleted (null if not found)
+	function describeForDelete(type, id) {
+		if (type === "program") {
+			const p = state.programs.find((x) => x.id === id);
+			return p && { label: p.code, text: `program ${p.code} (${p.name})` };
+		}
+		if (type === "section") {
+			const s = state.sections.find((x) => x.id === id);
+			return s && { label: sectionLabel(s), text: `section ${sectionLabel(s)}` };
+		}
+		if (type === "course") {
+			const c = state.courses.find((x) => x.id === id);
+			return c && { label: c.code, text: `course ${c.code} (${c.name})` };
+		}
+		if (type === "user") {
+			const u = state.users.find((x) => x.id === id);
+			return (
+				u && {
+					label: userName(u),
+					text: `${u.role} account: ${userName(u)}`,
+					details: { role: u.role, studentId: u.studentId },
+				}
+			);
+		}
+		if (type === "announcement") {
+			const a = state.announcements.find((x) => x.id === id);
+			return a && { label: a.title, text: `announcement "${a.title}"` };
+		}
+		return null;
+	}
+
 	document.getElementById("confirmDeleteBtn")?.addEventListener("click", () => {
 		if (!pendingDelete) return;
 		const { type, id } = pendingDelete;
+		const deleted = describeForDelete(type, id); // read the name before it is gone
 		const map = {
 			program: () => {
 				state.programs = state.programs.filter((p) => p.id !== id);
@@ -2162,7 +2531,15 @@ document.addEventListener("DOMContentLoaded", () => {
 			},
 		};
 		map[type]?.();
-		logActivity(`Deleted ${type} (id: ${id})`);
+		if (deleted)
+			logActivity({
+				entityType: type,
+				action: "deleted",
+				entityId: id,
+				entityLabel: deleted.label,
+				description: `Deleted ${deleted.text}`,
+				details: deleted.details,
+			});
 		showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted.`);
 		updateStats();
 		persistState();
@@ -2614,7 +2991,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		const yearLabel = yearLabels[(parseInt(s.year) || 1) - 1] + " Year";
 
 		// Update header
-		setText("sectionDetailsTitle", label);
+		sectionCrumbLabel = label; // shown as the last breadcrumb
 		setText(
 			"sectionDetailsSub",
 			`${prog?.name || "Unknown Program"} · ${yearLabel} · Capacity: ${s.capacity}`,
@@ -2723,6 +3100,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			b.classList.toggle("active", b.dataset.target === target),
 		);
 		pages.forEach((p) => p.classList.toggle("active", p.id === target));
+		updateBreadcrumb(target);
 		window.scrollTo({ top: 0, behavior: "smooth" });
 	}
 
@@ -2894,6 +3272,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	renderPrograms();
 	renderSections();
 	renderAnnouncements();
+	renderRecentPreview();
 	syncProgramDropdowns();
 	syncCourseProgramChecklist([]);
 	updateStats();
@@ -2938,7 +3317,12 @@ document.addEventListener("DOMContentLoaded", () => {
 					persistState();
 					renderUsers();
 					updateStats();
-					logActivity(`CSV import: ${result.count} user(s) added.`);
+					logActivity({
+						entityType: "user",
+						action: "imported",
+						description: `Imported ${result.count} user(s) from CSV`,
+						details: { count: result.count },
+					});
 				} else {
 					showBulkMsg(
 						msgEl,
@@ -3086,7 +3470,12 @@ document.addEventListener("DOMContentLoaded", () => {
 				persistState();
 				renderUsers();
 				updateStats();
-				logActivity(`Generated ${added} student(s) for ${label}.`);
+				logActivity({
+					entityType: "user",
+					action: "generated",
+					description: `Generated ${added} student(s) for ${label}`,
+					details: { count: added, section: label },
+				});
 				showBulkMsg(
 					msgEl,
 					`✓ Generated ${added} student(s) for ${label}.`,
