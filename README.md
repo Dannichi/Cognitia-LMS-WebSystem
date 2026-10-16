@@ -138,5 +138,7 @@ CREATE TABLE IF NOT EXISTS app_state (
 ) ENGINE=InnoDB;
 ```
 - Then bash this in terminal
-```Node.js npm init-y
-```                 
+  
+```bash
+npm init -y
+```
