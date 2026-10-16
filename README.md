@@ -1,6 +1,6 @@
 # How to Set-Up the local storage database
 
-> A school Learning Management System (LMS) that helps students manage their workloads and helps professors manage their classes, all under the control of an admin.
+> This branch implements a backend and database using SQL integration.
 
 ![Status](https://img.shields.io/badge/status-in%20development-orange)
 ![Type](https://img.shields.io/badge/type-LMS%20web%20app-blue)
