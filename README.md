@@ -139,6 +139,6 @@ CREATE TABLE IF NOT EXISTS app_state (
 ```
 - Then bash this in terminal
 ```Node.js
-npm 
+npm init-y
 
 ```                 
