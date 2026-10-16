@@ -138,6 +138,14 @@ CREATE TABLE IF NOT EXISTS app_state (
 ) ENGINE=InnoDB;
 ```
 - Then bash this in terminal
-  
-Run the `npm init -y` command in Node.js to start.
+```bash
+npm init -y
+npm npm install express mysql2 cors bcryptjs
+```
 
+- After the modules are in the file the run this last in terminal
+```bash
+node cognitia/js/server.js
+```
+
+You are all set up Congrats
