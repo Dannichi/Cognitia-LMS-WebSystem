@@ -1,0 +1,102 @@
+/* Dark theme tokens and component states. This file is loaded after the base theme. */
+html[data-theme="dark"] {
+	color-scheme: dark;
+
+	/* Keep Cognitia's established brand hues from styles/admin.css. */
+	--brand: #8b1a1a;
+	--brand-dark: #701515;
+	--brand-xdark: #5a1010;
+	--brand-light: rgba(139, 26, 26, 0.16);
+	--brand-mid: rgba(139, 26, 26, 0.34);
+	--brand-glow: rgba(139, 26, 26, 0.24);
+
+	/* Deep surfaces, visible borders, and high-contrast text. */
+	--bg: #080808;
+	--surface: #111111;
+	--surface-2: #181818;
+	--surface-3: #222222;
+	--border: #292929;
+	--border-strong: #383838;
+	--divider: #292929;
+
+	--text-1: #f5f5f5;
+	--text-2: #d4d4d4;
+	--text-3: #a3a3a3;
+	--text-4: #888888;
+	--text-5: #666666;
+	--text-6: #ffffff;
+
+	--sidebar-bg: var(--brand-xdark);
+	--sidebar-top: var(--brand-dark);
+
+	--green-bg: #12301f;
+	--green-fg: #8de0ad;
+	--blue-bg: #14263f;
+	--blue-fg: #a9c7f4;
+	--amber-bg: #3a2c0c;
+	--amber-fg: #f2c96b;
+	--red-bg: #3a1616;
+	--red-fg: #ff8f8f;
+	--gray-bg: #222222;
+	--gray-fg: #c4c4c4;
+	--purple-bg: #271f45;
+	--purple-fg: #c5b8ff;
+
+	--sh-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+	--sh-sm: 0 1px 3px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.35);
+	--sh-md: 0 4px 12px rgba(0, 0, 0, 0.55), 0 1px 3px rgba(0, 0, 0, 0.4);
+	--sh-lg: 0 8px 28px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.45);
+	--sh-xl: 0 20px 56px rgba(0, 0, 0, 0.65), 0 4px 12px rgba(0, 0, 0, 0.5);
+	--sh-brand: 0 4px 14px rgba(139, 26, 26, 0.32);
+	--ring: 0 0 0 3px rgba(139, 26, 26, 0.42);
+	--ring-offset: 0 0 0 2px var(--bg), 0 0 0 4px rgba(139, 26, 26, 0.5);
+}
+
+/* Keep the admin statistic cards clean in dark mode while retaining the light theme accent. */
+html[data-theme="dark"] body[data-role="admin"] #dashboard .stat-card::after {
+	display: none;
+}
+
+/* Correct the remaining legacy light surfaces without changing the theme state. */
+html[data-theme="dark"] .input-wrap:focus-within,
+html[data-theme="dark"] .ov-student-row,
+html[data-theme="dark"] .ov-item,
+html[data-theme="dark"] .submissions-table-wrap,
+html[data-theme="dark"] .q-points-input,
+html[data-theme="dark"] .option-row,
+html[data-theme="dark"] body[data-role="admin"] .form-group input.error {
+	background: var(--surface-2);
+}
+html[data-theme="dark"] .icon-btn.view:hover {
+	background: var(--green-bg);
+}
+html[data-theme="dark"] input,
+html[data-theme="dark"] select,
+html[data-theme="dark"] textarea {
+	color-scheme: dark;
+}
+html[data-theme="dark"] ::placeholder {
+	color: var(--text-4);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	html.theme-anim,
+	html.theme-anim *,
+	html.theme-anim *::before,
+	html.theme-anim *::after {
+		transition:
+			background-color 0.25s ease,
+			border-color 0.25s ease,
+			color 0.25s ease !important;
+	}
+}
+
+.topbar-btn.theme-toggle .fa-sun {
+	display: none;
+}
+html[data-theme="dark"] .topbar-btn.theme-toggle .fa-moon {
+	display: none;
+}
+html[data-theme="dark"] .topbar-btn.theme-toggle .fa-sun {
+	display: inline-block;
+}
