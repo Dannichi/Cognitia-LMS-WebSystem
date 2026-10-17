@@ -289,10 +289,10 @@ document.addEventListener("DOMContentLoaded", () => {
 		const svgNS = "http://www.w3.org/2000/svg";
 		const svg = document.createElementNS(svgNS, "svg");
 		svg.setAttribute("class", "academic-enrollment-chart");
-		svg.setAttribute("viewBox", "0 0 720 220");
+		svg.setAttribute("viewBox", "0 0 720 260");
 		svg.setAttribute("role", "img");
 		svg.setAttribute("aria-label", `Student enrollment by program. ${rows.map(([label, count]) => `${label}: ${count}`).join("; ")}`);
-		const plot = { left: 48, right: 710, top: 14, bottom: 178 };
+		const plot = { left: 56, right: 708, top: 22, bottom: 210 };
 		const maxValue = Math.max(...rows.map(([, count]) => count));
 		const axisMax = Math.max(4, Math.ceil(maxValue / 4) * 4);
 		const yFor = (value) => plot.bottom - (value / axisMax) * (plot.bottom - plot.top);
@@ -307,7 +307,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			line.setAttribute("class", "academic-chart-gridline");
 			svg.append(line);
 			const tickLabel = document.createElementNS(svgNS, "text");
-			tickLabel.setAttribute("x", plot.left - 9);
+			tickLabel.setAttribute("x", plot.left - 10);
 			tickLabel.setAttribute("y", y + 4);
 			tickLabel.setAttribute("text-anchor", "end");
 			tickLabel.setAttribute("class", "academic-chart-tick");
@@ -315,7 +315,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			svg.append(tickLabel);
 		}
 		const slot = (plot.right - plot.left) / rows.length;
-		const barWidth = Math.min(76, slot * 0.58);
+		const barWidth = Math.min(82, slot * 0.62);
 		rows.forEach(([label, count], index) => {
 			const x = plot.left + slot * index + (slot - barWidth) / 2;
 			const y = yFor(count);
@@ -332,14 +332,14 @@ document.addEventListener("DOMContentLoaded", () => {
 			svg.append(bar);
 			const value = document.createElementNS(svgNS, "text");
 			value.setAttribute("x", x + barWidth / 2);
-			value.setAttribute("y", Math.max(y - 6, 10));
+			value.setAttribute("y", Math.max(y - 9, 14));
 			value.setAttribute("text-anchor", "middle");
 			value.setAttribute("class", "academic-chart-value");
 			value.textContent = count.toLocaleString();
 			svg.append(value);
 			const category = document.createElementNS(svgNS, "text");
 			category.setAttribute("x", x + barWidth / 2);
-			category.setAttribute("y", 200);
+			category.setAttribute("y", 242);
 			category.setAttribute("text-anchor", "middle");
 			category.setAttribute("class", "academic-chart-category");
 			category.textContent = label.length > 19 ? `${label.slice(0, 18)}…` : label;

@@ -723,7 +723,12 @@ textarea {
 	display: block;
 	padding: 22px 28px;
 	background: var(--brand);
-	background-image: none;
+	background-image: linear-gradient(
+		110deg,
+		var(--brand-xdark) 0%,
+		var(--brand-dark) 52%,
+		var(--brand) 100%
+	);
 	border: 1px solid var(--brand-dark);
 	border-radius: var(--r-lg);
 	box-shadow: 0 2px 8px var(--brand-glow);
@@ -5457,30 +5462,32 @@ body[data-role="admin"] #dashboard .stat-card:first-child .stat-value {
 	font-size: 12px;
 }
 .academic-overview-chart {
-	min-height: 220px;
+	width: 100%;
+	min-width: 0;
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 }
 .academic-enrollment-chart {
 	display: block;
 	width: 100%;
-	height: 220px;
+	height: auto;
+	max-width: 100%;
 	overflow: visible;
 }
 .academic-chart-gridline {
 	stroke: var(--divider);
-	stroke-width: 1;
+	stroke-width: 1.25;
 }
 .academic-chart-tick,
 .academic-chart-category {
 	fill: var(--text-3);
 	font-family: inherit;
-	font-size: 10px;
+	font-size: 12px;
 }
 .academic-chart-value {
 	fill: var(--text-1);
 	font-family: inherit;
-	font-size: 10px;
+	font-size: 13px;
 	font-weight: 600;
 }
 .academic-chart-bar {
@@ -5558,9 +5565,6 @@ body[data-role="admin"] #dashboard .dashboard-activity-card .activity-list {
 	.academic-overview-heading {
 		align-items: flex-start;
 	}
-	.academic-enrollment-chart {
-		height: 200px;
-	}
 }
 
 /* Fit the admin dashboard to a standard laptop viewport without shrinking calendar dates into slivers. */
@@ -5634,9 +5638,6 @@ body[data-role="admin"] #dashboard .dashboard-activity-card .activity-list {
 	}
 	#dashboard .academic-overview-chart {
 		min-height: 0;
-	}
-	#dashboard .academic-enrollment-chart {
-		height: 180px;
 	}
 	#dashboard .calendar-header {
 		align-items: center;
