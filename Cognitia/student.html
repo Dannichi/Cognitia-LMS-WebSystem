@@ -5,13 +5,115 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Cognitia — Student</title>
 		<link rel="stylesheet" href="styles/student.css" />
+		<link rel="stylesheet" href="styles/dark-mode.css" />
+		<script src="js/theme.js"></script>
 		<script src="js/student-id.js"></script>
-		<script src="js/session.js"></script>
 		<link rel="icon" type="image/png" href="assets/icons/Logo-Icon-Red.png" />
 		<link
 			rel="stylesheet"
 			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
 		/>
+		<style>
+			/* Sidebar log out button (matches the admin layout) */
+			.sidebar-bottom {
+				display: flex;
+				align-items: center;
+			}
+			.sidebar-bottom .sidebar-profile-row {
+				display: flex;
+				flex-direction: row;
+				flex-wrap: nowrap;
+				align-items: center;
+				justify-content: space-between;
+				gap: 8px;
+				width: 100%;
+			}
+			.sidebar-bottom .user-info {
+				flex: 1 1 auto;
+				width: auto;
+				min-width: 0;
+			}
+			.sidebar-bottom .logout-btn {
+				flex-shrink: 0;
+				margin-left: auto;
+				width: 36px;
+				height: 36px;
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				border: 0;
+				border-radius: 10px;
+				background: rgba(255, 255, 255, 0.12);
+				color: #fff;
+				cursor: pointer;
+				transition:
+					background 0.25s ease,
+					transform 0.25s ease;
+			}
+			.sidebar-bottom .logout-btn:hover,
+			.sidebar-bottom .logout-btn:focus-visible {
+				background: rgba(255, 255, 255, 0.24);
+				transform: translateY(-1px);
+			}
+			/* Clickable dashboard stat cards: hover arrow + smooth transitions (same as admin) */
+			.stat-card[data-target] {
+				position: relative;
+				cursor: pointer;
+				transition:
+					transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+					box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+			}
+			.stat-card[data-target] .stat-go {
+				position: absolute;
+				top: 14px;
+				right: 16px;
+				font-size: 12px;
+				line-height: 1;
+				opacity: 0;
+				transform: translate(-6px, 6px);
+				transition:
+					opacity 0.4s ease,
+					transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+				pointer-events: none;
+			}
+			.stat-card[data-target]:hover,
+			.stat-card[data-target]:focus-visible {
+				transform: translateY(-2px);
+				box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+			}
+			.stat-card[data-target]:hover .stat-go,
+			.stat-card[data-target]:focus-visible .stat-go {
+				opacity: 0.55;
+				transform: translate(0, 0);
+			}
+			.stat-card[data-target]:active {
+				transform: translateY(0) scale(0.985);
+				transition-duration: 0.15s;
+			}
+			/* Soft fade-in when a page opens (card click or sidebar) */
+			.page.active {
+				animation: pageFadeIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+			}
+			@keyframes pageFadeIn {
+				from {
+					opacity: 0;
+					transform: translateY(10px);
+				}
+				to {
+					opacity: 1;
+					transform: none;
+				}
+			}
+			@media (prefers-reduced-motion: reduce) {
+				.stat-card[data-target],
+				.stat-card[data-target] .stat-go {
+					transition: none;
+				}
+				.page.active {
+					animation: none;
+				}
+			}
+		</style>
 	</head>
 	<body data-role="student">
 		<header class="mobile-header" id="mobileHeader">
@@ -96,27 +198,109 @@
 					</ul>
 				</nav>
 				<div class="sidebar-bottom">
-					<div class="user-info">
-						<div class="avatar" id="sidebarAvatar">ST</div>
-						<div class="user-details">
-							<span class="user-name" id="sidebarName">Student</span>
-							<span class="user-role">Student Account</span>
+					<div class="sidebar-profile-row">
+						<div class="user-info">
+							<div class="avatar" id="sidebarAvatar">ST</div>
+							<div class="user-details">
+								<span class="user-name" id="sidebarName">Student</span>
+								<span class="user-role">Student Account</span>
+							</div>
 						</div>
+						<button
+							class="logout-btn"
+							id="sidebarLogoutBtn"
+							type="button"
+							aria-label="Log out"
+							title="Log out"
+						>
+							<i class="fas fa-sign-out-alt"></i>
+						</button>
 					</div>
 				</div>
 			</aside>
 
+			<!-- ─── TOP BAR ─── -->
+			<header class="topbar" id="topbar">
+				<h1 class="topbar-title">Student – Dashboard</h1>
+				<div class="topbar-actions">
+					<div class="topbar-dd" id="notifDropdown">
+						<button
+							class="topbar-btn"
+							id="notifBtn"
+							type="button"
+							aria-label="Notifications"
+							aria-haspopup="true"
+							aria-expanded="false"
+							aria-controls="notifMenu"
+						>
+							<i class="fas fa-bell"></i>
+						</button>
+						<div class="topbar-menu topbar-menu-notif" id="notifMenu" hidden>
+							<div class="topbar-menu-head">Latest announcements</div>
+							<ul class="notif-list" id="notifList"></ul>
+							<button class="topbar-menu-foot" id="notifViewAll" type="button">
+								View all announcements
+							</button>
+						</div>
+					</div>
+					<button class="topbar-btn theme-toggle" id="themeToggle" type="button"
+						aria-label="Switch to dark mode" aria-pressed="false" title="Dark mode">
+						<i class="fas fa-moon" aria-hidden="true"></i>
+						<i class="fas fa-sun" aria-hidden="true"></i>
+					</button>
+					<div class="topbar-dd" id="profileDropdown">
+						<button
+							class="topbar-avatar"
+							id="profileMenuBtn"
+							type="button"
+							aria-label="Account menu"
+							aria-haspopup="true"
+							aria-expanded="false"
+							aria-controls="profileMenu"
+						>
+							<span id="topbarAvatar">ST</span>
+						</button>
+						<div class="topbar-menu topbar-menu-profile" id="profileMenu" hidden>
+							<div class="topbar-menu-user">
+								<strong id="topbarMenuName">Student</strong>
+							</div>
+							<button class="topbar-menu-item" id="topbarAccountBtn" type="button">
+								<i class="fas fa-user-circle"></i> Account
+							</button>
+							<button class="topbar-menu-item danger" id="topbarLogoutBtn" type="button">
+								<i class="fas fa-sign-out-alt"></i> Sign out
+							</button>
+						</div>
+					</div>
+				</div>
+			</header>
+
 			<main class="main" id="mainContent">
 				<!-- DASHBOARD -->
 				<section id="dashboard" class="page active">
-					<div class="page-header">
-						<div>
-							<h2>Dashboard</h2>
-							<p class="page-sub" id="studentWelcome">Welcome back!</p>
+					<div class="page-header greeting-header">
+						<div class="greeting">
+							<h2 class="greeting-title" id="studentWelcome">Welcome back!</h2>
+							<p class="greeting-sub">
+								Here's an overview of your courses and progress.
+							</p>
 						</div>
+						<img
+							class="greeting-logo"
+							src="assets/icons/Logo-Icon-White.png"
+							alt=""
+							aria-hidden="true"
+						/>
 					</div>
 					<div class="stat-grid">
-						<div class="stat-card">
+						<div
+							class="stat-card"
+							role="link"
+							tabindex="0"
+							data-target="courses"
+							title="View my courses"
+						>
+							<span class="stat-go" aria-hidden="true"><i class="fas fa-arrow-up-right-from-square"></i></span>
 							<div class="stat-top">
 								<div class="stat-icon"><i class="fas fa-book-open"></i></div>
 								<span class="stat-label">My Courses</span>
@@ -124,7 +308,14 @@
 							<p class="stat-value" id="stat-courses">0</p>
 							<p class="stat-hint">Enrolled this term</p>
 						</div>
-						<div class="stat-card">
+						<div
+							class="stat-card"
+							role="link"
+							tabindex="0"
+							data-target="assignments"
+							title="View assignments"
+						>
+							<span class="stat-go" aria-hidden="true"><i class="fas fa-arrow-up-right-from-square"></i></span>
 							<div class="stat-top">
 								<div class="stat-icon"><i class="fas fa-tasks"></i></div>
 								<span class="stat-label">Pending</span>
@@ -132,7 +323,14 @@
 							<p class="stat-value" id="stat-pending">0</p>
 							<p class="stat-hint">Assignments due</p>
 						</div>
-						<div class="stat-card">
+						<div
+							class="stat-card"
+							role="link"
+							tabindex="0"
+							data-target="quizzes"
+							title="View quizzes"
+						>
+							<span class="stat-go" aria-hidden="true"><i class="fas fa-arrow-up-right-from-square"></i></span>
 							<div class="stat-top">
 								<div class="stat-icon">
 									<i class="fas fa-question-circle"></i>
@@ -142,7 +340,14 @@
 							<p class="stat-value" id="stat-quizzes">0</p>
 							<p class="stat-hint">Available to take</p>
 						</div>
-						<div class="stat-card">
+						<div
+							class="stat-card"
+							role="link"
+							tabindex="0"
+							data-target="grades"
+							title="View my grades"
+						>
+							<span class="stat-go" aria-hidden="true"><i class="fas fa-arrow-up-right-from-square"></i></span>
 							<div class="stat-top">
 								<div class="stat-icon"><i class="fas fa-star"></i></div>
 								<span class="stat-label">Avg. Grade</span>
@@ -159,7 +364,7 @@
 							</h3>
 							<div id="upcoming-deadlines" class="upcoming-list">
 								<p class="empty-state" style="padding: 16px 0">
-									No upcoming deadlines. You're all caught up! 🎉
+									No upcoming deadlines. You're all caught up!
 								</p>
 							</div>
 						</div>
@@ -747,7 +952,7 @@
 				</div>
 				<div class="modal-body" style="text-align: center; padding: 24px 22px">
 					<div style="font-size: 48px; margin-bottom: 12px" id="quizResultIcon">
-						🎉
+						<i class="fas fa-trophy" style="color: var(--brand)"></i>
 					</div>
 					<p
 						style="font-size: 28px; font-weight: 700; color: var(--text-1)"
@@ -783,18 +988,10 @@
 					</button>
 				</div>
 				<div class="modal-body">
-					<p
-						id="quizReviewScore"
-						style="
-							font-size: 15px;
-							font-weight: 600;
-							color: var(--brand);
-							margin-bottom: 16px;
-						"
-					></p>
+					<p id="quizReviewScore" style="font-size:15px;font-weight:600;color:var(--brand);margin-bottom:16px;"></p>
 					<div id="quizReviewBody"></div>
 				</div>
-				<div class="modal-footer" style="justify-content: center">
+				<div class="modal-footer" style="justify-content:center;">
 					<button class="btn-primary modal-close">Close</button>
 				</div>
 			</div>
@@ -806,6 +1003,31 @@
 		</div>
 
 		<script src="js/student.js"></script>
+		<script src="js/topbar.js"></script>
 		<script src="js/student-calendar.js"></script>
+		<script>
+			// Sidebar Log out reuses the existing Account-page sign-out handler
+			document
+				.getElementById("sidebarLogoutBtn")
+				?.addEventListener("click", () =>
+					document.getElementById("profileLogoutBtn")?.click(),
+				);
+				// Dashboard stat cards open their page (reuses the sidebar navigation)
+				document.querySelectorAll(".stat-card[data-target]").forEach((card) => {
+					const go = () =>
+						document
+							.querySelector(
+								'.navbar a[data-target="' + card.dataset.target + '"]',
+							)
+							?.click();
+					card.addEventListener("click", go);
+					card.addEventListener("keydown", (e) => {
+						if (e.key === "Enter" || e.key === " ") {
+							e.preventDefault();
+							go();
+						}
+					});
+				});
+		</script>
 	</body>
 </html>
