@@ -5,11 +5,114 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Cognitia — Professor</title>
 		<link rel="stylesheet" href="styles/professor.css" />
+		<link rel="stylesheet" href="styles/dark-mode.css" />
+		<script src="js/theme.js"></script>
 		<link rel="icon" type="image/png" href="assets/icons/Logo-Icon-Red.png" />
 		<link
 			rel="stylesheet"
 			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
 		/>
+		<style>
+			/* Sidebar log out button (matches the admin layout) */
+			.sidebar-bottom {
+				display: flex;
+				align-items: center;
+			}
+			.sidebar-bottom .sidebar-profile-row {
+				display: flex;
+				flex-direction: row;
+				flex-wrap: nowrap;
+				align-items: center;
+				justify-content: space-between;
+				gap: 8px;
+				width: 100%;
+			}
+			.sidebar-bottom .user-info {
+				flex: 1 1 auto;
+				width: auto;
+				min-width: 0;
+			}
+			.sidebar-bottom .logout-btn {
+				flex-shrink: 0;
+				margin-left: auto;
+				width: 36px;
+				height: 36px;
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				border: 0;
+				border-radius: 10px;
+				background: rgba(255, 255, 255, 0.12);
+				color: #fff;
+				cursor: pointer;
+				transition:
+					background 0.25s ease,
+					transform 0.25s ease;
+			}
+			.sidebar-bottom .logout-btn:hover,
+			.sidebar-bottom .logout-btn:focus-visible {
+				background: rgba(255, 255, 255, 0.24);
+				transform: translateY(-1px);
+			}
+			/* Clickable dashboard stat cards: hover arrow + smooth transitions (same as admin) */
+			.stat-card[data-target] {
+				position: relative;
+				cursor: pointer;
+				transition:
+					transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+					box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+			}
+			.stat-card[data-target] .stat-go {
+				position: absolute;
+				top: 14px;
+				right: 16px;
+				font-size: 12px;
+				line-height: 1;
+				opacity: 0;
+				transform: translate(-6px, 6px);
+				transition:
+					opacity 0.4s ease,
+					transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+				pointer-events: none;
+			}
+			.stat-card[data-target]:hover,
+			.stat-card[data-target]:focus-visible {
+				transform: translateY(-2px);
+				box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+			}
+			.stat-card[data-target]:hover .stat-go,
+			.stat-card[data-target]:focus-visible .stat-go {
+				opacity: 0.55;
+				transform: translate(0, 0);
+			}
+			.stat-card[data-target]:active {
+				transform: translateY(0) scale(0.985);
+				transition-duration: 0.15s;
+			}
+			/* Soft fade-in when a page opens (card click or sidebar) */
+			.page.active {
+				animation: pageFadeIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+			}
+			@keyframes pageFadeIn {
+				from {
+					opacity: 0;
+					transform: translateY(10px);
+				}
+				to {
+					opacity: 1;
+					transform: none;
+				}
+			}
+			@media (prefers-reduced-motion: reduce) {
+				.stat-card[data-target],
+				.stat-card[data-target] .stat-go {
+					transition: none;
+				}
+				.page.active {
+					animation: none;
+				}
+			}
+		</style>
 	</head>
 	<body data-role="professor">
 		<header class="mobile-header" id="mobileHeader">
@@ -94,27 +197,109 @@
 					</ul>
 				</nav>
 				<div class="sidebar-bottom">
-					<div class="user-info">
-						<div class="avatar" id="sidebarAvatar">PF</div>
-						<div class="user-details">
-							<span class="user-name" id="sidebarName">Professor</span>
-							<span class="user-role">Faculty Member</span>
+					<div class="sidebar-profile-row">
+						<div class="user-info">
+							<div class="avatar" id="sidebarAvatar">PF</div>
+							<div class="user-details">
+								<span class="user-name" id="sidebarName">Professor</span>
+								<span class="user-role">Faculty Member</span>
+							</div>
 						</div>
+						<button
+							class="logout-btn"
+							id="sidebarLogoutBtn"
+							type="button"
+							aria-label="Log out"
+							title="Log out"
+						>
+							<i class="fas fa-sign-out-alt"></i>
+						</button>
 					</div>
 				</div>
 			</aside>
 
+			<!-- ─── TOP BAR ─── -->
+			<header class="topbar" id="topbar">
+				<h1 class="topbar-title">Professor – Dashboard</h1>
+				<div class="topbar-actions">
+					<div class="topbar-dd" id="notifDropdown">
+						<button
+							class="topbar-btn"
+							id="notifBtn"
+							type="button"
+							aria-label="Notifications"
+							aria-haspopup="true"
+							aria-expanded="false"
+							aria-controls="notifMenu"
+						>
+							<i class="fas fa-bell"></i>
+						</button>
+						<div class="topbar-menu topbar-menu-notif" id="notifMenu" hidden>
+							<div class="topbar-menu-head">Latest announcements</div>
+							<ul class="notif-list" id="notifList"></ul>
+							<button class="topbar-menu-foot" id="notifViewAll" type="button">
+								View all announcements
+							</button>
+						</div>
+					</div>
+					<button class="topbar-btn theme-toggle" id="themeToggle" type="button"
+						aria-label="Switch to dark mode" aria-pressed="false" title="Dark mode">
+						<i class="fas fa-moon" aria-hidden="true"></i>
+						<i class="fas fa-sun" aria-hidden="true"></i>
+					</button>
+					<div class="topbar-dd" id="profileDropdown">
+						<button
+							class="topbar-avatar"
+							id="profileMenuBtn"
+							type="button"
+							aria-label="Account menu"
+							aria-haspopup="true"
+							aria-expanded="false"
+							aria-controls="profileMenu"
+						>
+							<span id="topbarAvatar">PF</span>
+						</button>
+						<div class="topbar-menu topbar-menu-profile" id="profileMenu" hidden>
+							<div class="topbar-menu-user">
+								<strong id="topbarMenuName">Professor</strong>
+							</div>
+							<button class="topbar-menu-item" id="topbarAccountBtn" type="button">
+								<i class="fas fa-user-circle"></i> Account
+							</button>
+							<button class="topbar-menu-item danger" id="topbarLogoutBtn" type="button">
+								<i class="fas fa-sign-out-alt"></i> Sign out
+							</button>
+						</div>
+					</div>
+				</div>
+			</header>
+
 			<main class="main" id="mainContent">
 				<!-- DASHBOARD -->
 				<section id="dashboard" class="page active">
-					<div class="page-header">
-						<div>
-							<h2>Dashboard</h2>
-							<p class="page-sub" id="profWelcome">Welcome back!</p>
+					<div class="page-header greeting-header">
+						<div class="greeting">
+							<h2 class="greeting-title" id="profWelcome">Welcome back!</h2>
+							<p class="greeting-sub">
+								Here's an overview of your courses and students.
+							</p>
 						</div>
+						<img
+							class="greeting-logo"
+							src="assets/icons/Logo-Icon-White.png"
+							alt=""
+							aria-hidden="true"
+						/>
 					</div>
 					<div class="stat-grid">
-						<div class="stat-card">
+						<div
+							class="stat-card"
+							role="link"
+							tabindex="0"
+							data-target="courses"
+							title="View courses"
+						>
+							<span class="stat-go" aria-hidden="true"><i class="fas fa-arrow-up-right-from-square"></i></span>
 							<div class="stat-top">
 								<div class="stat-icon"><i class="fas fa-book-open"></i></div>
 								<span class="stat-label">Courses</span>
@@ -122,7 +307,14 @@
 							<p class="stat-value" id="stat-courses">0</p>
 							<p class="stat-hint">Assigned courses</p>
 						</div>
-						<div class="stat-card">
+						<div
+							class="stat-card"
+							role="link"
+							tabindex="0"
+							data-target="grades"
+							title="View students' grades"
+						>
+							<span class="stat-go" aria-hidden="true"><i class="fas fa-arrow-up-right-from-square"></i></span>
 							<div class="stat-top">
 								<div class="stat-icon">
 									<i class="fas fa-user-graduate"></i>
@@ -132,7 +324,14 @@
 							<p class="stat-value" id="stat-students">0</p>
 							<p class="stat-hint">Across all sections</p>
 						</div>
-						<div class="stat-card">
+						<div
+							class="stat-card"
+							role="link"
+							tabindex="0"
+							data-target="assignments"
+							title="View assignments"
+						>
+							<span class="stat-go" aria-hidden="true"><i class="fas fa-arrow-up-right-from-square"></i></span>
 							<div class="stat-top">
 								<div class="stat-icon"><i class="fas fa-clock"></i></div>
 								<span class="stat-label">Pending</span>
@@ -140,7 +339,14 @@
 							<p class="stat-value" id="stat-pending">0</p>
 							<p class="stat-hint">Ungraded submissions</p>
 						</div>
-						<div class="stat-card">
+						<div
+							class="stat-card"
+							role="link"
+							tabindex="0"
+							data-target="quizzes"
+							title="View quizzes"
+						>
+							<span class="stat-go" aria-hidden="true"><i class="fas fa-arrow-up-right-from-square"></i></span>
 							<div class="stat-top">
 								<div class="stat-icon"><i class="fas fa-file-alt"></i></div>
 								<span class="stat-label">Quiz Attempts</span>
@@ -1298,109 +1504,41 @@
 						<i class="fas fa-times"></i>
 					</button>
 				</div>
-				<div
-					class="modal-body"
-					style="
-						padding: 20px 24px;
-						display: flex;
-						flex-direction: column;
-						gap: 16px;
-						max-height: 78vh;
-						overflow-y: auto;
-					"
-				>
+				<div class="modal-body" style="padding:20px 24px;display:flex;flex-direction:column;gap:16px;max-height:78vh;overflow-y:auto;">
 					<!-- Student info row -->
-					<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px">
-						<div class="form-group" style="margin: 0">
+					<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+						<div class="form-group" style="margin:0;">
 							<label>Student</label>
 							<input type="text" id="essay-grade-student" disabled />
 						</div>
-						<div class="form-group" style="margin: 0">
+						<div class="form-group" style="margin:0;">
 							<label>Progress</label>
 							<input type="text" id="essay-grade-qnum" disabled />
 						</div>
 					</div>
 					<!-- Question -->
-					<div class="form-group" style="margin: 0">
+					<div class="form-group" style="margin:0;">
 						<label>Question</label>
-						<p
-							id="essay-grade-question"
-							style="
-								font-size: 14px;
-								margin: 0;
-								padding: 10px 14px;
-								background: var(--surface-2, #f8fafc);
-								border: 1px solid var(--border-1, #e2e8f0);
-								border-radius: 6px;
-								line-height: 1.7;
-								color: var(--text-1);
-							"
-						></p>
-						<p
-							id="essay-grade-rubric"
-							style="
-								font-size: 12px;
-								color: var(--text-4);
-								font-style: italic;
-								margin: 6px 0 0;
-								display: none;
-							"
-						></p>
+						<p id="essay-grade-question" style="font-size:14px;margin:0;padding:10px 14px;background:var(--surface-2,#f8fafc);border:1px solid var(--border-1,#e2e8f0);border-radius:6px;line-height:1.7;color:var(--text-1);"></p>
+						<p id="essay-grade-rubric" style="font-size:12px;color:var(--text-4);font-style:italic;margin:6px 0 0;display:none;"></p>
 					</div>
 					<!-- Student's Answer -->
-					<div class="form-group" style="margin: 0">
+					<div class="form-group" style="margin:0;">
 						<label>Student's Answer</label>
-						<p
-							id="essay-grade-answer"
-							style="
-								font-size: 13.5px;
-								margin: 0;
-								padding: 14px;
-								background: var(--surface-2, #f8fafc);
-								border: 1px solid var(--border-1, #e2e8f0);
-								border-radius: 6px;
-								min-height: 140px;
-								max-height: 280px;
-								overflow-y: auto;
-								line-height: 1.75;
-								white-space: pre-wrap;
-								color: var(--text-1);
-							"
-						></p>
+						<p id="essay-grade-answer" style="font-size:13.5px;margin:0;padding:14px;background:var(--surface-2,#f8fafc);border:1px solid var(--border-1,#e2e8f0);border-radius:6px;min-height:140px;max-height:280px;overflow-y:auto;line-height:1.75;white-space:pre-wrap;color:var(--text-1);"></p>
 					</div>
 					<!-- Score + Feedback side by side -->
-					<div
-						style="
-							display: grid;
-							grid-template-columns: 180px 1fr;
-							gap: 12px;
-							align-items: start;
-						"
-					>
-						<div class="form-group" style="margin: 0">
-							<label for="essay-grade-score"
-								>Score <span class="req">*</span>
-								<small style="font-weight: 400; color: var(--text-4)"
-									>(out of <span id="essay-grade-max">10</span>)</small
-								>
+					<div style="display:grid;grid-template-columns:180px 1fr;gap:12px;align-items:start;">
+						<div class="form-group" style="margin:0;">
+							<label for="essay-grade-score">Score <span class="req">*</span>
+								<small style="font-weight:400;color:var(--text-4)">(out of <span id="essay-grade-max">10</span>)</small>
 							</label>
-							<input
-								type="number"
-								id="essay-grade-score"
-								min="0"
-								placeholder="Enter score"
-							/>
+							<input type="number" id="essay-grade-score" min="0" placeholder="Enter score" />
 							<span class="error-text" id="essay-grade-scoreErr"></span>
 						</div>
-						<div class="form-group" style="margin: 0">
-							<label for="essay-grade-feedback"
-								>Feedback <span class="optional">(optional)</span></label
-							>
-							<textarea
-								id="essay-grade-feedback"
-								rows="3"
-								placeholder="Write feedback for the student…"
-							></textarea>
+						<div class="form-group" style="margin:0;">
+							<label for="essay-grade-feedback">Feedback <span class="optional">(optional)</span></label>
+							<textarea id="essay-grade-feedback" rows="3" placeholder="Write feedback for the student…"></textarea>
 						</div>
 					</div>
 				</div>
@@ -1413,8 +1551,32 @@
 			</div>
 		</div>
 
-		<script src="js/session.js"></script>
 		<script src="js/professor.js"></script>
+		<script src="js/topbar.js"></script>
 		<script src="js/prof-calendar.js"></script>
+		<script>
+			// Sidebar Log out reuses the existing Account-page sign-out handler
+			document
+				.getElementById("sidebarLogoutBtn")
+				?.addEventListener("click", () =>
+					document.getElementById("profileLogoutBtn")?.click(),
+				);
+				// Dashboard stat cards open their page (reuses the sidebar navigation)
+				document.querySelectorAll(".stat-card[data-target]").forEach((card) => {
+					const go = () =>
+						document
+							.querySelector(
+								'.navbar a[data-target="' + card.dataset.target + '"]',
+							)
+							?.click();
+					card.addEventListener("click", go);
+					card.addEventListener("keydown", (e) => {
+						if (e.key === "Enter" || e.key === " ") {
+							e.preventDefault();
+							go();
+						}
+					});
+				});
+		</script>
 	</body>
 </html>

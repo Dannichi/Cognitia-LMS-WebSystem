@@ -680,6 +680,30 @@ textarea {
 	transform: translateY(-2px);
 	box-shadow: var(--sh-md);
 }
+
+/* Hover: the soft circle in the corner grows smoothly (halfway big) */
+.stat-card::after {
+	transform-origin: center;
+	transition:
+		transform 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+		opacity 0.5s ease;
+	z-index: 0;
+}
+.stat-card:hover::after,
+.stat-card:focus-visible::after {
+	transform: scale(2.2);
+	opacity: 0.95;
+}
+/* keep card content above the growing circle */
+.stat-card > :not(.stat-go) {
+	position: relative;
+	z-index: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+	.stat-card::after {
+		transition: none;
+	}
+}
 .stat-top {
 	display: flex;
 	align-items: center;
@@ -3453,4 +3477,426 @@ td {
 	transition:
 		border-color 0.3s,
 		color 0.3s;
+}
+
+/* ============================================================
+    TOP BAR — title, notifications, profile (matches admin)
+    Height 84px = sidebar 20px pad + 45px logo + 18px pad + 1px,
+    so its bottom border lines up with the logo divider.
+============================================================ */
+.app-shell {
+	display: block; /* sidebar is fixed; stack top bar and .main */
+}
+.topbar {
+	position: sticky;
+	top: 0;
+	z-index: 60;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--sp-md);
+	height: 84px;
+	margin-left: var(--sidebar-w);
+	width: calc(100% - var(--sidebar-w));
+	padding: 0 var(--sp-xl);
+	background: var(--surface);
+	border-bottom: 1px solid var(--border-strong, #d4d2ca);
+	transition:
+		margin-left var(--t-slow) var(--ease),
+		width var(--t-slow) var(--ease);
+}
+.sidebar.collapsed ~ .topbar {
+	margin-left: var(--sidebar-collapsed-w);
+	width: calc(100% - var(--sidebar-collapsed-w));
+}
+.topbar + .main {
+	min-height: calc(100vh - 84px);
+}
+.topbar-title {
+	font-size: 18px;
+	font-weight: 700;
+	letter-spacing: -0.01em;
+	color: var(--brand);
+	white-space: nowrap;
+}
+.topbar-actions {
+	display: flex;
+	align-items: center;
+	gap: var(--sp-sm);
+}
+.topbar-dd {
+	position: relative;
+}
+.topbar-btn,
+.topbar-avatar {
+	width: 38px;
+	height: 38px;
+	border: 1px solid var(--border);
+	border-radius: 50%;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	transition:
+		background var(--t-fast) var(--ease),
+		color var(--t-fast) var(--ease),
+		box-shadow var(--t-fast) var(--ease);
+}
+.topbar-btn {
+	background: var(--surface-3);
+	color: var(--text-2);
+	font-size: 16px;
+}
+.topbar-btn:hover,
+.topbar-btn[aria-expanded="true"] {
+	background: var(--brand-light);
+	color: var(--brand);
+}
+.topbar-avatar {
+	background: var(--brand);
+	border-color: var(--brand-dark);
+	color: #fff;
+	font-size: 13px;
+	font-weight: 700;
+}
+.topbar-avatar:hover,
+.topbar-avatar[aria-expanded="true"] {
+	background: var(--brand-dark);
+}
+.topbar-btn:focus-visible,
+.topbar-avatar:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--brand-glow);
+}
+.topbar-menu {
+	position: absolute;
+	top: calc(100% + 8px);
+	right: 0;
+	z-index: 70;
+	width: 220px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-md);
+	box-shadow: var(--sh-lg);
+	overflow: hidden;
+}
+.topbar-menu[hidden] {
+	display: none;
+}
+.topbar-menu-notif {
+	width: 320px;
+}
+.topbar-menu-head {
+	padding: 12px 16px;
+	font-size: 12px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--text-3);
+	border-bottom: 1px solid var(--divider);
+}
+.notif-list {
+	list-style: none;
+	max-height: 320px;
+	overflow-y: auto;
+}
+.notif-item {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	width: 100%;
+	padding: 10px 16px;
+	text-align: left;
+	background: none;
+	border: 0;
+	border-bottom: 1px solid var(--divider);
+	cursor: pointer;
+	color: var(--text-1);
+}
+.notif-item strong {
+	font-size: 14px;
+	font-weight: 600;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.notif-item:hover,
+.notif-item:focus-visible {
+	background: var(--brand-light);
+	outline: none;
+}
+.notif-empty {
+	padding: 20px 16px;
+	font-size: 14px;
+	color: var(--text-3);
+	text-align: center;
+}
+.topbar-menu-foot,
+.topbar-menu-item {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	padding: 10px 16px;
+	background: none;
+	border: 0;
+	cursor: pointer;
+	font-size: 14px;
+	color: var(--text-2);
+	text-align: left;
+}
+.topbar-menu-foot {
+	justify-content: center;
+	font-weight: 600;
+	color: var(--brand);
+	background: var(--surface-2);
+}
+.topbar-menu-foot:hover,
+.topbar-menu-item:hover,
+.topbar-menu-foot:focus-visible,
+.topbar-menu-item:focus-visible {
+	background: var(--brand-light);
+	color: var(--brand);
+	outline: none;
+}
+.topbar-menu-item.danger {
+	color: var(--red-fg);
+	border-top: 1px solid var(--divider);
+}
+.topbar-menu-user {
+	display: flex;
+	flex-direction: column;
+	padding: 12px 16px;
+	border-bottom: 1px solid var(--divider);
+}
+.topbar-menu-user strong {
+	font-size: 14px;
+	color: var(--text-1);
+}
+
+/* Phones use .mobile-header + bottom nav instead */
+@media (max-width: 600px) {
+	.topbar {
+		display: none;
+	}
+	.topbar + .main {
+		min-height: 100vh;
+	}
+}
+
+/* ─── ACCOUNT: both cards share one height ─── */
+.profile-unified {
+	align-items: stretch;
+}
+.profile-main {
+	height: 100%;
+}
+.profile-form-section {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+}
+.profile-form {
+	flex: 1;
+}
+.profile-form .form-actions {
+	margin-top: auto;
+}
+
+
+/* ─── SIDEBAR NAV: larger text, less empty space ─── */
+.navbar li a {
+	padding-top: 11px;
+	padding-bottom: 11px;
+}
+.navbar li a i {
+	width: 20px;
+	font-size: 17px;
+}
+.nav-text {
+	font-size: 16.5px;
+}
+
+/* ─── TOP BAR TITLE: larger text ─── */
+.topbar-title {
+	font-size: 26px;
+	letter-spacing: -0.015em;
+}
+
+/* ─── EDIT PROFILE CARD: larger contents to fill the empty space ─── */
+.profile-form-section h3,
+.profile-form-section .card-title {
+	font-size: 22px;
+	margin-bottom: 24px;
+	padding-bottom: 16px;
+}
+.profile-form {
+	gap: 30px;
+}
+.profile-form .form-row {
+	gap: 24px;
+}
+.profile-form .form-group {
+	gap: 10px;
+}
+.profile-form .form-group label {
+	font-size: 16px;
+}
+.profile-form .optional {
+	font-size: 13.5px;
+}
+.profile-form .form-group input,
+.profile-form .input-wrap input {
+	padding: 16px 18px;
+	font-size: 17px;
+}
+.profile-form .form-group input {
+	border-radius: 12px;
+}
+.profile-form .input-wrap .toggle-pwd {
+	padding: 0 20px;
+	font-size: 18px;
+}
+.profile-form small {
+	font-size: 14px !important;
+	line-height: 1.5;
+}
+.profile-form .error-text {
+	font-size: 13.5px;
+}
+.profile-form .form-actions .btn-primary {
+	padding: 14px 28px;
+	font-size: 16px;
+	border-radius: 12px;
+}
+@media (max-width: 600px) {
+	.profile-form .form-row {
+		grid-template-columns: 1fr;
+	}
+}
+
+
+/* ─── DROPDOWNS: custom look (replaces the stiff native select) ─── */
+.toolbar select,
+.toolbar-select,
+.bulletin-filter {
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	appearance: none;
+	padding: 10px 40px 10px 14px;
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	background-color: var(--surface);
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b6b6b' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 14px center;
+	background-size: 14px;
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--text-2);
+	cursor: pointer;
+	transition:
+		border-color 0.2s ease,
+		background-color 0.2s ease,
+		box-shadow 0.2s ease,
+		transform 0.2s ease;
+}
+.toolbar select:hover,
+.toolbar-select:hover,
+.bulletin-filter:hover {
+	border-color: var(--brand-mid, #a41c1c);
+	background-color: var(--brand-light, #fdf2f2);
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238b1a1a' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+	transform: translateY(-1px);
+}
+.toolbar select:focus,
+.toolbar-select:focus,
+.bulletin-filter:focus {
+	outline: none;
+	border-color: var(--brand, #8b1a1a);
+	background-color: #fff;
+	box-shadow: 0 0 0 4px rgba(139, 26, 26, 0.12);
+}
+.toolbar select:disabled,
+.toolbar-select:disabled {
+	opacity: 0.55;
+	cursor: not-allowed;
+	transform: none;
+}
+
+/* ─── DASHBOARD GREETING ─────────────────────────────────── */
+.page-header.greeting-header {
+	display: block;
+	padding: 22px 28px;
+	background: var(--brand);
+	background-image: linear-gradient(
+		45deg,
+		#5a0c0c 0%,
+		#861919 45%,
+		#d9534f 100%
+	);
+	border: 1px solid var(--brand-dark);
+	border-radius: var(--r-lg);
+	box-shadow: 0 2px 8px var(--brand-glow);
+	position: relative;
+	overflow: hidden; /* clips the logo watermark at the card edge */
+}
+.greeting-header .greeting {
+	position: relative;
+	z-index: 1; /* text stays above the logo */
+	max-width: calc(100% - 140px);
+}
+/* Decorative logo on the right, tilted -10° */
+.greeting-header .greeting-logo {
+	position: absolute;
+	right: 28px;
+	top: 50%;
+	height: 120%;
+	width: auto;
+	max-height: 150px;
+	transform: translateY(-50%) rotate(-10deg);
+	opacity: 0.18;
+	pointer-events: none;
+	user-select: none;
+}
+.greeting-header .greeting-title {
+	font-size: 28px;
+	font-weight: 700;
+	letter-spacing: -0.02em;
+	line-height: 1.25;
+	color: #fff;
+	overflow-wrap: anywhere;
+}
+.greeting-header .greeting-sub {
+	margin-top: 6px;
+	font-size: 15px;
+	line-height: 1.5;
+	color: rgba(255, 255, 255, 0.85);
+}
+@media (max-width: 768px) {
+	.page-header.greeting-header {
+		padding: 18px 20px;
+	}
+	.greeting-header .greeting-title {
+		font-size: 24px;
+	}
+	.greeting-header .greeting {
+		max-width: calc(100% - 90px);
+	}
+	.greeting-header .greeting-logo {
+		right: 16px;
+		max-height: 110px;
+	}
+}
+@media (max-width: 480px) {
+	.page-header.greeting-header {
+		padding: 14px 16px;
+		margin-bottom: 14px;
+	}
+	.greeting-header .greeting-title {
+		font-size: 20px;
+	}
+	.greeting-header .greeting-sub {
+		font-size: 13px;
+	}
 }
