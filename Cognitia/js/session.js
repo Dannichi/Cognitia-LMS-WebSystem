@@ -67,5 +67,30 @@ const CognitiaSession = (() => {
         }
     }
 
-    return { toSession, get, set, getStoredPassword };
+    // Client-side route guard for prototype dashboards. Legacy accounts with
+    // no approvalStatus retain their prior access rules.
+    function requireRole(role) {
+        const session = get();
+        let state;
+        try {
+            state = JSON.parse(localStorage.getItem(DB_KEY) || "{}");
+        } catch {
+            state = {};
+        }
+        const user = Array.isArray(state.users)
+            ? state.users.find((item) => String(item.id) === String(session?.id))
+            : null;
+        const allowed = session?.role === role && user?.role === role &&
+            user.status !== "inactive" &&
+            user.approvalStatus !== "pending" &&
+            user.approvalStatus !== "rejected";
+        if (!allowed) {
+            localStorage.removeItem(SESSION_KEY);
+            window.location.replace("login.html");
+            return null;
+        }
+        return toSession(user);
+    }
+
+    return { toSession, get, set, getStoredPassword, requireRole };
 })();

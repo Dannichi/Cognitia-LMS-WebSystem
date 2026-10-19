@@ -301,6 +301,18 @@
 				return;
 			}
 
+			if (user.approvalStatus === "pending") {
+				showError("Your account is awaiting administrator approval.");
+				setLoading(false);
+				return;
+			}
+
+			if (user.approvalStatus === "rejected") {
+				showError("Your account request was rejected. Contact your administrator for assistance.");
+				setLoading(false);
+				return;
+			}
+
 			if (user.status === "inactive") {
 				showError("Your account is inactive. Contact your administrator.");
 				setLoading(false);

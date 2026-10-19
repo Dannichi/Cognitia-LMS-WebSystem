@@ -250,9 +250,9 @@
             sectionId: null,
             sectionIds: [],
             courseIds: [],
-            // Professors stay inactive: login already blocks inactive accounts
-            // until an admin sets them to Active in the Admin Panel.
-            status: data.role === "student" ? "active" : "inactive",
+            approvalStatus: "pending",
+            status: "inactive",
+            registeredAt: new Date().toISOString(),
             joined: new Date().toLocaleDateString("en-PH", {
                 year: "numeric",
                 month: "short",
@@ -273,7 +273,7 @@
         message.textContent = "";
         if (user.role === "student") {
             message.append(
-                "Your student account is ready. Your Student ID is ",
+                "Your student account is awaiting administrator approval. Your Student ID is ",
                 Object.assign(document.createElement("strong"), {
                     textContent: user.studentId,
                 }),
@@ -281,7 +281,7 @@
             );
         } else {
             message.textContent =
-                "Your professor account was created but is inactive. An administrator must activate it before you can log in.";
+                "Your professor account is awaiting administrator approval. You can log in after an administrator approves it.";
         }
         $("register-success").hidden = false;
         $("success-title").focus();

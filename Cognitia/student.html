@@ -1002,6 +1002,8 @@
 			<i class="fas fa-check-circle"></i><span id="toastMsg"></span>
 		</div>
 
+		<script src="js/session.js"></script>
+		<script>if (!CognitiaSession.requireRole("student")) document.documentElement.style.visibility = "hidden";</script>
 		<script src="js/student.js"></script>
 		<script src="js/topbar.js"></script>
 		<script src="js/student-calendar.js"></script>
