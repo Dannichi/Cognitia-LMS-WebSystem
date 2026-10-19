@@ -1361,13 +1361,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		const options = academicConfig.exampleUnits.flatMap((unit) => unit.programs.map((program) => ({ ...program, unitId: unit.id, unitName: unit.name })))
 			.filter((program) => (!unitFilter || program.unitId === unitFilter) && `${program.name} ${program.displayName} ${program.code} ${program.unitName}`.toLowerCase().includes(search));
 		grid.replaceChildren();
-		const summaryFor = (program) => {
-			const sections = state.sections.filter((section) => String(section.programId) === String(program.id));
-			const sectionIds = new Set(sections.map((section) => String(section.id)));
-			const students = new Set(state.users.filter((user) => user.role === "student" && (String(user.programId) === String(program.id) || sectionIds.has(String(user.sectionId)))).map((user) => String(user.id)));
-			const courses = state.courses.filter((course) => getCourseProgramIds(course).some((id) => String(id) === String(program.id))).length;
-			return `${sections.length} sections · ${students.size} students · ${courses} courses`;
-		};
 		options.forEach((catalog) => {
 			const saved = state.programs.find((program) => program.catalogId === catalog.id);
 			if (!saved) return;
@@ -1376,13 +1369,15 @@ document.addEventListener("DOMContentLoaded", () => {
 			const top = makeEl("div", "academic-program-card-top");
 			top.append(makeEl("h3", "", saved.name || catalog.displayName));
 			top.appendChild(makeEl("span", `program-status${String(saved.status).toLowerCase() === "active" ? " is-active" : ""}`, saved.status || "Active"));
-			card.append(top, makeEl("p", "academic-program-meta", `${catalog.code} · ${saved.department || catalog.unitName}`), makeEl("p", "academic-program-summary", summaryFor(saved)));
+			card.append(top, makeEl("p", "academic-program-meta", `${saved.code || catalog.code} · ${saved.department || catalog.unitName}`));
 			const actions = makeEl("div", "academic-card-actions");
+			const primaryActions = makeEl("div", "academic-card-action-group");
+			const editActions = makeEl("div", "academic-card-action-group");
 			const courses = makeEl("button", "btn-cancel", "Courses"); courses.type = "button"; courses.addEventListener("click", () => openProgramCourses(saved.id));
 			const sections = makeEl("button", "btn-cancel", "Sections"); sections.type = "button"; sections.addEventListener("click", () => openProgramSections(saved.id));
 			const edit = makeEl("button", "btn-cancel", "Edit"); edit.type = "button"; edit.addEventListener("click", () => editProgram(saved.id));
 			const remove = makeEl("button", "btn-cancel delete academic-delete-btn", "Delete"); remove.type = "button"; remove.addEventListener("click", () => confirmDelete("program", saved.id, `program ${saved.code}`));
-			actions.append(courses, sections, edit, remove);
+			primaryActions.append(courses, sections); editActions.append(edit, remove); actions.append(primaryActions, editActions);
 			card.appendChild(actions); grid.appendChild(card);
 		});
 		const configuredIds = new Set(academicConfig.exampleUnits.flatMap((unit) => unit.programs.map((program) => program.id)));
@@ -1391,13 +1386,15 @@ document.addEventListener("DOMContentLoaded", () => {
 		legacy.forEach((program) => {
 			const card = makeEl("article", "program-card academic-program-card legacy-program-card");
 			const top = makeEl("div", "academic-program-card-top"); top.append(makeEl("h3", "", program.name || "Unnamed program"), makeEl("span", `program-status${String(program.status).toLowerCase() === "active" ? " is-active" : ""}`, program.status || "Active"));
-			card.append(top, makeEl("p", "academic-program-meta", `${program.code || "No code"} · ${program.department || "Academic program"}`), makeEl("p", "academic-program-summary", summaryFor(program)));
+			card.append(top, makeEl("p", "academic-program-meta", `${program.code || "No code"} · ${program.department || "Academic program"}`));
 			const actions = makeEl("div", "academic-card-actions");
+			const primaryActions = makeEl("div", "academic-card-action-group");
+			const editActions = makeEl("div", "academic-card-action-group");
 			const courses = makeEl("button", "btn-cancel", "Courses"); courses.type = "button"; courses.addEventListener("click", () => openProgramCourses(program.id));
 			const sections = makeEl("button", "btn-cancel", "Sections"); sections.type = "button"; sections.addEventListener("click", () => openProgramSections(program.id));
 			const edit = makeEl("button", "btn-cancel", "Edit"); edit.type = "button"; edit.addEventListener("click", () => editProgram(program.id));
 			const remove = makeEl("button", "btn-cancel delete academic-delete-btn", "Delete"); remove.type = "button"; remove.addEventListener("click", () => confirmDelete("program", program.id, `program ${program.code || program.name}`));
-			actions.append(courses, sections, edit, remove); card.appendChild(actions); grid.appendChild(card);
+			primaryActions.append(courses, sections); editActions.append(edit, remove); actions.append(primaryActions, editActions); card.appendChild(actions); grid.appendChild(card);
 		});
 		if (legacyGrid) { legacyGrid.replaceChildren(); legacyGrid.hidden = true; }
 		if (!grid.children.length) {
@@ -1413,8 +1410,9 @@ document.addEventListener("DOMContentLoaded", () => {
 		if (!program) return;
 		activeProgramId = program.id;
 		activeProgramCourseYear = "1";
-		setText("programCoursesTitle", "Manage Program Courses");
-		setText("programCoursesSubtitle", `${program.name} (${program.code})`);
+		const catalog = configuredProgram(program.catalogId);
+		setText("programCoursesTitle", "Program Courses");
+		setText("programCoursesSubtitle", `${program.name}\n${program.code || catalog?.code || "No abbreviation"} · ${program.department || catalog?.unitName || "Academic program"}`);
 		renderProgramCourses();
 		updateAcademicBreadcrumb("sections");
 		openModal("programCoursesModal");
@@ -1437,23 +1435,22 @@ document.addEventListener("DOMContentLoaded", () => {
 		if (tabs) {
 			tabs.replaceChildren();
 			academicConfig.yearLevels.forEach((item) => {
-				const button = makeEl("button", `academic-tab${activeProgramCourseYear === item.value ? " is-active" : ""}`, item.label);
+				const button = makeEl("button", `academic-tab${activeProgramCourseYear === item.value ? " is-active" : ""}`, `Year ${item.value}`);
 				button.type = "button"; button.role = "tab"; button.setAttribute("aria-selected", String(activeProgramCourseYear === item.value));
 				button.addEventListener("click", () => { activeProgramCourseYear = item.value; renderProgramCourses(); }); tabs.appendChild(button);
 			});
 		}
-		const yearLabel = academicYearLabel(activeProgramCourseYear);
+		const yearLabel = `Year ${activeProgramCourseYear}`;
 		setText("programCourseYearTitle", `${yearLabel} Courses`);
 		const assigned = state.courses.filter((course) => getCourseProgramIds(course).some((id) => String(id) === String(program.id)) && getProgramCourseYears(course, program.id).includes(activeProgramCourseYear));
+		setText("programCourseSummary", `${assigned.length} ${assigned.length === 1 ? "course" : "courses"} assigned`);
 		body.replaceChildren();
 		assigned.forEach((course) => {
 			const row = document.createElement("tr");
 			row.append(makeEl("td", "", course.code || "—"), makeEl("td", "", course.name || "Unnamed course"), makeEl("td", "", course.units ?? "—"));
-			const actionCell = makeEl("td", "academic-row-actions");
-			const unassign = makeEl("button", "icon-btn delete", "Unassign"); unassign.type = "button"; unassign.addEventListener("click", () => unassignCourseFromProgram(program.id, course.id, activeProgramCourseYear));
-			actionCell.appendChild(unassign); row.appendChild(actionCell); body.appendChild(row);
+			body.appendChild(row);
 		});
-		if (empty) { empty.hidden = assigned.length > 0; empty.textContent = assigned.length ? "" : `No courses assigned to ${yearLabel} yet. Add courses from the existing course catalog for this program and year level.`; }
+		if (empty) { empty.hidden = assigned.length > 0; empty.textContent = assigned.length ? "" : `No courses assigned\nThere are currently no courses assigned to this program for ${yearLabel}.`; }
 		const tableWrap = document.getElementById("programCourseTableWrap"); if (tableWrap) tableWrap.hidden = assigned.length === 0;
 		if (notice) notice.hidden = true;
 	}
