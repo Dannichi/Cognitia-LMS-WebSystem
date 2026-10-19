@@ -200,6 +200,25 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 	});
 
+	/* ─── EVENTS FOR ONE DAY (official first, then personal) ─── */
+	function itemsFor(dateKey, eventMap) {
+		const items = (eventMap[dateKey] || []).map((ev) => ({
+			kind: "official",
+			title: ev.title,
+			tag: ev.type === "quiz" ? "Quiz" : "Assignment",
+		}));
+		const evs = window.CognitiaCalendar ? window.CognitiaCalendar.eventsFor(dateKey) : [];
+		evs.forEach((ev) =>
+			items.push({
+				kind: ev.type === "personal" ? "personal" : "official",
+				title: ev.title,
+				sub: ev.start ? `${ev.start}\u2013${ev.end}` : "",
+				color: ev.color,
+			}),
+		);
+		return items;
+	}
+
 	/* ─── CALENDAR RENDER ─── */
 	function renderCalendar() {
 		const monthLabel = document.getElementById("calMonthLabel");
@@ -236,39 +255,32 @@ document.addEventListener("DOMContentLoaded", () => {
 			const isPast =
 				new Date(calYear, calMonth, d) < new Date(tYear, tMonth, tDay);
 			const events = eventMap[dateKey] || [];
-			const hasAssign = events.some((e) => e.type === "assignment");
-			const hasQuiz = events.some((e) => e.type === "quiz");
+			const items = itemsFor(dateKey, eventMap);
 
 			cell.className = "cal-day";
 			if (isToday) cell.classList.add("cal-day--today");
 			if (isPast && !isToday) cell.classList.add("cal-day--past");
-			if (events.length) cell.classList.add("cal-day--has-ann");
+			if (items.length) cell.classList.add("cal-day--has-ann");
 
-			// Build dot indicators — one per type
-			let dotsHtml = "";
-			if (events.length) {
-				dotsHtml = `<span class="cal-day-dots">`;
-				if (hasAssign)
-					dotsHtml += `<span class="cal-day-dot dot-assign"></span>`;
-				if (hasQuiz) dotsHtml += `<span class="cal-day-dot dot-quiz"></span>`;
-				dotsHtml += `</span>`;
+			cell.innerHTML = `<span class="cal-day-num">${d}</span><span class="cal-day-add-hint"><i class="fas fa-plus"></i></span>`;
+			if (items.length) {
+				cell.querySelector(".cal-day-num").after(CalTip.dotsEl(items));
+				CalTip.attach(cell, dateKey, items);
 			}
-
-			cell.innerHTML = `<span class="cal-day-num">${d}</span>${dotsHtml}<span class="cal-day-add-hint"><i class="fas fa-plus"></i></span>`;
 
 			if (!isPast || isToday) {
 				cell.classList.add("cal-day--clickable");
-				cell.title = `Create for ${labelTxt}`;
 				cell.addEventListener("click", (e) => {
 					e.stopPropagation();
+					CalTip.hide();
 					showCalPicker(cell, dateVal, labelTxt, dateKey, eventMap);
 				});
 			} else if (events.length) {
 				// Past days with events — clickable to show events only (no create)
 				cell.classList.add("cal-day--clickable");
-				cell.title = `${events.length} item(s) on ${labelTxt}`;
 				cell.addEventListener("click", (e) => {
 					e.stopPropagation();
+					CalTip.hide();
 					showCalPicker(cell, "", labelTxt, dateKey, eventMap);
 				});
 			}
@@ -395,4 +407,5 @@ document.addEventListener("DOMContentLoaded", () => {
 	}
 	window.addEventListener("storage", refresh);
 	window.addEventListener("cognitia:prof-data-updated", refresh);
+	window.addEventListener("cognitia:calendar-events-changed", refresh);
 });

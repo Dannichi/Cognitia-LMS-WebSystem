@@ -328,17 +328,13 @@
 							</div>
 							<div class="cal-legend">
 								<span class="cal-legend-dot today-dot"></span><span>Today</span>
-								<span
-									class="cal-legend-dot"
-									style="background: var(--brand, #8b1a1a)"
-								></span
-								><span>Assignment</span>
-								<span
-									class="cal-legend-dot"
-									style="background: var(--blue-fg, #0066cc)"
-								></span
-								><span>Quiz</span>
+								<span class="cal-legend-dot cal-legend-dot--official"></span><span>Official</span>
+								<span class="cal-legend-dot cal-legend-dot--personal"></span><span>Personal</span>
 							</div>
+							<button type="button" class="cal-view-all" data-goto="calendar">
+								<span>View full calendar</span>
+								<i class="fas fa-chevron-right" aria-hidden="true"></i>
+							</button>
 						</div>
 						<div class="card dashboard-col">
 							<h3 class="card-title"><i class="fas fa-clock"></i> Upcoming</h3>
@@ -1609,5 +1605,14 @@
 		<script src="js/bulletin-reader.js"></script>
 		<script src="js/topbar.js"></script>
 		<script src="js/prof-calendar.js"></script>
+			<script>
+			// Dashboard calendar card: "View full calendar" opens the My Calendar tab
+			document.querySelectorAll(".cal-view-all").forEach(function (btn) {
+				btn.addEventListener("click", function () {
+					var nav = document.querySelector('a[data-target="calendar"]');
+					if (nav) nav.click();
+				});
+			});
+		</script>
 	</body>
 </html>
