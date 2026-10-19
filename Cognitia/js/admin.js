@@ -1272,8 +1272,8 @@ document.addEventListener("DOMContentLoaded", () => {
 			document.getElementById("m-programName").value = "";
 			document.getElementById("m-programCode").value = "";
 			if (preselect) {
-					const option = configuredProgram(preselect);
-					if (option) { document.getElementById("m-programCampus").value = academicConfig.campuses[0]?.id || ""; document.getElementById("m-programUnit").value = option.unitId; populateProgramModalCatalog(preselect); }
+				const option = configuredProgram(preselect);
+				if (option) { document.getElementById("m-programCampus").value = academicConfig.campuses[0]?.id || ""; document.getElementById("m-programUnit").value = option.unitId; populateProgramModalCatalog(preselect); }
 			}
 			document.getElementById("m-programIdDisplay").value = "Generated on save";
 			document.getElementById("m-programDesc").value = "";
@@ -1350,6 +1350,17 @@ document.addEventListener("DOMContentLoaded", () => {
 		showToast(`Program "${savedProgram.code}" ${isEditing ? "updated" : "added"}.`);
 	});
 
+	function makeProgramCardInteractive(card, programId, programName) {
+		card.tabIndex = 0;
+		card.setAttribute("role", "group");
+		card.setAttribute("aria-label", `Program ${programName}. Press Enter to open details.`);
+		card.setAttribute("aria-keyshortcuts", "Enter Space");
+		card.addEventListener("click", (event) => { if (!event.target.closest("button")) viewProgram(programId); });
+		card.addEventListener("keydown", (event) => {
+			if (event.target !== card || (event.key !== "Enter" && event.key !== " ")) return;
+			event.preventDefault(); viewProgram(programId);
+		});
+	}
 	function renderPrograms() {
 		const grid = document.getElementById("program-grid");
 		const legacyGrid = document.getElementById("legacy-program-grid");
@@ -1372,16 +1383,11 @@ document.addEventListener("DOMContentLoaded", () => {
 			top.append(makeEl("h3", "", saved.name || catalog.displayName));
 			top.appendChild(makeEl("span", `program-status${String(saved.status).toLowerCase() === "active" ? " is-active" : ""}`, saved.status || "Active"));
 			card.append(top, makeEl("p", "academic-program-meta", `${saved.code || catalog.code} · ${saved.department || catalog.unitName}`));
+			makeProgramCardInteractive(card, saved.id, saved.name || catalog.displayName);
 			const actions = makeEl("div", "academic-card-actions");
-			const primaryActions = makeEl("div", "academic-card-action-group");
-			const editActions = makeEl("div", "academic-card-action-group");
-			const courses = makeEl("button", "btn-cancel", "Courses"); courses.type = "button"; courses.addEventListener("click", () => openProgramCourses(saved.id));
-			const sections = makeEl("button", "btn-cancel", "Sections"); sections.type = "button"; sections.addEventListener("click", () => openProgramSections(saved.id));
-			const edit = makeEl("button", "btn-cancel", "Edit"); edit.type = "button"; edit.addEventListener("click", () => editProgram(saved.id));
-			const view = makeEl("button", "btn-cancel", "View"); view.type = "button"; view.addEventListener("click", () => viewProgram(saved.id));
-			const remove = makeEl("button", "btn-cancel delete academic-delete-btn", "Delete"); remove.type = "button"; remove.addEventListener("click", () => confirmDelete("program", saved.id, `program ${saved.code}`));
-			primaryActions.append(courses, sections); editActions.append(edit, view, remove); actions.append(primaryActions, editActions);
-			card.appendChild(actions); grid.appendChild(card);
+			const edit = makeEl("button", "btn-cancel", "Edit"); edit.type = "button"; edit.addEventListener("click", (event) => { event.stopPropagation(); editProgram(saved.id); });
+			const remove = makeEl("button", "btn-cancel delete academic-delete-btn", "Delete"); remove.type = "button"; remove.addEventListener("click", (event) => { event.stopPropagation(); confirmDelete("program", saved.id, `program ${saved.code}`); });
+			actions.append(edit, remove); card.appendChild(actions); grid.appendChild(card);
 		});
 		const configuredIds = new Set(academicConfig.exampleUnits.flatMap((unit) => unit.programs.map((program) => program.id)));
 		const selectedUnitName = academicConfig.exampleUnits.find((unit) => unit.id === unitFilter)?.name;
@@ -1390,15 +1396,11 @@ document.addEventListener("DOMContentLoaded", () => {
 			const card = makeEl("article", "program-card academic-program-card legacy-program-card");
 			const top = makeEl("div", "academic-program-card-top"); top.append(makeEl("h3", "", program.name || "Unnamed program"), makeEl("span", `program-status${String(program.status).toLowerCase() === "active" ? " is-active" : ""}`, program.status || "Active"));
 			card.append(top, makeEl("p", "academic-program-meta", `${program.code || "No code"} · ${program.department || "Academic program"}`));
+			makeProgramCardInteractive(card, program.id, program.name || "Unnamed program");
 			const actions = makeEl("div", "academic-card-actions");
-			const primaryActions = makeEl("div", "academic-card-action-group");
-			const editActions = makeEl("div", "academic-card-action-group");
-			const courses = makeEl("button", "btn-cancel", "Courses"); courses.type = "button"; courses.addEventListener("click", () => openProgramCourses(program.id));
-			const sections = makeEl("button", "btn-cancel", "Sections"); sections.type = "button"; sections.addEventListener("click", () => openProgramSections(program.id));
-			const edit = makeEl("button", "btn-cancel", "Edit"); edit.type = "button"; edit.addEventListener("click", () => editProgram(program.id));
-			const view = makeEl("button", "btn-cancel", "View"); view.type = "button"; view.addEventListener("click", () => viewProgram(program.id));
-			const remove = makeEl("button", "btn-cancel delete academic-delete-btn", "Delete"); remove.type = "button"; remove.addEventListener("click", () => confirmDelete("program", program.id, `program ${program.code || program.name}`));
-			primaryActions.append(courses, sections); editActions.append(edit, view, remove); actions.append(primaryActions, editActions); card.appendChild(actions); grid.appendChild(card);
+			const edit = makeEl("button", "btn-cancel", "Edit"); edit.type = "button"; edit.addEventListener("click", (event) => { event.stopPropagation(); editProgram(program.id); });
+			const remove = makeEl("button", "btn-cancel delete academic-delete-btn", "Delete"); remove.type = "button"; remove.addEventListener("click", (event) => { event.stopPropagation(); confirmDelete("program", program.id, `program ${program.code || program.name}`); });
+			actions.append(edit, remove); card.appendChild(actions); grid.appendChild(card);
 		});
 		if (legacyGrid) { legacyGrid.replaceChildren(); legacyGrid.hidden = true; }
 		if (!grid.children.length) {
@@ -1424,6 +1426,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	function viewProgram(programId) {
 		const program = state.programs.find((item) => String(item.id) === String(programId));
 		if (!program) return;
+		activeProgramId = program.id;
 		const catalog = configuredProgram(program.catalogId);
 		const campus = academicConfig.campuses.find((item) => String(item.id) === String(program.campusId));
 		setText("viewProgramName", program.name || "Unnamed program");
@@ -1435,6 +1438,18 @@ document.addEventListener("DOMContentLoaded", () => {
 		if (description) { description.textContent = String(program.desc || "").trim(); description.hidden = !description.textContent; }
 		openModal("viewProgramModal");
 	}
+	document.getElementById("viewProgramCoursesBtn")?.addEventListener("click", () => {
+		const programId = activeProgramId;
+		document.getElementById("viewProgramModal")?.classList.remove("active");
+		openProgramCourses(programId);
+	});
+	document.getElementById("viewProgramSectionsBtn")?.addEventListener("click", () => {
+		const programId = activeProgramId;
+		document.getElementById("viewProgramModal")?.classList.remove("active");
+		openProgramSections(programId);
+	});
+	document.getElementById("programCourseYearSelect")?.addEventListener("change", (event) => { activeProgramCourseYear = event.currentTarget.value; renderProgramCourses(); });
+	document.getElementById("sectionYearSelect")?.addEventListener("change", (event) => { activeSectionYear = event.currentTarget.value; renderSections(); });
 	function getProgramCourseYears(course, programId) {
 		const map = course?.programYears;
 		if (map && Object.prototype.hasOwnProperty.call(map, String(programId))) return Array.isArray(map[String(programId)]) ? map[String(programId)].map(String) : [];
@@ -1449,16 +1464,12 @@ document.addEventListener("DOMContentLoaded", () => {
 		const empty = document.getElementById("programCourseEmpty");
 		const notice = document.getElementById("programCoursesNotice");
 		if (!body || !program) return;
-		const tabs = document.getElementById("programCourseYearTabs");
-		if (tabs) {
-			tabs.replaceChildren();
-			academicConfig.yearLevels.forEach((item) => {
-				const button = makeEl("button", `academic-tab${activeProgramCourseYear === item.value ? " is-active" : ""}`, `Year ${item.value}`);
-				button.type = "button"; button.role = "tab"; button.setAttribute("aria-selected", String(activeProgramCourseYear === item.value));
-				button.addEventListener("click", () => { activeProgramCourseYear = item.value; renderProgramCourses(); }); tabs.appendChild(button);
-			});
+		const yearSelect = document.getElementById("programCourseYearSelect");
+		if (yearSelect) {
+			yearSelect.replaceChildren(...academicConfig.yearLevels.map((item) => new Option(item.label, item.value)));
+			yearSelect.value = activeProgramCourseYear;
 		}
-		const yearLabel = `Year ${activeProgramCourseYear}`;
+		const yearLabel = academicYearLabel(activeProgramCourseYear);
 		setText("programCourseYearTitle", `${yearLabel} Courses`);
 		const assigned = state.courses.filter((course) => getCourseProgramIds(course).some((id) => String(id) === String(program.id)) && getProgramCourseYears(course, program.id).includes(activeProgramCourseYear));
 		setText("programCourseSummary", `${assigned.length} ${assigned.length === 1 ? "course" : "courses"} assigned`);
@@ -1558,18 +1569,17 @@ document.addEventListener("DOMContentLoaded", () => {
 		if (!grid) return;
 		const program = state.programs.find((item) => String(item.id) === String(activeProgramId)) || selectedAcademicProgram();
 		const allSections = program ? state.sections.filter((section) => String(section.programId) === String(program.id)) : [];
-		const tabs = document.getElementById("sectionYearTabs");
-		if (tabs) {
-			tabs.replaceChildren();
-			academicConfig.yearLevels.forEach((item) => {
-				const button = makeEl("button", `academic-tab${activeSectionYear === item.value ? " is-active" : ""}`, item.label); button.type = "button"; button.setAttribute("role", "tab"); button.setAttribute("aria-selected", String(activeSectionYear === item.value)); button.addEventListener("click", () => { activeSectionYear = item.value; renderSections(); }); tabs.appendChild(button);
-			});
+		const yearSelect = document.getElementById("sectionYearSelect");
+		if (yearSelect) {
+			yearSelect.replaceChildren(...academicConfig.yearLevels.map((item) => new Option(item.label, item.value)));
+			yearSelect.value = activeSectionYear;
 		}
 		const matching = allSections.filter((section) => String(section.year) === activeSectionYear);
+		setText("sectionYearTitle", `${academicYearLabel(activeSectionYear)} Sections`);
 		grid.replaceChildren();
 		if (empty) { empty.hidden = matching.length > 0; empty.textContent = program ? `No sections for ${academicYearLabel(activeSectionYear)} yet. Create a section to begin organizing students and courses for this year.` : "Select a saved program to manage sections."; }
-		const studentTotal = allSections.reduce((sum, section) => sum + state.users.filter((user) => user.role === "student" && String(user.sectionId) === String(section.id)).length, 0);
-		setText("programSectionCount", String(allSections.length)); setText("programStudentCount", String(studentTotal));
+		const studentTotal = matching.reduce((sum, section) => sum + state.users.filter((user) => user.role === "student" && String(user.sectionId) === String(section.id)).length, 0);
+		setText("programSectionCount", String(matching.length)); setText("programStudentCount", String(studentTotal));
 		matching.forEach((section) => {
 			const card = makeEl("article", "academic-section-card");
 			const content = makeEl("div", "academic-section-card-content");
@@ -3049,7 +3059,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			const matchesSearch = !query || `${a.title || ""} ${a.body || ""}`.toLocaleLowerCase().includes(query);
 			const matchesAudience = audience === "all" || (audience === "all-users" ? !a.audience || a.audience === "all" : a.audience === audience);
 			return matchesSearch && (annStatusFilter === "all" || status === annStatusFilter) && (category === "all" || cat === category) && matchesAudience;
-		}).slice().sort((a,b) => Date.parse(announcementDate(b) || 0) - Date.parse(announcementDate(a) || 0));
+		}).slice().sort((a, b) => Date.parse(announcementDate(b) || 0) - Date.parse(announcementDate(a) || 0));
 		setText("annResultsCount", `${filtered.length} shown`);
 		grid.replaceChildren();
 		if (!filtered.length) {
@@ -3767,10 +3777,10 @@ document.addEventListener("DOMContentLoaded", () => {
 		if (!section) return;
 		const select = document.getElementById("sectionCourseSelect");
 		const assigned = new Set(getSectionCourseIds(section));
-	const options = state.courses.filter((course) => getCourseProgramIds(course).some((id) => String(id) === String(section.programId)) && getProgramCourseYears(course, section.programId).includes(String(section.year)) && !assigned.has(String(course.id)));
+		const options = state.courses.filter((course) => getCourseProgramIds(course).some((id) => String(id) === String(section.programId)) && getProgramCourseYears(course, section.programId).includes(String(section.year)) && !assigned.has(String(course.id)));
 		select.replaceChildren(new Option("Select a program course", ""), ...options.map((course) => new Option(`${course.code || "No code"} — ${course.name || "Unnamed course"} · ${course.units ?? "—"} units`, String(course.id))));
 		const empty = document.getElementById("sectionCourseEmpty");
-	if (empty) { empty.hidden = options.length > 0; empty.textContent = state.courses.some((course) => getCourseProgramIds(course).some((id) => String(id) === String(section.programId)) && getProgramCourseYears(course, section.programId).includes(String(section.year))) ? "All program courses for this year are already assigned to this section." : "No courses are linked to this program and year yet. Add a course in Manage Program Courses first."; }
+		if (empty) { empty.hidden = options.length > 0; empty.textContent = state.courses.some((course) => getCourseProgramIds(course).some((id) => String(id) === String(section.programId)) && getProgramCourseYears(course, section.programId).includes(String(section.year))) ? "All program courses for this year are already assigned to this section." : "No courses are linked to this program and year yet. Add a course in Manage Program Courses first."; }
 		select.hidden = options.length === 0;
 		setText("sectionCourseAssignmentHelp", `Choose a course already assigned to ${state.programs.find((item) => String(item.id) === String(section.programId))?.code || "this program"}.`);
 		setError("sectionCourseAssignErr", "");
@@ -3781,7 +3791,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		const section = state.sections.find((item) => String(item.id) === String(_currentSectionId));
 		const courseId = document.getElementById("sectionCourseSelect").value;
 		const course = state.courses.find((item) => String(item.id) === String(courseId));
-	if (!section || !course || !getCourseProgramIds(course).some((id) => String(id) === String(section.programId)) || !getProgramCourseYears(course, section.programId).includes(String(section.year))) { setError("sectionCourseAssignErr", "Choose a course assigned to this program and year."); return; }
+		if (!section || !course || !getCourseProgramIds(course).some((id) => String(id) === String(section.programId)) || !getProgramCourseYears(course, section.programId).includes(String(section.year))) { setError("sectionCourseAssignErr", "Choose a course assigned to this program and year."); return; }
 		const ids = getSectionCourseIds(section);
 		if (ids.includes(String(course.id))) { setError("sectionCourseAssignErr", "This course is already assigned to this section."); return; }
 		const previousSections = state.sections;
@@ -3843,7 +3853,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		const section = state.sections.find((item) => String(item.id) === String(_currentSectionId));
 		if (!section || !confirm("Remove this professor's assignments from the section? The professor account remains.")) return;
 		const previousSections = state.sections; const previousUsers = state.users;
-			const remaining = (Array.isArray(section.professorAssignments) ? section.professorAssignments : []).filter((item) => String(item.professorId ?? item.userId) !== String(professorId));
+		const remaining = (Array.isArray(section.professorAssignments) ? section.professorAssignments : []).filter((item) => String(item.professorId ?? item.userId) !== String(professorId));
 		state.sections = state.sections.map((item) => String(item.id) === String(section.id) ? { ...item, professorAssignments: remaining } : item);
 		state.users = state.users.map((user) => String(user.id) === String(professorId) ? { ...user, sectionIds: (user.sectionIds || []).filter((id) => String(id) !== String(section.id)), sections: (user.sections || []).filter((id) => String(id) !== String(section.id)) } : user);
 		if (!persistState()) { state.sections = previousSections; state.users = previousUsers; showToast("Professor assignment could not be removed.", true); return; }
