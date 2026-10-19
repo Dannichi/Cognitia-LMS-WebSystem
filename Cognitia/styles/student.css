@@ -4629,3 +4629,49 @@ html[data-theme="dark"] [data-ev-color="slate"] {
 .notif-item.is-unread strong {
 	font-weight: 700;
 }
+
+/* ─── SIDEBAR SECTION LABELS (same look as the admin panel) ─── */
+.navbar li.nav-label {
+	margin: 14px 0 4px;
+	padding: 0 18px;
+	font-size: 10.5px;
+	font-weight: 600;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: rgba(255, 255, 255, 0.45);
+	white-space: nowrap;
+	overflow: hidden;
+	pointer-events: none;
+	user-select: none;
+}
+.navbar li.nav-label:first-child {
+	margin-top: 0;
+}
+.sidebar.collapsed .navbar li.nav-label {
+	height: 1px;
+	margin: 10px 8px;
+	padding: 0;
+	background: var(--sidebar-bdr);
+}
+.sidebar.collapsed .navbar li.nav-label span,
+.sidebar.collapsed .navbar li.nav-label:first-child {
+	display: none;
+}
+/* "Profile" label above the user row, outside the link */
+.sidebar-section-label {
+	align-self: stretch;
+	margin: 0;
+	padding: 0 12px;
+	font-size: 10.5px;
+	font-weight: 600;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: rgba(255, 255, 255, 0.45);
+	white-space: nowrap;
+	overflow: hidden;
+	pointer-events: none;
+	user-select: none;
+}
+.sidebar.collapsed .sidebar-section-label {
+	display: none;
+}
