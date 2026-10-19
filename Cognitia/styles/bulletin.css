@@ -601,7 +601,7 @@ html[data-theme="dark"] .bulletin-editor-modal .btn-cancel:hover { border-color:
 		padding: 0 0 0 18px;
 	}
 }
-:root { --bulletin-border: #858585; --bulletin-focus: #701515; }
+:root { --bulletin-border: var(--border); --bulletin-focus: #701515; }
 html[data-theme="dark"] { --bulletin-border: #696969; --bulletin-focus: var(--brand); }
 .bulletin-stat,
 .bulletin-admin-card,
@@ -627,3 +627,26 @@ html[data-theme="dark"] { --bulletin-border: #696969; --bulletin-focus: var(--br
 .bulletin-media-preview video {
 	border-color: var(--bulletin-border);
 }
+html:not([data-theme="dark"]) .bulletin-editor-modal,
+html:not([data-theme="dark"]) .bulletin-editor-panel input:not([type="checkbox"]),
+html:not([data-theme="dark"]) .bulletin-editor-panel select,
+html:not([data-theme="dark"]) .bulletin-editor-panel textarea,
+html:not([data-theme="dark"]) .bulletin-media-control input[type="file"],
+html:not([data-theme="dark"]) .bulletin-zoom-controls button,
+html:not([data-theme="dark"]) .bulletin-detail-close,
+html:not([data-theme="dark"]) .bulletin-detail-media img,
+html:not([data-theme="dark"]) .bulletin-detail-media video,
+html:not([data-theme="dark"]) #annPreviewMedia img,
+html:not([data-theme="dark"]) #annPreviewMedia video,
+html:not([data-theme="dark"]) .bulletin-media-preview img,
+html:not([data-theme="dark"]) .bulletin-media-preview video,
+html:not([data-theme="dark"]) .bulletin-card-actions button:not(.view):not(.delete),
+html:not([data-theme="dark"]) .bulletin-editor-modal .btn-cancel {
+	border-color: var(--border);
+}
+html:not([data-theme="dark"]) .bulletin-detail-dialog { border-color: var(--border); }
+html:not([data-theme="dark"]) .bulletin-editor-modal .modal-footer { border-top-color: var(--border); }
+html:not([data-theme="dark"]) .bulletin-media-error { border-color: var(--border); }
+html:not([data-theme="dark"]) .bulletin-editor-modal .bulletin-live-preview-wrap { border-left-color: var(--border); }
+html:not([data-theme="dark"]) .bulletin-editor-modal .bulletin-preview-toolbar { border-bottom-color: var(--border); }
+html:not([data-theme="dark"]) .bulletin-preview-viewport { border-color: var(--border); }
