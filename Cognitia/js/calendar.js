@@ -36,7 +36,8 @@
 	}
 
 	function getAnnouncements() {
-		return window._cognitiaState?.announcements || [];
+		const items = window._cognitiaState?.announcements;
+		return Array.isArray(items) ? items.filter((announcement) => announcement && announcement.status !== "draft" && announcement.scheduledDate) : [];
 	}
 
 	function getAnnouncementsForDate(isoStr) {
@@ -120,10 +121,18 @@
 		const bodyEl = document.getElementById("m-annBody");
 		const typeEl = document.getElementById("m-annType");
 		const audienceEl = document.getElementById("m-annAudience");
+		const categoryEl = document.getElementById("m-annCategory");
+		const featuredEl = document.getElementById("m-annFeatured");
+		const eventDateEl = document.getElementById("m-annEventDate");
 		if (titleEl) titleEl.value = "";
 		if (bodyEl) bodyEl.value = "";
 		if (typeEl) typeEl.value = "info";
 		if (audienceEl) audienceEl.value = "all";
+		if (categoryEl) categoryEl.value = "academic";
+		if (featuredEl) featuredEl.checked = false;
+		if (eventDateEl) eventDateEl.value = "";
+		window._clearAnnouncementMedia?.();
+		window._previewAnnouncement?.();
 
 		["m-annTitleErr", "m-annBodyErr", "m-annScheduledDateErr"].forEach((id) => {
 			const el = document.getElementById(id);
@@ -149,8 +158,11 @@
 
 		const modalTitle = document.getElementById("announcementModalTitle");
 		const saveBtn = document.getElementById("saveAnnouncementBtn");
+		const draftBtn = document.getElementById("saveAnnouncementDraftBtn");
 		if (modalTitle) modalTitle.textContent = "Schedule Announcement";
 		if (saveBtn) saveBtn.textContent = "Schedule Announcement";
+		if (draftBtn) draftBtn.textContent = "Save as Draft";
+		window._previewAnnouncement?.();
 
 		if (window._cognitiaState) window._cognitiaState.editTarget = null;
 
@@ -179,7 +191,7 @@
 		const modalTitle = document.getElementById("announcementModalTitle");
 		const saveBtn = document.getElementById("saveAnnouncementBtn");
 		if (modalTitle) modalTitle.textContent = "New Announcement";
-		if (saveBtn) saveBtn.textContent = "Post Announcement";
+		if (saveBtn) saveBtn.textContent = "Publish Announcement";
 
 		renderCalendar();
 	});
@@ -187,7 +199,10 @@
 	/* ─── Sync bridge before save ─────────────────────── */
 	document.getElementById("saveAnnouncementBtn")?.addEventListener(
 		"click",
-		() => { window._calendarSelectedDate = selectedCalDate; },
+		() => {
+			const schedule = document.getElementById("m-annSchedule");
+			window._calendarSelectedDate = schedule?.checked ? selectedCalDate : null;
+		},
 		true
 	);
 
