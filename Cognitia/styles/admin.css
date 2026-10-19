@@ -5969,51 +5969,31 @@ body[data-role="admin"] #dashboard .dashboard-activity-card .activity-list {
 	flex-wrap: wrap;
 }
 #academic-list-view .academic-management-toolbar .academic-selectors { display: contents; }
-#academic-list-view .academic-management-toolbar .academic-selectors .form-group {
+#academic-list-view .academic-management-toolbar .academic-selectors select:not(.academic-context-select) {
 	flex: 0 1 190px;
 	min-width: 150px;
-	margin: 0;
-	padding: 7px 11px;
+	min-height: 42px;
+	padding: 8px 12px;
 	border: 1px solid var(--border);
 	border-radius: 5px;
 	background: var(--surface);
-}
-#academic-list-view .academic-management-toolbar .academic-selectors label {
-	display: block;
-	margin: 0 0 2px;
-	color: var(--text-3);
-	font-size: 11px;
-}
-#academic-list-view .academic-management-toolbar .academic-selectors select {
-	width: 100%;
-	min-height: 24px;
-	padding: 0;
-	border: 0;
-	background: transparent;
 	color: var(--text-1);
 	font-size: 14px;
-	font-weight: 650;
+	font-weight: 600;
 }
 #academic-list-view .academic-management-toolbar .search-box {
 	flex: 1 1 260px;
 	min-width: 220px;
 }
 @media (max-width: 700px) {
-	#academic-list-view .academic-management-toolbar .academic-selectors .form-group { flex: 1 1 calc(50% - 5px); min-width: 0; }
 	#academic-list-view .academic-management-toolbar .search-box { flex: 1 1 100%; min-width: 0; }
+	#academic-list-view .academic-management-toolbar .academic-selectors select:not(.academic-context-select) { flex: 1 1 calc(50% - 5px); min-width: 0; }
 }
 @media (max-width: 420px) {
-	#academic-list-view .academic-management-toolbar .academic-selectors .form-group { flex-basis: 100%; }
+	#academic-list-view .academic-management-toolbar .academic-selectors select:not(.academic-context-select) { flex-basis: 100%; }
 }
 
 /* Program card Courses action and its theme-aware read-only overview table. */
-.academic-program-grid .academic-card-action-group:first-child .btn-cancel:first-child {
-	min-width: 116px;
-	min-height: 48px;
-	padding: 10px 18px;
-	font-size: 15px;
-	font-weight: 700;
-}
 #programCourseTableWrap {
 	background: var(--surface);
 	border-color: var(--border);
