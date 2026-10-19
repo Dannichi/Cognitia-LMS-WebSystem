@@ -2841,7 +2841,11 @@ document.addEventListener("DOMContentLoaded", () => {
 	const annScheduleGroup = document.getElementById("schedulePickerGroup");
 	const annScheduledDateInput = document.getElementById("m-annScheduledDate");
 	const annMediaInput = document.getElementById("m-annMedia");
+	const annMediaRemove = document.getElementById("m-annMediaRemove");
 	let annMediaURL = null;
+	let annMediaFile = null;
+	let annRemoveExistingMedia = false;
+	let annExistingMedia = null;
 	let annStatusFilter = "all";
 	const ANN_CATEGORIES = { academic: "Academic", events: "Events", examinations: "Examinations", scholarships: "Scholarships", general: "General" };
 	const ANN_AUDIENCES = { all: "All Users", students: "Students", professors: "Professors" };
@@ -2878,19 +2882,65 @@ document.addEventListener("DOMContentLoaded", () => {
 		setText("annPreviewCategory", ANN_CATEGORIES[category] || "General");
 		setText("annPreviewMeta", `Preview · ${ANN_AUDIENCES[audience] || "All Users"} · ${scheduled ? date ? `Scheduled for ${formatAnnouncementDate(date)}` : "Choose a publication date" : "Will publish immediately"}`);
 	}
-	const announcementPreview = document.querySelector("#announcementModal .bulletin-live-preview");
+	const announcementPreviewViewport = document.getElementById("annPreviewViewport");
+	const announcementPreviewContent = document.getElementById("annPreviewContent");
 	let announcementPreviewZoom = 1;
-	function setAnnouncementPreviewZoom(value) {
-		announcementPreviewZoom = Math.min(1.5, Math.max(0.5, value));
-		if (announcementPreview) {
-			announcementPreview.style.zoom = String(announcementPreviewZoom);
-			announcementPreview.style.width = `${100 / announcementPreviewZoom}%`;
+	let announcementPreviewPanX = 0;
+	let announcementPreviewPanY = 0;
+	let announcementPreviewPointer = null;
+	function clampAnnouncementPreviewPan() {
+		if (!announcementPreviewViewport || !announcementPreviewContent) return;
+		if (announcementPreviewZoom > 1) {
+			announcementPreviewViewport.scrollLeft = 0;
+			announcementPreviewViewport.scrollTop = 0;
 		}
+		const maxX = announcementPreviewViewport.clientWidth - announcementPreviewContent.offsetWidth * announcementPreviewZoom;
+		const maxY = announcementPreviewViewport.clientHeight - announcementPreviewContent.offsetHeight * announcementPreviewZoom;
+		announcementPreviewPanX = announcementPreviewZoom <= 1 ? 0 : Math.min(0, Math.max(Math.min(0, maxX), announcementPreviewPanX));
+		announcementPreviewPanY = announcementPreviewZoom <= 1 ? 0 : Math.min(0, Math.max(Math.min(0, maxY), announcementPreviewPanY));
+		announcementPreviewContent.style.transform = `translate(${announcementPreviewPanX}px, ${announcementPreviewPanY}px) scale(${announcementPreviewZoom})`;
+		announcementPreviewViewport.classList.toggle("is-zoomed", announcementPreviewZoom > 1);
+	}
+	function setAnnouncementPreviewZoom(value, resetPosition = false) {
+		announcementPreviewZoom = Math.min(1.5, Math.max(0.5, value));
+		if (resetPosition && announcementPreviewViewport) {
+			announcementPreviewViewport.scrollLeft = 0;
+			announcementPreviewViewport.scrollTop = 0;
+		}
+		if (resetPosition || announcementPreviewZoom <= 1) announcementPreviewPanX = announcementPreviewPanY = 0;
+		clampAnnouncementPreviewPan();
 		setText("annPreviewZoomValue", `${Math.round(announcementPreviewZoom * 100)}%`);
+		const out = document.getElementById("annPreviewZoomOut");
+		const into = document.getElementById("annPreviewZoomIn");
+		if (out) out.disabled = announcementPreviewZoom <= 0.5;
+		if (into) into.disabled = announcementPreviewZoom >= 1.5;
 	}
 	document.getElementById("annPreviewZoomOut")?.addEventListener("click", () => setAnnouncementPreviewZoom(announcementPreviewZoom - 0.1));
 	document.getElementById("annPreviewZoomIn")?.addEventListener("click", () => setAnnouncementPreviewZoom(announcementPreviewZoom + 0.1));
-	document.getElementById("annPreviewZoomReset")?.addEventListener("click", () => setAnnouncementPreviewZoom(1));
+	document.getElementById("annPreviewZoomReset")?.addEventListener("click", () => setAnnouncementPreviewZoom(1, true));
+	announcementPreviewViewport?.addEventListener("pointerdown", (event) => {
+		if (announcementPreviewZoom <= 1 || event.button !== 0 || event.target.closest("button, video, input, a")) return;
+		announcementPreviewPointer = { id: event.pointerId, x: event.clientX, y: event.clientY, panX: announcementPreviewPanX, panY: announcementPreviewPanY };
+		announcementPreviewViewport.setPointerCapture(event.pointerId);
+		announcementPreviewViewport.classList.add("is-dragging");
+		event.preventDefault();
+	});
+	announcementPreviewViewport?.addEventListener("pointermove", (event) => {
+		if (!announcementPreviewPointer || announcementPreviewPointer.id !== event.pointerId) return;
+		announcementPreviewPanX = announcementPreviewPointer.panX + event.clientX - announcementPreviewPointer.x;
+		announcementPreviewPanY = announcementPreviewPointer.panY + event.clientY - announcementPreviewPointer.y;
+		clampAnnouncementPreviewPan();
+	});
+	function endAnnouncementPreviewDrag(event) {
+		if (!announcementPreviewPointer || (event && announcementPreviewPointer.id !== event.pointerId)) return;
+		announcementPreviewPointer = null;
+		announcementPreviewViewport?.classList.remove("is-dragging");
+	}
+	announcementPreviewViewport?.addEventListener("pointerup", endAnnouncementPreviewDrag);
+	announcementPreviewViewport?.addEventListener("pointercancel", endAnnouncementPreviewDrag);
+	announcementPreviewViewport?.addEventListener("lostpointercapture", endAnnouncementPreviewDrag);
+	window.addEventListener("resize", clampAnnouncementPreviewPan);
+	if (announcementPreviewContent && "ResizeObserver" in window) new ResizeObserver(clampAnnouncementPreviewPan).observe(announcementPreviewContent);
 	setAnnouncementPreviewZoom(1);
 
 	function openAnnouncementViewer(a) {
@@ -2912,45 +2962,105 @@ document.addEventListener("DOMContentLoaded", () => {
 		const meta = makeEl("div", "bulletin-article-meta", `${audience} · ${status === "scheduled" ? "Scheduled for" : status === "draft" ? "Saved" : "Published"} ${formatAnnouncementDate(announcementDate(a))}${a.type && a.type !== "info" ? ` · ${{ warning: "Important", urgent: "Urgent" }[a.type] || ""}` : ""}`);
 		const content = makeEl("div", "bulletin-detail-content", String(a.body || a.message || a.content || ""));
 		inner.append(head, title, meta, content);
-		const mediaSource = a.mediaDataUrl || a.attachmentDataUrl;
-		if (typeof mediaSource === "string" && /^(data:image\/|data:video\/|blob:|https:\/\/)/i.test(mediaSource)) {
-			const mediaType = String(a.mediaType || a.attachmentType || "");
-			const isVideo = mediaType.startsWith("video/") || /^data:video\//i.test(mediaSource);
-			const media = document.createElement(isVideo ? "video" : "img");
-			media.src = mediaSource;
-			media.alt = isVideo ? "Announcement video" : "Announcement image";
-			if (isVideo) { media.controls = true; media.preload = "metadata"; }
-			const mediaWrap = makeEl("div", "bulletin-detail-media");
-			mediaWrap.appendChild(media);
-			inner.appendChild(mediaWrap);
-		}
 		dialog.appendChild(inner);
 		dialog.addEventListener("click", (event) => { if (event.target === dialog) dialog.close(); });
-		dialog.addEventListener("close", () => dialog.remove());
+		let viewerMediaURL = null;
+		dialog.addEventListener("close", () => { if (viewerMediaURL) URL.revokeObjectURL(viewerMediaURL); dialog.remove(); });
 		document.body.appendChild(dialog);
 		dialog.showModal();
 		close.focus();
+		const legacySource = a.mediaDataUrl || a.attachmentDataUrl;
+		const showMedia = (blob, type, name = "") => {
+			if (!dialog.open || !blob) return;
+			viewerMediaURL = URL.createObjectURL(blob);
+			const isVideo = String(type || blob.type).startsWith("video/");
+			const media = document.createElement(isVideo ? "video" : "img");
+			media.src = viewerMediaURL;
+			media.alt = isVideo ? `Announcement video${name ? `: ${name}` : ""}` : `Announcement image${name ? `: ${name}` : ""}`;
+			if (isVideo) { media.controls = true; media.preload = "metadata"; }
+			const mediaWrap = makeEl("div", "bulletin-detail-media");
+			mediaWrap.appendChild(media);
+			media.addEventListener("error", () => { mediaWrap.replaceChildren(makeEl("p", "bulletin-media-error", "This attachment could not be loaded.")); });
+			inner.appendChild(mediaWrap);
+		};
+		if (legacySource && /^(data:image\/|data:video\/)/i.test(legacySource)) {
+			try {
+				const [header, data] = legacySource.split(",", 2);
+				const type = header.match(/^data:([^;]+)/i)?.[1] || a.mediaType || "application/octet-stream";
+				const binary = atob(data);
+				const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+				showMedia(new Blob([bytes], { type }), type, a.mediaName || "");
+			} catch { inner.appendChild(makeEl("p", "bulletin-media-error", "This attachment could not be loaded.")); }
+		} else if (a.mediaAttachment?.type) {
+			window.CognitiaBulletinMedia?.get(a.id).then((record) => {
+				if (record?.blob) showMedia(record.blob, record.type || a.mediaAttachment.type, record.name || a.mediaAttachment.name);
+				else if (dialog.open) inner.appendChild(makeEl("p", "bulletin-media-error", "This attachment is unavailable in this browser."));
+			}).catch(() => { if (dialog.open) inner.appendChild(makeEl("p", "bulletin-media-error", "This attachment could not be loaded.")); });
+		}
 	}
 	window._previewAnnouncement = previewAnnouncement;
 	function clearAnnouncementMedia() {
 		if (annMediaURL) URL.revokeObjectURL(annMediaURL);
 		annMediaURL = null;
+		annMediaFile = null;
+		annExistingMedia = null;
+		annRemoveExistingMedia = false;
 		const preview = document.getElementById("m-annMediaPreview");
 		if (preview) { preview.replaceChildren(); preview.hidden = true; }
 		document.getElementById("annPreviewMedia")?.replaceChildren();
 		if (annMediaInput) annMediaInput.value = "";
+		if (annMediaRemove) annMediaRemove.hidden = true;
 	}
 	window._clearAnnouncementMedia = clearAnnouncementMedia;
+	function showAnnouncementMediaPreview(blob, type, name, isExisting = false) {
+		if (annMediaURL) URL.revokeObjectURL(annMediaURL);
+		annMediaURL = URL.createObjectURL(blob);
+		annMediaFile = isExisting ? null : blob;
+		annExistingMedia = isExisting ? blob : null;
+		const isVideo = String(type || blob.type).startsWith("video/");
+		const makeMedia = () => {
+			const el = document.createElement(isVideo ? "video" : "img");
+			el.src = annMediaURL;
+			el.alt = `${isVideo ? "Announcement video" : "Announcement image"}${name ? `: ${name}` : ""}`;
+			if (isVideo) { el.controls = true; el.preload = "metadata"; }
+			el.addEventListener("error", () => el.replaceWith(makeMediaError("The selected attachment could not be previewed.")), { once: true });
+			return el;
+		};
+		const preview = document.getElementById("m-annMediaPreview");
+		preview.replaceChildren(makeMedia());
+		preview.hidden = false;
+		document.getElementById("annPreviewMedia")?.replaceChildren(makeMedia());
+		if (annMediaRemove) annMediaRemove.hidden = false;
+	}
+	function makeMediaError(message) { return makeEl("p", "bulletin-media-error", message); }
 	function previewAnnouncementMedia(file) {
-		clearAnnouncementMedia();
 		if (!file) return;
 		const isImage = file.type.startsWith("image/"), isVideo = file.type.startsWith("video/");
-		if ((!isImage && !isVideo) || file.size > 15 * 1024 * 1024) { showToast("Choose an image or video under 15 MB.", true); return; }
-		annMediaURL = URL.createObjectURL(file);
-		const makeMedia = () => { const el = document.createElement(isImage ? "img" : "video"); el.src = annMediaURL; el.alt = isImage ? "Announcement media preview" : "Announcement video preview"; if (isVideo) { el.controls = true; el.preload = "metadata"; } return el; };
-		const preview = document.getElementById("m-annMediaPreview"); preview.replaceChildren(makeMedia()); preview.hidden = false;
-		document.getElementById("annPreviewMedia")?.replaceChildren(makeMedia());
+		if ((!isImage && !isVideo) || file.size > 15 * 1024 * 1024) { annMediaInput.value = ""; showToast("Choose an image or video under 15 MB.", true); return; }
+		annRemoveExistingMedia = false;
+		showAnnouncementMediaPreview(file, file.type, file.name);
 	}
+	async function loadExistingAnnouncementMedia(a) {
+		if (!a?.mediaAttachment?.type) return;
+		try {
+			const record = await window.CognitiaBulletinMedia?.get(a.id);
+			if (state.editTarget?.type !== "announcement" || String(state.editTarget.id) !== String(a.id)) return;
+			if (!record?.blob) { showToast("The saved attachment is unavailable in this browser.", true); return; }
+			showAnnouncementMediaPreview(record.blob, record.type || a.mediaAttachment.type, record.name || a.mediaAttachment.name, true);
+		} catch { showToast("The saved attachment could not be loaded.", true); }
+	}
+	annMediaRemove?.addEventListener("click", () => {
+		annRemoveExistingMedia = Boolean(annExistingMedia || state.editTarget?.type === "announcement" && state.announcements.find((item) => String(item.id) === String(state.editTarget.id))?.mediaAttachment);
+		if (annMediaURL) URL.revokeObjectURL(annMediaURL);
+		annMediaURL = null;
+		annMediaFile = null;
+		annExistingMedia = null;
+		if (annMediaInput) annMediaInput.value = "";
+		document.getElementById("m-annMediaPreview")?.replaceChildren();
+		document.getElementById("m-annMediaPreview").hidden = true;
+		document.getElementById("annPreviewMedia")?.replaceChildren();
+		annMediaRemove.hidden = true;
+	});
 
 	function syncScheduleUI(forceDate = null) {
 		if (!annScheduleCheckbox || !annScheduleGroup) return;
@@ -2997,6 +3107,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			if (annScheduleCheckbox) annScheduleCheckbox.checked = false;
 			if (annScheduledDateInput) annScheduledDateInput.value = "";
 			clearAnnouncementMedia();
+			setAnnouncementPreviewZoom(1, true);
 			syncScheduleUI();
 			const badge = document.getElementById("annDateBadge");
 			if (badge) badge.style.display = "none";
@@ -3013,7 +3124,9 @@ document.addEventListener("DOMContentLoaded", () => {
 	document.getElementById("m-annFeatured")?.addEventListener("change", previewAnnouncement);
 	annMediaInput?.addEventListener("change", () => previewAnnouncementMedia(annMediaInput.files?.[0]));
 
-	function saveAnnouncement(asDraft = false) {
+	let announcementSavePending = false;
+	async function saveAnnouncement(asDraft = false) {
+		if (announcementSavePending) return;
 		if (!Array.isArray(state.announcements)) state.announcements = [];
 		const previousAnnouncements = state.announcements.slice();
 		const title = document.getElementById("m-annTitle").value.trim();
@@ -3029,9 +3142,13 @@ document.addEventListener("DOMContentLoaded", () => {
 		if (state.editTarget?.type === "announcement" && !existing) { showToast("This announcement was removed in another tab.", true); closeAllModals(); return; }
 		const nowISO = new Date().toISOString();
 		const scheduledDate = isScheduled ? scheduledDateRaw : null;
+		const announcementId = existing?.id ?? uid();
+		const announcementMedia = annMediaFile
+			? { type: annMediaFile.type, name: annMediaFile.name || "attachment" }
+			: annRemoveExistingMedia ? null : existing?.mediaAttachment || null;
 		const announcement = {
 			...(existing || {}),
-			id: existing?.id ?? uid(),
+			id: announcementId,
 			title, body,
 			type: document.getElementById("m-annType").value,
 			category: document.getElementById("m-annCategory").value,
@@ -3044,20 +3161,54 @@ document.addEventListener("DOMContentLoaded", () => {
 			scheduledDate,
 			eventDate: document.getElementById("m-annEventDate").value || null,
 			authorId: existing?.authorId ?? CognitiaSession.get()?.id ?? null,
+			mediaAttachment: announcementMedia,
 		};
+		const saveButton = document.getElementById("saveAnnouncementBtn");
+		const draftButton = document.getElementById("saveAnnouncementDraftBtn");
+		let previousMedia = null;
+		let mediaStoreChanged = false;
+		announcementSavePending = true;
+		if (saveButton) saveButton.disabled = true;
+		if (draftButton) draftButton.disabled = true;
+		try {
+			if (annMediaFile || annRemoveExistingMedia) {
+				if (!window.CognitiaBulletinMedia) throw new Error("Browser media storage is unavailable.");
+				previousMedia = await window.CognitiaBulletinMedia.get(announcementId);
+				if (annMediaFile) await window.CognitiaBulletinMedia.save(announcementId, annMediaFile);
+				else await window.CognitiaBulletinMedia.remove(announcementId);
+				mediaStoreChanged = true;
+			}
 		if (existing) state.announcements = state.announcements.map((a) => String(a.id) === String(existing.id) ? announcement : a);
 		else state.announcements.unshift(announcement);
 		logActivity({ entityType: "announcement", action: existing ? "updated" : asDraft ? "drafted" : "created", entityId: announcement.id, entityLabel: announcement.title, description: `${existing ? "Updated" : asDraft ? "Saved draft" : announcement.status === "scheduled" ? "Scheduled" : "Published"} announcement "${announcement.title}"`, details: { type: announcement.type, category: announcement.category, audience: announcement.audience, status: announcement.status, scheduledDate: announcement.scheduledDate } });
 		if (!persistState()) {
 			state.announcements = previousAnnouncements;
 			renderAnnouncements();
-			showToast("The announcement could not be saved. Check available browser storage and try again.", true);
-			return;
+			throw new Error("The announcement could not be saved. Check available browser storage and try again.");
 		}
 		showToast(asDraft ? "Announcement saved as a draft." : announcement.status === "scheduled" ? `Announcement scheduled for ${scheduledDate}.` : existing ? "Announcement updated." : "Announcement published.");
 		closeAllModals();
 		state.editTarget = null;
 		clearAnnouncementMedia();
+		} catch (error) {
+			state.announcements = previousAnnouncements;
+			renderAnnouncements();
+			if (mediaStoreChanged) {
+				try {
+					if (previousMedia?.blob) await window.CognitiaBulletinMedia.save(announcementId, previousMedia.blob, previousMedia);
+					else await window.CognitiaBulletinMedia.remove(announcementId);
+				} catch { /* The original media record is left intact when storage itself fails. */ }
+			}
+			if (annRemoveExistingMedia && existing?.mediaAttachment) {
+				annRemoveExistingMedia = false;
+				loadExistingAnnouncementMedia(existing);
+			}
+			showToast(error.message || "The announcement or its attachment could not be saved.", true);
+		} finally {
+			announcementSavePending = false;
+			if (saveButton) saveButton.disabled = false;
+			if (draftButton) draftButton.disabled = false;
+		}
 	}
 	document.getElementById("saveAnnouncementBtn")?.addEventListener("click", () => saveAnnouncement(false));
 	document.getElementById("saveAnnouncementDraftBtn")?.addEventListener("click", () => saveAnnouncement(true));
@@ -3065,6 +3216,9 @@ document.addEventListener("DOMContentLoaded", () => {
 	function openEditAnnouncement(id) {
 		const a = state.announcements.find((item) => String(item.id) === String(id));
 		if (!a) return;
+		clearAnnouncementMedia();
+		if (annMediaRemove) annMediaRemove.hidden = !a.mediaAttachment?.type;
+		setAnnouncementPreviewZoom(1, true);
 		state.editTarget = { type: "announcement", id: a.id };
 		window._calendarSelectedDate = a.scheduledDate || null;
 		setText("announcementModalTitle", "Edit Announcement");
@@ -3085,6 +3239,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		clearErrors("m-annTitleErr", "m-annBodyErr", "m-annScheduledDateErr");
 		previewAnnouncement();
 		openModal("announcementModal");
+		loadExistingAnnouncementMedia(a);
 	}
 	const announcementModal = document.getElementById("announcementModal");
 	if (announcementModal) new MutationObserver(() => {
@@ -3255,6 +3410,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			pendingDelete = null; closeAllModals(); showToast("Delete could not be saved. Check browser storage and try again.", true); return;
 		}
 		logActivity({ entityType: type, action: "deleted", entityId: id, entityLabel: deleted.label, description: `Deleted ${deleted.text}`, details: deleted.details });
+		if (type === "announcement") window.CognitiaBulletinMedia?.remove(id).catch(() => {});
 		syncProgramDropdowns(); renderPrograms(); renderSections(); renderCourses(); renderUsers(); renderAnnouncements(); updateStats();
 		if (type === "program" && matches(activeProgramId)) { activeProgramId = null; _currentSectionId = null; showAcademicList(); }
 		else if (type === "section" && matches(_currentSectionId)) { _currentSectionId = null; showProgramSections(); }

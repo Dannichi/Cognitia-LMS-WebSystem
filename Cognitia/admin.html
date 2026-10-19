@@ -2122,10 +2122,8 @@
 								type="file"
 								id="m-annMedia"
 								accept="image/*,video/*"
-							/><small
-								>Preview only. Media is not saved to localStorage or
-								shared.</small
-							>
+							/><small>Media is saved in this browser, separately from announcement text.</small>
+							<button type="button" id="m-annMediaRemove" class="btn-cancel bulletin-remove-media" hidden>Remove attachment</button>
 							<div
 								id="m-annMediaPreview"
 								class="bulletin-media-preview"
@@ -2134,7 +2132,7 @@
 						</div>
 					</div>
 					<aside class="bulletin-live-preview-wrap">
-						<div class="bulletin-preview-toolbar" aria-label="Preview controls">
+						<div class="bulletin-preview-toolbar" role="group" aria-label="Preview controls">
 							<span class="bulletin-editor-kicker"><span>Live preview</span></span>
 							<div class="bulletin-zoom-controls" role="group" aria-label="Preview zoom">
 								<button type="button" id="annPreviewZoomOut" aria-label="Zoom out">−</button>
@@ -2143,28 +2141,26 @@
 								<button type="button" id="annPreviewZoomReset">Reset</button>
 							</div>
 						</div>
-						<article class="bulletin-live-preview">
-							<div class="bulletin-preview-brand">
-								<i class="fas fa-bullhorn"></i> COGNITIA CAMPUS BULLETIN
+						<div
+							class="bulletin-preview-viewport"
+							id="annPreviewViewport"
+							tabindex="0"
+							aria-label="Announcement preview. Zoom in, then drag to pan."
+						>
+							<div class="bulletin-preview-content" id="annPreviewContent">
+								<article class="bulletin-live-preview">
+									<div class="bulletin-preview-brand">
+										<i class="fas fa-bullhorn"></i> COGNITIA CAMPUS BULLETIN
+									</div>
+									<span id="annPreviewCategory" class="bulletin-category-pill">Academic</span>
+									<h3 id="annPreviewTitle">Your announcement title</h3>
+									<div class="bulletin-preview-meta" id="annPreviewMeta">Preview · All Users</div>
+									<div class="bulletin-preview-body" id="annPreviewBody">
+										Your full announcement content will appear here. Use the preview to check readability before publishing.
+									</div>
+									<div id="annPreviewMedia"></div>
+								</article>
 							</div>
-							<span id="annPreviewCategory" class="bulletin-category-pill"
-								>Academic</span
-							>
-							<h3 id="annPreviewTitle">Your announcement title</h3>
-							<div class="bulletin-preview-meta" id="annPreviewMeta">
-								Preview · All Users
-							</div>
-							<div class="bulletin-preview-body" id="annPreviewBody">
-								Your full announcement content will appear here. Use the preview
-								to check readability before publishing.
-							</div>
-							<div id="annPreviewMedia"></div>
-						</article>
-						<div class="bulletin-before-publish">
-							<strong>Before publishing</strong
-							><span>✓ Check the title and content.</span
-							><span>✓ Confirm the intended audience.</span
-							><span>✓ Verify the publication date.</span>
 						</div>
 					</aside>
 				</div>
@@ -2321,6 +2317,7 @@
 
 		<script src="js/academic-config.js"></script>
 		<script src="js/sidebar.js"></script>
+		<script src="js/bulletin-media.js"></script>
 		<script src="js/admin.js"></script>
 		<script src="js/approval.js"></script>
 		<script src="js/calendar.js"></script>

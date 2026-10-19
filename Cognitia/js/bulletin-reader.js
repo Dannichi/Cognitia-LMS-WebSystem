@@ -84,11 +84,28 @@ document.addEventListener("DOMContentLoaded", () => {
 		const meta = create("div", "bulletin-article-meta", `${a.audience === "students" ? "Students" : a.audience === "professors" ? "Professors" : "All Users"} · ${displayDate(a)}${a.type && a.type !== "info" ? ` · ${a.type}` : ""}`);
 		const content = create("div", "bulletin-detail-content", a.body || a.message || a.content || "");
 		inner.append(head, title, meta, content); dialog.appendChild(inner);
+		let mediaURL = null;
 		dialog.addEventListener("click", (event) => { if (event.target === dialog) dialog.close(); });
-		dialog.addEventListener("close", () => dialog.remove());
+		dialog.addEventListener("close", () => { if (mediaURL) URL.revokeObjectURL(mediaURL); dialog.remove(); });
 		document.body.appendChild(dialog);
 		dialog.showModal();
 		close.focus();
+		if (a.mediaAttachment?.type && window.CognitiaBulletinMedia) {
+			window.CognitiaBulletinMedia.get(a.id).then((record) => {
+				if (!dialog.open) return;
+				if (!record?.blob) { inner.appendChild(create("p", "bulletin-media-error", "This attachment is unavailable in this browser.")); return; }
+				mediaURL = URL.createObjectURL(record.blob);
+				const isVideo = String(record.type || a.mediaAttachment.type).startsWith("video/");
+				const media = document.createElement(isVideo ? "video" : "img");
+				media.src = mediaURL;
+				media.alt = isVideo ? "Announcement video" : "Announcement image";
+				if (isVideo) { media.controls = true; media.preload = "metadata"; }
+				const mediaWrap = create("div", "bulletin-detail-media");
+				mediaWrap.appendChild(media);
+				media.addEventListener("error", () => mediaWrap.replaceChildren(create("p", "bulletin-media-error", "This attachment could not be loaded.")));
+				inner.appendChild(mediaWrap);
+			}).catch(() => { if (dialog.open) inner.appendChild(create("p", "bulletin-media-error", "This attachment could not be loaded.")); });
+		}
 	}
 	function articleCard(a, featured = false) {
 		const card = create("article", `bulletin-article-card${featured ? " is-featured" : ""}`);
