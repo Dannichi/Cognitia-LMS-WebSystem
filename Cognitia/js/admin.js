@@ -2878,6 +2878,59 @@ document.addEventListener("DOMContentLoaded", () => {
 		setText("annPreviewCategory", ANN_CATEGORIES[category] || "General");
 		setText("annPreviewMeta", `Preview · ${ANN_AUDIENCES[audience] || "All Users"} · ${scheduled ? date ? `Scheduled for ${formatAnnouncementDate(date)}` : "Choose a publication date" : "Will publish immediately"}`);
 	}
+	const announcementPreview = document.querySelector("#announcementModal .bulletin-live-preview");
+	let announcementPreviewZoom = 1;
+	function setAnnouncementPreviewZoom(value) {
+		announcementPreviewZoom = Math.min(1.5, Math.max(0.5, value));
+		if (announcementPreview) {
+			announcementPreview.style.zoom = String(announcementPreviewZoom);
+			announcementPreview.style.width = `${100 / announcementPreviewZoom}%`;
+		}
+		setText("annPreviewZoomValue", `${Math.round(announcementPreviewZoom * 100)}%`);
+	}
+	document.getElementById("annPreviewZoomOut")?.addEventListener("click", () => setAnnouncementPreviewZoom(announcementPreviewZoom - 0.1));
+	document.getElementById("annPreviewZoomIn")?.addEventListener("click", () => setAnnouncementPreviewZoom(announcementPreviewZoom + 0.1));
+	document.getElementById("annPreviewZoomReset")?.addEventListener("click", () => setAnnouncementPreviewZoom(1));
+	setAnnouncementPreviewZoom(1);
+
+	function openAnnouncementViewer(a) {
+		const dialog = document.createElement("dialog");
+		dialog.className = "bulletin-detail-dialog";
+		dialog.setAttribute("aria-labelledby", "adminBulletinDetailTitle");
+		const inner = makeEl("div", "bulletin-detail-inner");
+		const head = makeEl("div", "bulletin-detail-head");
+		const category = makeEl("span", "bulletin-category-pill", ANN_CATEGORIES[safeAnnouncementCategory(a)] || "General");
+		const close = makeEl("button", "bulletin-detail-close", "Close");
+		close.type = "button";
+		close.setAttribute("aria-label", "Close announcement");
+		close.addEventListener("click", () => dialog.close());
+		head.append(category, close);
+		const title = makeEl("h2", "", String(a.title || "Announcement"));
+		title.id = "adminBulletinDetailTitle";
+		const audience = ANN_AUDIENCES[a.audience] || "All Users";
+		const status = announcementStatus(a);
+		const meta = makeEl("div", "bulletin-article-meta", `${audience} · ${status === "scheduled" ? "Scheduled for" : status === "draft" ? "Saved" : "Published"} ${formatAnnouncementDate(announcementDate(a))}${a.type && a.type !== "info" ? ` · ${{ warning: "Important", urgent: "Urgent" }[a.type] || ""}` : ""}`);
+		const content = makeEl("div", "bulletin-detail-content", String(a.body || a.message || a.content || ""));
+		inner.append(head, title, meta, content);
+		const mediaSource = a.mediaDataUrl || a.attachmentDataUrl;
+		if (typeof mediaSource === "string" && /^(data:image\/|data:video\/|blob:|https:\/\/)/i.test(mediaSource)) {
+			const mediaType = String(a.mediaType || a.attachmentType || "");
+			const isVideo = mediaType.startsWith("video/") || /^data:video\//i.test(mediaSource);
+			const media = document.createElement(isVideo ? "video" : "img");
+			media.src = mediaSource;
+			media.alt = isVideo ? "Announcement video" : "Announcement image";
+			if (isVideo) { media.controls = true; media.preload = "metadata"; }
+			const mediaWrap = makeEl("div", "bulletin-detail-media");
+			mediaWrap.appendChild(media);
+			inner.appendChild(mediaWrap);
+		}
+		dialog.appendChild(inner);
+		dialog.addEventListener("click", (event) => { if (event.target === dialog) dialog.close(); });
+		dialog.addEventListener("close", () => dialog.remove());
+		document.body.appendChild(dialog);
+		dialog.showModal();
+		close.focus();
+	}
 	window._previewAnnouncement = previewAnnouncement;
 	function clearAnnouncementMedia() {
 		if (annMediaURL) URL.revokeObjectURL(annMediaURL);
@@ -3082,9 +3135,10 @@ document.addEventListener("DOMContentLoaded", () => {
 			const footer = makeEl("div", "bulletin-admin-card__footer");
 			footer.appendChild(makeEl("span", "", `${status === "scheduled" ? "Publishes" : status === "draft" ? "Saved" : "Published"} · ${formatAnnouncementDate(announcementDate(a))}`));
 			const actions = makeEl("div", "bulletin-card-actions");
+			const view = makeEl("button", "view", "View Announcement"); view.type = "button"; view.addEventListener("click", () => openAnnouncementViewer(a));
 			const edit = makeEl("button", "", "Edit"); edit.type = "button"; edit.addEventListener("click", () => openEditAnnouncement(a.id));
 			const remove = makeEl("button", "delete", "Delete"); remove.type = "button"; remove.addEventListener("click", () => confirmDelete("announcement", a.id, `announcement "${a.title || ""}"`));
-			actions.append(edit, remove); footer.appendChild(actions); card.append(top, meta, body, footer); grid.appendChild(card);
+			actions.append(view, edit, remove); footer.appendChild(actions); card.append(top, meta, body, footer); grid.appendChild(card);
 		});
 	}
 

@@ -2134,8 +2134,14 @@
 						</div>
 					</div>
 					<aside class="bulletin-live-preview-wrap">
-						<div class="bulletin-editor-kicker">
-							<span>Live preview</span><i class="far fa-eye"></i>
+						<div class="bulletin-preview-toolbar" aria-label="Preview controls">
+							<span class="bulletin-editor-kicker"><span>Live preview</span></span>
+							<div class="bulletin-zoom-controls" role="group" aria-label="Preview zoom">
+								<button type="button" id="annPreviewZoomOut" aria-label="Zoom out">−</button>
+								<output id="annPreviewZoomValue" aria-live="polite">100%</output>
+								<button type="button" id="annPreviewZoomIn" aria-label="Zoom in">+</button>
+								<button type="button" id="annPreviewZoomReset">Reset</button>
+							</div>
 						</div>
 						<article class="bulletin-live-preview">
 							<div class="bulletin-preview-brand">
