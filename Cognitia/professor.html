@@ -6,6 +6,7 @@
 		<title>Cognitia — Professor</title>
 		<link rel="stylesheet" href="styles/professor.css" />
 		<link rel="stylesheet" href="styles/dark-mode.css" />
+		<link rel="stylesheet" href="styles/bulletin.css" />
 		<script src="js/theme.js"></script>
 		<script src="js/session.js"></script>
 		<script src="js/notification.js"></script>
@@ -603,27 +604,12 @@
 
 				<!-- BULLETIN -->
 				<section id="bulletin" class="page">
-					<div class="page-header">
-						<div>
-							<h2>Campus Bulletin</h2>
-							<p class="page-sub">
-								Announcements &amp; notices from administration
-							</p>
-						</div>
-						<select id="bulletin-date-filter" class="toolbar-select">
-							<option value="">All</option>
-							<option value="upcoming">Upcoming</option>
-							<option value="past">Past</option>
-						</select>
-					</div>
-					<div
-						style="display: flex; flex-direction: column; gap: 12px"
-						id="bulletin-list"
-					>
-						<div class="empty-state">
-							<i class="fas fa-bullhorn"></i>
-							<p>No announcements yet.</p>
-						</div>
+					<div class="bulletin-reader-heading"><div><h2>Campus Bulletin</h2><p class="page-sub">Official announcements, academic updates, and campus events.</p></div></div>
+					<div class="bulletin-reader-search"><i class="fas fa-search"></i><input id="bulletinSearch" type="search" placeholder="Search campus announcements…" aria-label="Search campus announcements"></div>
+					<div class="bulletin-reader-layout">
+						<aside class="bulletin-categories"><h3>Categories</h3><nav id="bulletinCategories" aria-label="Announcement categories"></nav></aside>
+						<div class="bulletin-feed-column"><div class="bulletin-column-heading"><div><h3>Latest announcements</h3><p>Stay informed about what’s happening on campus.</p></div><span id="bulletinFeedCount"></span></div><div id="bulletinFeatured"></div><div id="bulletinFeed" class="bulletin-feed"></div></div>
+						<aside class="bulletin-highlights"><h3>Campus highlights</h3><div id="bulletinHighlights"></div></aside>
 					</div>
 				</section>
 
@@ -1620,6 +1606,7 @@
 
 		<script>if (!CognitiaSession.requireRole("professor")) document.documentElement.style.visibility = "hidden";</script>
 		<script src="js/professor.js"></script>
+		<script src="js/bulletin-reader.js"></script>
 		<script src="js/topbar.js"></script>
 		<script src="js/prof-calendar.js"></script>
 	</body>

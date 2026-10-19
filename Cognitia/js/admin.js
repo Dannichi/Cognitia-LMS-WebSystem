@@ -22,6 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		Limit: two tabs editing the SAME existing record still overwrite each
 		other; localStorage has no locks or transactions. A backend fixes that. */
 	let knownUserIds = new Set();
+	let knownAnnouncementIds = new Set();
 
 	function readStoredState() {
 		try {
@@ -59,7 +60,21 @@ document.addEventListener("DOMContentLoaded", () => {
 		return changed;
 	}
 
+	function syncAnnouncementsFromStorage(stored) {
+		if (!Array.isArray(stored?.announcements)) return;
+		const storedIds = new Set(stored.announcements.map((a) => a?.id).filter((id) => id != null));
+		stored.announcements.forEach((announcement) => {
+			if (announcement?.id != null && !knownAnnouncementIds.has(announcement.id) && !state.announcements.some((item) => item?.id === announcement.id))
+				state.announcements.push(announcement);
+		});
+		state.announcements = state.announcements.filter((announcement) =>
+			!(announcement?.id != null && knownAnnouncementIds.has(announcement.id) && !storedIds.has(announcement.id)),
+		);
+		knownAnnouncementIds = storedIds;
+	}
+
 	function persistState() {
+		let persisted = false;
 		try {
 			const existing = (() => {
 				try {
@@ -74,6 +89,8 @@ document.addEventListener("DOMContentLoaded", () => {
 				renderUsers();
 				updateStats();
 			}
+			if (Array.isArray(state.announcements) && Array.isArray(existing.announcements)) syncAnnouncementsFromStorage(existing);
+			if (Array.isArray(existing.announcements)) renderAnnouncements();
 			localStorage.setItem(
 				DB_KEY,
 				JSON.stringify({
@@ -95,11 +112,15 @@ document.addEventListener("DOMContentLoaded", () => {
 				}),
 			);
 			knownUserIds = new Set(state.users.map((u) => u.id));
+			knownAnnouncementIds = new Set(state.announcements.map((a) => a?.id).filter((id) => id != null));
+			persisted = true;
 		} catch (e) {
 			console.warn("Cognitia: could not persist state", e);
 		}
+		if (!persisted) return false;
 		setTimeout(() => window._syncGenDropdowns?.(), 0);
 		window.dispatchEvent(new CustomEvent("cognitia:state-saved"));
+		return true;
 	}
 
 	function loadState() {
@@ -112,10 +133,11 @@ document.addEventListener("DOMContentLoaded", () => {
 				sections: saved.sections || [],
 				courses: saved.courses || [],
 				users: saved.users || [],
-				announcements: saved.announcements || [],
+				announcements: Array.isArray(saved.announcements) ? saved.announcements : [],
 				nextId: saved.nextId || 1,
 			});
 			knownUserIds = new Set(state.users.map((u) => u.id));
+			knownAnnouncementIds = new Set(state.announcements.filter((a) => a && a.id != null).map((a) => a.id));
 		} catch (e) {
 			console.warn("Cognitia: could not load state", e);
 		}
@@ -130,6 +152,10 @@ document.addEventListener("DOMContentLoaded", () => {
 		nextId: 1,
 		editTarget: null,
 	};
+	const academicConfig = window.COGNITIA_ACADEMIC_CONFIG;
+	let activeProgramId = null;
+	let activeProgramCatalogId = null;
+	let programModalDirty = false;
 
 	// Load persisted data immediately after state is declared
 	loadState();
@@ -207,7 +233,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	}
 
 	function getProgramName(programId) {
-		const p = state.programs.find((p) => p.id === programId);
+		const p = state.programs.find((p) => String(p.id) === String(programId));
 		return p ? p.code : "—";
 	}
 
@@ -251,8 +277,102 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	function sectionLabel(sec) {
 		return sec
-			? `${getProgramName(sec.programId)} ${sec.year}-${sec.letter}`
+			? `${getProgramName(sec.programId)} - ${sec.year}${String(sec.letter || "").toUpperCase()}`
 			: "";
+	}
+
+	function populateAcademicConfiguration() {
+		const yearSelects = ["m-sectionYear", "m-courseYear", "section-year-filter"];
+		yearSelects.forEach((id) => {
+			const select = document.getElementById(id);
+			if (!select) return;
+			const selected = select.value;
+			const includeAll = id === "section-year-filter";
+			select.replaceChildren();
+			if (includeAll) {
+				const all = document.createElement("option");
+				all.value = "";
+				all.textContent = "All Year Levels";
+				select.appendChild(all);
+			}
+			if (id === "m-sectionYear") select.add(new Option("Select year level", ""));
+			academicConfig.yearLevels.forEach(({ value, label }) => {
+				const option = document.createElement("option");
+				option.value = value;
+				option.textContent = label;
+				select.appendChild(option);
+			});
+			if ([...select.options].some((option) => option.value === selected)) select.value = selected;
+		});
+
+		const letterSelect = document.getElementById("m-sectionLetter");
+		if (letterSelect) {
+			letterSelect.replaceChildren(new Option("Select a letter", ""));
+			academicConfig.sectionLetters.forEach((letter) => letterSelect.add(new Option(letter, letter)));
+		}
+
+		const candidateList = document.getElementById("academicCandidateUnits");
+		if (candidateList) {
+			candidateList.replaceChildren();
+			(academicConfig.candidateUnits || []).forEach((unit) => {
+				const item = document.createElement("li");
+				const link = document.createElement("a");
+				link.href = unit.source;
+				link.target = "_blank";
+				link.rel = "noopener noreferrer";
+				link.textContent = unit.name;
+				item.append(link, document.createTextNode(" — listed by UCC; South Campus offering not verified"));
+				if (unit.programs?.length) {
+					const programs = document.createElement("ul");
+					unit.programs.forEach((program) => {
+						const programItem = document.createElement("li");
+						programItem.textContent = program.name;
+						programs.appendChild(programItem);
+					});
+					item.appendChild(programs);
+				}
+				candidateList.appendChild(item);
+			});
+		}
+		const excludedList = document.getElementById("academicExcludedUnits");
+		if (excludedList) {
+			const engineering = (academicConfig.excludedUnits || []).find((unit) => unit.id === "engineering");
+			excludedList.textContent = engineering ? `${engineering.name} excluded: ${engineering.reason}` : "";
+		}
+	}
+
+	function sectionDisplayName(section, program) {
+		return `${program?.code || "?"} - ${section.year}${String(section.letter || "").toUpperCase()}`;
+	}
+
+	function getSectionCourseIds(section) {
+		return Array.isArray(section?.courseIds) ? [...new Set(section.courseIds.map(String))] : [];
+	}
+
+	function getSectionProfessorAssignments(section) {
+		const assignments = new Map();
+		(Array.isArray(section?.professorAssignments) ? section.professorAssignments : []).forEach((item) => {
+			const professorId = String(item.professorId ?? item.userId ?? "");
+			if (professorId) assignments.set(professorId, { professorId, courseIds: Array.isArray(item.courseIds) ? [...new Set(item.courseIds.map(String))] : [] });
+		});
+		state.users.filter((user) => user.role === "professor" && (Array.isArray(user.sectionIds) ? user.sectionIds : Array.isArray(user.sections) ? user.sections : []).some((id) => String(id) === String(section?.id))).forEach((user) => {
+			const key = String(user.id);
+			if (!assignments.has(key)) assignments.set(key, { professorId: key, courseIds: [] });
+		});
+		return [...assignments.values()];
+	}
+
+	function selectedAcademicProgram() {
+		const value = document.getElementById("academic-program-select")?.value || "";
+		if (!value) return null;
+		const [kind, id] = value.split(":", 2);
+		if (kind === "legacy") return state.programs.find((program) => String(program.id) === id) || null;
+		if (kind === "example") return state.programs.find((program) => program.catalogId === id) || null;
+		return null;
+	}
+
+	function programSelectionValue(program) {
+		return program?.catalogId ? `example:${program.catalogId}` : `legacy:${program?.id}`;
 	}
 
 	function makeEl(tag, className, text) {
@@ -553,10 +673,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	function syncProgramDropdowns() {
 		const selectors = [
-			"m-sectionProgram",
 			"m-userProgram",
 			"course-program-filter",
-			"section-program-filter",
 			"user-program-filter",
 		];
 
@@ -576,6 +694,59 @@ document.addEventListener("DOMContentLoaded", () => {
 			});
 			sel.value = currentVal;
 		});
+		syncAcademicHierarchy();
+	}
+
+	function syncAcademicHierarchy() {
+		const unitSelect = document.getElementById("academic-unit-select");
+		const programSelect = document.getElementById("academic-program-select");
+		if (!unitSelect || !programSelect) return;
+		const campusFilter = document.getElementById("academic-campus-filter");
+		const oldCampus = campusFilter?.value || "";
+		if (campusFilter) {
+			campusFilter.replaceChildren(new Option("All Campuses", ""), ...academicConfig.campuses.map((campus) => new Option(campus.name, campus.id)));
+			campusFilter.value = academicConfig.campuses.some((campus) => campus.id === oldCampus) ? oldCampus : "";
+		}
+		const priorProgram = programSelect.value;
+		const priorUnit = unitSelect.value;
+		const departmentList = academicConfig.exampleUnits;
+		unitSelect.replaceChildren(new Option("All Colleges", ""), ...departmentList.map((unit) => new Option(unit.name, unit.id)));
+		unitSelect.value = [...unitSelect.options].some((option) => option.value === priorUnit) ? priorUnit : "";
+		programSelect.replaceChildren(new Option("Choose a program", ""));
+		departmentList.forEach((unit) => {
+			const group = document.createElement("optgroup");
+			group.label = unit.name;
+			unit.programs.forEach((program) => group.appendChild(new Option(`${program.code} — ${program.displayName}`, `example:${program.id}`)));
+			programSelect.appendChild(group);
+		});
+		const configuredIds = new Set(academicConfig.exampleUnits.flatMap((unit) => unit.programs.map((program) => program.id)));
+		state.programs.filter((program) => !configuredIds.has(program.catalogId)).forEach((program) => programSelect.add(new Option(`${program.code || "No code"} — ${program.name || "Unnamed program"}`, `legacy:${program.id}`)));
+		programSelect.value = [...programSelect.options].some((option) => option.value === priorProgram) ? priorProgram : "";
+		renderPrograms();
+		renderSections();
+	}
+
+	document.getElementById("academic-unit-select")?.addEventListener("change", syncAcademicHierarchy);
+	document.getElementById("clearAcademicFilters")?.addEventListener("click", () => {
+		document.getElementById("academic-campus-filter").value = "";
+		document.getElementById("academic-unit-select").value = "";
+		document.getElementById("program-search").value = "";
+		renderPrograms();
+	});
+	document.getElementById("academic-program-select")?.addEventListener("change", function () {
+		selectAcademicProgram(this.value);
+	});
+	function selectAcademicProgram(value) {
+		const unitSelect = document.getElementById("academic-unit-select");
+		const programSelect = document.getElementById("academic-program-select");
+		if (!unitSelect || !programSelect) return;
+		if (value.startsWith("example:")) {
+			const option = configuredProgram(value.slice("example:".length));
+			if (option) unitSelect.value = option.unitId;
+		} else unitSelect.value = "";
+		syncAcademicHierarchy();
+		programSelect.value = value;
+		renderSections();
 	}
 
 	/* ═══════════════════════════════════════════
@@ -612,22 +783,18 @@ document.addEventListener("DOMContentLoaded", () => {
 	const CRUMB_LABELS = {
 		dashboard: "Dashboard",
 		bulletin: "Bulletin",
-		programs: "Programs",
-		sections: "Sections",
+		programs: "Academic Management",
+		sections: "Academic Management",
 		courses: "Courses",
 		activity: "Recent Activity",
 		profile: "Account",
 	};
-	let sectionCrumbLabel = ""; // set by openSectionDetails()
 
 	function updateBreadcrumb(target, userFilter = "") {
 		const crumbs = [{ label: "Admin", target: "dashboard" }];
 		if (target === "manage-users") {
 			crumbs.push({ label: "User Management" }); // group only, no page of its own
 			crumbs.push({ label: userFilter === "professor" ? "Professors" : "Students" });
-		} else if (target === "section-details") {
-			crumbs.push({ label: "Sections", target: "sections" });
-			crumbs.push({ label: sectionCrumbLabel || "Section Details" });
 		} else {
 			crumbs.push({ label: CRUMB_LABELS[target] || target });
 		}
@@ -652,7 +819,29 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 		setText("mobileHeaderTitle", crumbs[crumbs.length - 1].label);
 	}
+	function updateAcademicBreadcrumb(view = "list") {
+		const program = state.programs.find((item) => String(item.id) === String(activeProgramId));
+		const section = state.sections.find((item) => String(item.id) === String(_currentSectionId));
+		const crumbs = [{ label: "Admin", target: "dashboard" }, { label: "Academic Management", academicTarget: "list" }];
+		if (view !== "list" && program) crumbs.push({ label: program.name || program.code, academicTarget: "sections" });
+		if (view === "details" && section) crumbs.push({ label: sectionDisplayName(section, program) });
+		const list = document.getElementById("breadcrumbList");
+		if (!list) return;
+		list.replaceChildren(...crumbs.map((crumb, index) => {
+			const li = document.createElement("li");
+			const last = index === crumbs.length - 1;
+			const el = document.createElement(last ? "span" : "button");
+			el.textContent = crumb.label;
+			if (last) el.setAttribute("aria-current", "page");
+			else { el.type = "button"; el.className = "breadcrumb-link"; if (crumb.target) el.dataset.target = crumb.target; if (crumb.academicTarget) el.dataset.academicTarget = crumb.academicTarget; }
+			li.appendChild(el); return li;
+		}));
+		setText("mobileHeaderTitle", crumbs[crumbs.length - 1].label);
+	}
 	document.getElementById("breadcrumbList")?.addEventListener("click", (e) => {
+		const academicTarget = e.target.closest("[data-academic-target]")?.dataset.academicTarget;
+		if (academicTarget === "list") { showAcademicList(); return; }
+		if (academicTarget === "sections") { showProgramSections(); return; }
 		const link = e.target.closest("[data-target]");
 		if (link) navigateTo(link.dataset.target);
 	});
@@ -666,7 +855,8 @@ document.addEventListener("DOMContentLoaded", () => {
 			l.classList.toggle("active", isNavActive(l, target, userFilter)),
 		);
 		if (target === "manage-users") setUserView(userFilter);
-		updateBreadcrumb(target, userFilter);
+		if (target === "programs") showAcademicList();
+		else updateBreadcrumb(target, userFilter);
 		mobileItems.forEach((b) =>
 			b.classList.toggle("active", b.dataset.target === target),
 		);
@@ -681,6 +871,11 @@ document.addEventListener("DOMContentLoaded", () => {
 			),
 		);
 		pages.forEach((p) => p.classList.toggle("active", p.id === target));
+		if (target === "programs") {
+			document.getElementById("academic-list-view").hidden = false;
+			document.getElementById("program-sections-view").hidden = true;
+			document.getElementById("section-details").hidden = true;
+		}
 		if (target === "bulletin") renderAnnouncements();
 		if (target === "activity") renderActivityPage();
 		if (target === "dashboard") renderRecentPreview(); // refresh "x min ago"
@@ -870,11 +1065,19 @@ document.addEventListener("DOMContentLoaded", () => {
 	});
 	document.querySelectorAll(".modal").forEach((modal) => {
 		modal.addEventListener("click", (e) => {
-			if (e.target === modal) closeAllModals();
+			if (e.target !== modal) return;
+			if (modal.id === "programModal") closeProgramModal();
+			else if (modal.id === "programCourseAddModal") closeProgramCourseAddModal();
+			else if (modal.id === "programCoursesModal") closeProgramCoursesModal();
+			else closeAllModals();
 		});
 	});
 	document.addEventListener("keydown", (e) => {
-		if (e.key === "Escape") closeAllModals();
+		if (e.key !== "Escape") return;
+		if (document.getElementById("programCourseAddModal")?.classList.contains("active")) closeProgramCourseAddModal();
+		else if (document.getElementById("programCoursesModal")?.classList.contains("active")) closeProgramCoursesModal();
+		else if (document.getElementById("programModal")?.classList.contains("active")) closeProgramModal();
+		else closeAllModals();
 	});
 
 	function resetAnnouncementModalState() {
@@ -882,7 +1085,8 @@ document.addEventListener("DOMContentLoaded", () => {
 		if (badge) badge.style.display = "none";
 
 		const title = document.getElementById("announcementModalTitle");
-		if (title) title.textContent = "New Announcement";
+		if (title) title.textContent = "Create Announcement";
+		setText("announcementModalSubtitle", "Compose, preview, and publish an official campus update.");
 
 		const btn = document.getElementById("saveAnnouncementBtn");
 		if (btn) btn.textContent = "Post Announcement";
@@ -990,182 +1194,416 @@ document.addEventListener("DOMContentLoaded", () => {
 	/* ═══════════════════════════════════════════
 		PROGRAMS
 	═══════════════════════════════════════════ */
+	function closeProgramModal(force = false) {
+		if (!force && programModalDirty && !confirm("Discard unsaved program changes?")) return;
+		document.getElementById("programModal")?.classList.remove("active");
+		programModalDirty = false;
+		state.editTarget = null;
+	}
+	document.getElementById("programModalCloseBtn")?.addEventListener("click", () => closeProgramModal());
+	document.getElementById("programCancelBtn")?.addEventListener("click", () => closeProgramModal());
+	["m-programCampus", "m-programUnit", "m-programCatalogOption", "m-programNameLegacy", "m-programDesc", "m-programStatus"].forEach((id) => {
+		document.getElementById(id)?.addEventListener("input", () => { programModalDirty = true; });
+		document.getElementById(id)?.addEventListener("change", () => { programModalDirty = true; });
+	});
+	document.querySelectorAll("#m-colorPicker .color-option").forEach((option) => option.addEventListener("click", () => { programModalDirty = true; }));
+	document.getElementById("m-programNameLegacy")?.addEventListener("input", function () { document.getElementById("m-programName").value = this.value; });
+	document.getElementById("academic-campus-filter")?.addEventListener("change", renderPrograms);
+	document.getElementById("m-programCampus")?.addEventListener("change", () => {
+		populateProgramModalCatalog();
+		programModalDirty = true;
+	});
+	document.getElementById("m-programUnit")?.addEventListener("change", () => {
+		populateProgramModalCatalog();
+		programModalDirty = true;
+	});
+	document.getElementById("m-programCatalogOption")?.addEventListener("change", function () {
+		const option = configuredProgram(this.value);
+		document.getElementById("m-programName").value = option?.name || "";
+		document.getElementById("m-programCode").value = option?.code || "";
+		document.getElementById("m-programIdDisplay").value = "Generated on save";
+		setError("m-programCatalogOptionErr", "");
+		programModalDirty = true;
+	});
+	function configuredProgram(id) {
+		return academicConfig.exampleUnits.flatMap((unit) => unit.programs.map((program) => ({ ...program, unitId: unit.id, unitName: unit.name }))).find((program) => program.id === id) || null;
+	}
+	function populateProgramModalCatalog(selected = "") {
+		const select = document.getElementById("m-programCatalogOption");
+		const unitId = document.getElementById("m-programUnit")?.value;
+		select.replaceChildren(new Option("Select a predefined program", ""));
+		const unit = academicConfig.exampleUnits.find((item) => item.id === unitId);
+		(unit?.programs || []).forEach((program) => select.add(new Option(`${program.displayName} — ${program.code}`, program.id)));
+		select.value = [...select.options].some((option) => option.value === selected) ? selected : "";
+		const chosen = configuredProgram(select.value);
+		document.getElementById("m-programName").value = chosen?.name || "";
+		document.getElementById("m-programCode").value = chosen?.code || "";
+	}
+	function initProgramModalCatalog() {
+		const campus = document.getElementById("m-programCampus");
+		campus.replaceChildren(new Option("Select campus", ""));
+		academicConfig.campuses.forEach((item) => campus.add(new Option(item.name, item.id)));
+		const unit = document.getElementById("m-programUnit");
+		unit.replaceChildren(new Option("Select college or department", ""));
+		academicConfig.exampleUnits.forEach((item) => unit.add(new Option(item.name, item.id)));
+	}
+	initProgramModalCatalog();
+
 	document
 		.getElementById("openAddProgramBtn")
-		?.addEventListener("click", () => {
+		?.addEventListener("click", (event) => {
 			state.editTarget = null;
-			document.getElementById("programModalTitle").textContent = "Add Program";
-			document.getElementById("saveProgramBtn").textContent = "Save Program";
+			const preselect = event.currentTarget.dataset.catalogId || "";
+			delete event.currentTarget.dataset.catalogId;
+			setText("programModalTitle", "Add Academic Program");
+			setText("saveProgramBtn", "Save Program");
+			document.getElementById("programCatalogFields").hidden = false;
+			document.getElementById("legacyProgramEditNote").hidden = true;
+			document.getElementById("legacyProgramNameGroup").hidden = true;
+			document.getElementById("m-programNameLegacy").value = "";
+			document.getElementById("m-programCampus").disabled = false;
+			document.getElementById("m-programUnit").disabled = false;
+			document.getElementById("m-programCatalogOption").disabled = false;
+			document.getElementById("m-programCampus").value = "";
+			document.getElementById("m-programUnit").value = "";
+			populateProgramModalCatalog();
+			document.getElementById("m-programCatalogOption").value = "";
 			document.getElementById("m-programName").value = "";
 			document.getElementById("m-programCode").value = "";
+			if (preselect) {
+					const option = configuredProgram(preselect);
+					if (option) { document.getElementById("m-programCampus").value = academicConfig.campuses[0]?.id || ""; document.getElementById("m-programUnit").value = option.unitId; populateProgramModalCatalog(preselect); }
+			}
+			document.getElementById("m-programIdDisplay").value = "Generated on save";
 			document.getElementById("m-programDesc").value = "";
 			document.getElementById("m-programStatus").value = "Active";
 			document
 				.querySelectorAll("#m-colorPicker .color-option")
 				.forEach((o) => o.classList.remove("selected"));
+			const defaultColor = document.querySelector("#m-colorPicker .color-option");
+			if (defaultColor) setSelectedColor("m-colorPicker", defaultColor.dataset.color);
 			clearErrors("m-programNameErr", "m-programCodeErr", "m-programColorErr");
+			setError("m-programCatalogOptionErr", "");
+			setError("m-programCampusErr", "");
+			setError("m-programUnitErr", "");
+			programModalDirty = false;
 			openModal("programModal");
 		});
 
 	document.getElementById("saveProgramBtn")?.addEventListener("click", () => {
-		const name = document.getElementById("m-programName").value;
-		const code = document.getElementById("m-programCode").value;
+		const saveButton = document.getElementById("saveProgramBtn");
+		if (saveButton.disabled) return;
+		const isEditing = state.editTarget?.type === "program";
+		const name = isEditing && !state.programs.find((p) => String(p.id) === String(state.editTarget.id))?.catalogId
+			? document.getElementById("m-programNameLegacy").value.trim()
+			: document.getElementById("m-programName").value.trim();
+		const code = document.getElementById("m-programCode").value.trim();
 		const desc = document.getElementById("m-programDesc").value;
 		const status = document.getElementById("m-programStatus").value;
 		const color = getSelectedColor("m-colorPicker");
+		const catalogId = document.getElementById("m-programCatalogOption")?.value || "";
+		const campusId = document.getElementById("m-programCampus").value;
+		const unitId = document.getElementById("m-programUnit").value;
+		const campusValid = isEditing || academicConfig.campuses.some((item) => item.id === campusId);
+		const unit = academicConfig.exampleUnits.find((item) => item.id === unitId);
+		const catalogEntry = unit?.programs.find((program) => program.id === catalogId);
+		setError("m-programCampusErr", !isEditing && !campusValid ? "Select a campus from the configured catalog." : "");
+		setError("m-programUnitErr", !isEditing && !unit ? "Select a college or department from the configured catalog." : "");
+		setError("m-programCatalogOptionErr", !isEditing && !catalogEntry ? "Select a program from the configured catalog." : "");
+		const legacyNameValid = !isEditing || !!name;
+		setError("m-programNameErr", !legacyNameValid ? "Program name is required." : "");
+		const vColor = color ? true : (setError("m-programColorErr", "Please select a color."), false);
+		if (!campusValid || (!isEditing && (!unit || !catalogEntry)) || !legacyNameValid || !vColor) return;
+		const currentId = isEditing ? state.editTarget.id : null;
+		if (!isEditing && state.programs.some((program) => program.catalogId === catalogEntry.id)) {
+			setError("m-programCatalogOptionErr", "This catalog program already has a saved record. Use its existing card to manage it."); return;
+		}
+		if (isEditing && !state.programs.find((program) => String(program.id) === String(currentId))?.catalogId && state.programs.some((program) => String(program.id) !== String(currentId) && String(program.name || "").trim().toLowerCase() === name.toLowerCase())) {
+			setError("m-programNameErr", "A program with this name already exists."); return;
+		}
 
-		const vName = validateField(name, "m-programNameErr", [
-			{ test: required, msg: "Program name is required." },
-			{
-				test: (v) => /^[A-Za-z0-9\s\-&]+$/.test(v.trim()),
-				msg: "No special characters allowed.",
-			},
-		]);
-		const vCode = validateField(code, "m-programCodeErr", [
-			{ test: required, msg: "Program code is required." },
-		]);
-		const vColor = color
-			? true
-			: (setError("m-programColorErr", "Please select a color."), false);
-		if (!vName || !vCode || !vColor) return;
-
-		const currentId =
-			state.editTarget?.type === "program" ? state.editTarget.id : null;
-		const dupName = state.programs.find(
-			(p) =>
-				p.name.trim().toLowerCase() === name.trim().toLowerCase() &&
-				p.id !== currentId,
-		);
-		const dupCode = state.programs.find(
-			(p) =>
-				p.code.trim().toLowerCase() === code.trim().toLowerCase() &&
-				p.id !== currentId,
-		);
-		if (dupName) {
-			setError("m-programNameErr", "A program with this name already exists.");
+		const previousPrograms = state.programs;
+		const previousNextId = state.nextId;
+		let savedProgram;
+		if (isEditing) {
+			const existing = state.programs.find((program) => String(program.id) === String(currentId));
+			if (!existing) return;
+			savedProgram = { ...existing, desc: desc.trim(), status, color };
+			if (!existing.catalogId) savedProgram.name = name;
+			state.programs = state.programs.map((program) => String(program.id) === String(currentId) ? savedProgram : program);
+		} else {
+			savedProgram = { id: uid(), name: catalogEntry.name, code: catalogEntry.code, desc: desc.trim(), status, color, catalogId: catalogEntry.id, department: unit.name, departmentId: unit.id, campusId };
+			state.programs = [...state.programs, savedProgram];
+		}
+		setButtonLoading(saveButton, true, "Save Program");
+		if (!persistState()) {
+			state.programs = previousPrograms; state.nextId = previousNextId;
+			setButtonLoading(saveButton, false, isEditing ? "Update Program" : "Save Program");
+			showToast("Program could not be saved. Check browser storage and try again.", true);
 			return;
 		}
-		// Program codes CAN be duplicated — no restriction on dupCode
-
-		if (state.editTarget?.type === "program") {
-			const prog = state.programs.find((p) => p.id === state.editTarget.id);
-			Object.assign(prog, {
-				name: name.trim(),
-				code: code.trim(),
-				desc: desc.trim(),
-				status,
-				color,
-			});
-			logActivity({
-				entityType: "program",
-				action: "updated",
-				entityId: prog.id,
-				entityLabel: prog.code,
-				description: `Updated program ${prog.code} (${prog.name})`,
-			});
-			showToast(`Program "${prog.code}" updated.`);
-		} else {
-			const prog = {
-				id: uid(),
-				name: name.trim(),
-				code: code.trim(),
-				desc: desc.trim(),
-				status,
-				color,
-			};
-			state.programs.push(prog);
-			logActivity({
-				entityType: "program",
-				action: "created",
-				entityId: prog.id,
-				entityLabel: prog.code,
-				description: `Added program ${prog.code} (${prog.name})`,
-			});
-			showToast(`Program "${prog.code}" added.`);
-		}
-
-		syncProgramDropdowns();
-		renderPrograms();
-		updateStats();
-		persistState();
-		closeAllModals();
+		syncProgramDropdowns(); renderPrograms(); renderSections(); updateStats();
+		logActivity({ entityType: "program", action: isEditing ? "updated" : "created", entityId: savedProgram.id, entityLabel: savedProgram.code, description: `${isEditing ? "Updated" : "Added"} program ${savedProgram.code} (${savedProgram.name})` });
+		programModalDirty = false;
+		closeProgramModal(true);
+		showToast(`Program "${savedProgram.code}" ${isEditing ? "updated" : "added"}.`);
 	});
 
 	function renderPrograms() {
 		const grid = document.getElementById("program-grid");
-		const search = document
-			.getElementById("program-search")
-			.value.toLowerCase();
-		const filter = document
-			.getElementById("program-status-filter")
-			.value.toLowerCase();
-
-		const filtered = state.programs.filter(
-			(p) =>
-				(p.name.toLowerCase().includes(search) ||
-					p.code.toLowerCase().includes(search)) &&
-				(!filter || p.status.toLowerCase() === filter),
-		);
-
-		grid.innerHTML = "";
-		if (filtered.length === 0) {
-			grid.innerHTML =
-				'<p class="empty-state full-span" id="programEmpty">No programs found.</p>';
-			return;
+		const legacyGrid = document.getElementById("legacy-program-grid");
+		if (!grid) return;
+		const search = (document.getElementById("program-search")?.value || "").toLowerCase().trim();
+		const unitFilter = document.getElementById("academic-unit-select")?.value || "";
+		const campusFilter = document.getElementById("academic-campus-filter")?.value || "";
+		const clearFilters = document.getElementById("clearAcademicFilters");
+		if (clearFilters) clearFilters.hidden = !(search || unitFilter || campusFilter);
+		const options = academicConfig.exampleUnits.flatMap((unit) => unit.programs.map((program) => ({ ...program, unitId: unit.id, unitName: unit.name })))
+			.filter((program) => (!unitFilter || program.unitId === unitFilter) && `${program.name} ${program.displayName} ${program.code} ${program.unitName}`.toLowerCase().includes(search));
+		grid.replaceChildren();
+		const summaryFor = (program) => {
+			const sections = state.sections.filter((section) => String(section.programId) === String(program.id));
+			const sectionIds = new Set(sections.map((section) => String(section.id)));
+			const students = new Set(state.users.filter((user) => user.role === "student" && (String(user.programId) === String(program.id) || sectionIds.has(String(user.sectionId)))).map((user) => String(user.id)));
+			const courses = state.courses.filter((course) => getCourseProgramIds(course).some((id) => String(id) === String(program.id))).length;
+			return `${sections.length} sections · ${students.size} students · ${courses} courses`;
+		};
+		options.forEach((catalog) => {
+			const saved = state.programs.find((program) => program.catalogId === catalog.id);
+			if (!saved) return;
+			if (campusFilter && saved.campusId && String(saved.campusId) !== String(campusFilter)) return;
+			const card = makeEl("article", "program-card academic-program-card");
+			const top = makeEl("div", "academic-program-card-top");
+			top.append(makeEl("h3", "", saved.name || catalog.displayName));
+			top.appendChild(makeEl("span", `program-status${String(saved.status).toLowerCase() === "active" ? " is-active" : ""}`, saved.status || "Active"));
+			card.append(top, makeEl("p", "academic-program-meta", `${catalog.code} · ${saved.department || catalog.unitName}`), makeEl("p", "academic-program-summary", summaryFor(saved)));
+			const actions = makeEl("div", "academic-card-actions");
+			const courses = makeEl("button", "btn-cancel", "Courses"); courses.type = "button"; courses.addEventListener("click", () => openProgramCourses(saved.id));
+			const sections = makeEl("button", "btn-cancel", "Sections"); sections.type = "button"; sections.addEventListener("click", () => openProgramSections(saved.id));
+			const edit = makeEl("button", "btn-cancel", "Edit"); edit.type = "button"; edit.addEventListener("click", () => editProgram(saved.id));
+			const remove = makeEl("button", "btn-cancel delete academic-delete-btn", "Delete"); remove.type = "button"; remove.addEventListener("click", () => confirmDelete("program", saved.id, `program ${saved.code}`));
+			actions.append(courses, sections, edit, remove);
+			card.appendChild(actions); grid.appendChild(card);
+		});
+		const configuredIds = new Set(academicConfig.exampleUnits.flatMap((unit) => unit.programs.map((program) => program.id)));
+		const selectedUnitName = academicConfig.exampleUnits.find((unit) => unit.id === unitFilter)?.name;
+		const legacy = state.programs.filter((program) => !configuredIds.has(program.catalogId) && (!unitFilter || program.department === selectedUnitName) && (!campusFilter || !program.campusId || String(program.campusId) === String(campusFilter)) && `${program.name || ""} ${program.code || ""} ${program.department || ""}`.toLowerCase().includes(search));
+		legacy.forEach((program) => {
+			const card = makeEl("article", "program-card academic-program-card legacy-program-card");
+			const top = makeEl("div", "academic-program-card-top"); top.append(makeEl("h3", "", program.name || "Unnamed program"), makeEl("span", `program-status${String(program.status).toLowerCase() === "active" ? " is-active" : ""}`, program.status || "Active"));
+			card.append(top, makeEl("p", "academic-program-meta", `${program.code || "No code"} · ${program.department || "Academic program"}`), makeEl("p", "academic-program-summary", summaryFor(program)));
+			const actions = makeEl("div", "academic-card-actions");
+			const courses = makeEl("button", "btn-cancel", "Courses"); courses.type = "button"; courses.addEventListener("click", () => openProgramCourses(program.id));
+			const sections = makeEl("button", "btn-cancel", "Sections"); sections.type = "button"; sections.addEventListener("click", () => openProgramSections(program.id));
+			const edit = makeEl("button", "btn-cancel", "Edit"); edit.type = "button"; edit.addEventListener("click", () => editProgram(program.id));
+			const remove = makeEl("button", "btn-cancel delete academic-delete-btn", "Delete"); remove.type = "button"; remove.addEventListener("click", () => confirmDelete("program", program.id, `program ${program.code || program.name}`));
+			actions.append(courses, sections, edit, remove); card.appendChild(actions); grid.appendChild(card);
+		});
+		if (legacyGrid) { legacyGrid.replaceChildren(); legacyGrid.hidden = true; }
+		if (!grid.children.length) {
+			const message = state.programs.length === 0
+				? "No academic programs have been added yet. Use Add Program to create one."
+				: "No programs match your search or filters. Clear filters to see all saved programs.";
+			grid.appendChild(makeEl("p", "empty-state full-span", message));
 		}
+	}
 
-		filtered.forEach((p) => {
-			const card = document.createElement("div");
-			card.className = "program-card";
-			card.style.setProperty("--card-color", p.color);
-			card.innerHTML = `
-				<div class="program-top">
-					<h3>${p.name}</h3>
-					<span class="status ${p.status.toLowerCase()}">${p.status}</span>
-				</div>
-				<div class="program-code">${p.code}</div>
-				${p.desc ? `<p class="program-desc">${p.desc}</p>` : ""}
-				<div class="program-actions">
-					<button class="icon-btn edit" title="Edit"><i class="fas fa-edit"></i></button>
-					<button class="icon-btn delete" title="Delete"><i class="fas fa-trash"></i></button>
-				</div>
-			`;
-			card
-				.querySelector(".edit")
-				.addEventListener("click", () => editProgram(p.id));
-			card
-				.querySelector(".delete")
-				.addEventListener("click", () =>
-					confirmDelete("program", p.id, `program "${p.code}"`),
-				);
-			grid.appendChild(card);
+	function openProgramCourses(programId) {
+		const program = state.programs.find((item) => String(item.id) === String(programId));
+		if (!program) return;
+		activeProgramId = program.id;
+		activeProgramCourseYear = "1";
+		setText("programCoursesTitle", "Manage Program Courses");
+		setText("programCoursesSubtitle", `${program.name} (${program.code})`);
+		renderProgramCourses();
+		updateAcademicBreadcrumb("sections");
+		openModal("programCoursesModal");
+	}
+	function getProgramCourseYears(course, programId) {
+		const map = course?.programYears;
+		if (map && Object.prototype.hasOwnProperty.call(map, String(programId))) return Array.isArray(map[String(programId)]) ? map[String(programId)].map(String) : [];
+		return course?.year && academicConfig.yearLevels.some((item) => item.value === String(course.year)) ? [String(course.year)] : [];
+	}
+	function academicYearLabel(value) {
+		return academicConfig.yearLevels.find((item) => item.value === String(value))?.label || `Year ${value}`;
+	}
+	function renderProgramCourses() {
+		const program = state.programs.find((item) => String(item.id) === String(activeProgramId));
+		const body = document.getElementById("programCourseRows");
+		const empty = document.getElementById("programCourseEmpty");
+		const notice = document.getElementById("programCoursesNotice");
+		if (!body || !program) return;
+		const tabs = document.getElementById("programCourseYearTabs");
+		if (tabs) {
+			tabs.replaceChildren();
+			academicConfig.yearLevels.forEach((item) => {
+				const button = makeEl("button", `academic-tab${activeProgramCourseYear === item.value ? " is-active" : ""}`, item.label);
+				button.type = "button"; button.role = "tab"; button.setAttribute("aria-selected", String(activeProgramCourseYear === item.value));
+				button.addEventListener("click", () => { activeProgramCourseYear = item.value; renderProgramCourses(); }); tabs.appendChild(button);
+			});
+		}
+		const yearLabel = academicYearLabel(activeProgramCourseYear);
+		setText("programCourseYearTitle", `${yearLabel} Courses`);
+		const assigned = state.courses.filter((course) => getCourseProgramIds(course).some((id) => String(id) === String(program.id)) && getProgramCourseYears(course, program.id).includes(activeProgramCourseYear));
+		body.replaceChildren();
+		assigned.forEach((course) => {
+			const row = document.createElement("tr");
+			row.append(makeEl("td", "", course.code || "—"), makeEl("td", "", course.name || "Unnamed course"), makeEl("td", "", course.units ?? "—"));
+			const actionCell = makeEl("td", "academic-row-actions");
+			const unassign = makeEl("button", "icon-btn delete", "Unassign"); unassign.type = "button"; unassign.addEventListener("click", () => unassignCourseFromProgram(program.id, course.id, activeProgramCourseYear));
+			actionCell.appendChild(unassign); row.appendChild(actionCell); body.appendChild(row);
+		});
+		if (empty) { empty.hidden = assigned.length > 0; empty.textContent = assigned.length ? "" : `No courses assigned to ${yearLabel} yet. Add courses from the existing course catalog for this program and year level.`; }
+		const tableWrap = document.getElementById("programCourseTableWrap"); if (tableWrap) tableWrap.hidden = assigned.length === 0;
+		if (notice) notice.hidden = true;
+	}
+	function unassignCourseFromProgram(programId, courseId, year) {
+		const course = state.courses.find((item) => String(item.id) === String(courseId));
+		if (!course || !confirm(`Remove ${course.code || course.name} from ${academicYearLabel(year)}? The shared course record will remain.`)) return;
+		const previousCourses = state.courses;
+		const years = getProgramCourseYears(course, programId).filter((item) => item !== String(year));
+		const programYears = { ...(course.programYears || {}), [String(programId)]: years };
+		const remainingIds = years.length ? getCourseProgramIds(course) : getCourseProgramIds(course).filter((id) => String(id) !== String(programId));
+		state.courses = state.courses.map((item) => String(item.id) === String(courseId) ? { ...item, programYears, programIds: remainingIds, programId: String(item.programId) === String(programId) ? (remainingIds[0] ?? null) : item.programId } : item);
+		if (!persistState()) { state.courses = previousCourses; showToast("Course assignment could not be saved. Try again.", true); return; }
+		renderProgramCourses(); renderCourses(); renderSections(); updateStats();
+		logActivity({ entityType: "course", action: "updated", entityId: course.id, entityLabel: course.code, description: `Unassigned course ${course.code} from ${state.programs.find((item) => String(item.id) === String(programId))?.code || "program"}` });
+		showToast("Course unassigned from this program.");
+	}
+	function openProgramCourseAdd() {
+		const program = state.programs.find((item) => String(item.id) === String(activeProgramId));
+		if (!program) return;
+		const select = document.getElementById("programCourseSelect");
+		const available = state.courses.filter((course) => !getProgramCourseYears(course, program.id).includes(activeProgramCourseYear));
+		select.replaceChildren();
+		available.forEach((course) => select.add(new Option(`${course.code || "No code"} — ${course.name || "Unnamed course"}${getCourseProgramIds(course).some((id) => String(id) === String(program.id)) ? " · already linked to program" : ""}`, String(course.id))));
+		const emptyMessage = document.getElementById("programCourseCatalogEmpty");
+		emptyMessage.hidden = available.length > 0;
+		emptyMessage.textContent = state.courses.length ? `All existing courses are already assigned to ${academicYearLabel(activeProgramCourseYear)}.` : "No courses are available yet. Add a course from the Courses page first.";
+		select.hidden = available.length === 0;
+		document.getElementById("saveProgramCourseBtn").disabled = available.length === 0;
+		setError("programCourseSelectErr", "");
+		openModal("programCourseAddModal");
+	}
+	function closeProgramCourseAddModal() { document.getElementById("programCourseAddModal")?.classList.remove("active"); }
+	function closeProgramCoursesModal() { document.getElementById("programCoursesModal")?.classList.remove("active"); updateAcademicBreadcrumb("list"); }
+	document.getElementById("programCoursesCloseBtn")?.addEventListener("click", closeProgramCoursesModal);
+	document.getElementById("closeProgramCoursesBtn")?.addEventListener("click", closeProgramCoursesModal);
+	document.getElementById("openProgramCourseAddBtn")?.addEventListener("click", openProgramCourseAdd);
+	document.getElementById("programCourseAddCloseBtn")?.addEventListener("click", closeProgramCourseAddModal);
+	document.getElementById("cancelProgramCourseAddBtn")?.addEventListener("click", closeProgramCourseAddModal);
+	document.getElementById("saveProgramCourseBtn")?.addEventListener("click", () => {
+		const program = state.programs.find((item) => String(item.id) === String(activeProgramId));
+		const course = state.courses.find((item) => String(item.id) === String(document.getElementById("programCourseSelect").value));
+		if (!program || !course) { setError("programCourseSelectErr", "Choose an existing course record."); return; }
+		if (getProgramCourseYears(course, program.id).includes(activeProgramCourseYear)) { setError("programCourseSelectErr", "This course is already assigned to this year level."); return; }
+		const previousCourses = state.courses;
+		const ids = getCourseProgramIds(course);
+		const years = getProgramCourseYears(course, program.id);
+		const programYears = { ...(course.programYears || {}), [String(program.id)]: [...new Set([...years, activeProgramCourseYear])] };
+		state.courses = state.courses.map((item) => String(item.id) === String(course.id) ? { ...item, programIds: ids.some((id) => String(id) === String(program.id)) ? ids : [...ids, program.id], programId: item.programId ?? program.id, programYears } : item);
+		if (!persistState()) { state.courses = previousCourses; showToast("Course assignment could not be saved. Try again.", true); return; }
+		closeProgramCourseAddModal(); renderProgramCourses(); renderCourses(); renderSections(); updateStats();
+		logActivity({ entityType: "course", action: "updated", entityId: course.id, entityLabel: course.code, description: `Assigned course ${course.code} to ${program.code}` });
+		showToast("Course assigned to program.");
+	});
+
+	let activeSectionYear = "";
+	let activeProgramCourseYear = "1";
+	function openProgramSections(programId) {
+		const program = state.programs.find((item) => String(item.id) === String(programId));
+		if (!program) return;
+		activeProgramId = program.id;
+		const configuredCatalogIds = new Set(academicConfig.exampleUnits.flatMap((unit) => unit.programs.map((item) => item.id)));
+		selectAcademicProgram(configuredCatalogIds.has(program.catalogId) ? `example:${program.catalogId}` : `legacy:${program.id}`);
+		setText("programSectionsTitle", program.name || "Program Sections");
+		setText("programSectionsSub", `${program.code || "No code"} · Program Sections`);
+		document.getElementById("academic-list-view").hidden = true;
+		document.getElementById("program-sections-view").hidden = false;
+		document.getElementById("section-details").hidden = true;
+		activeSectionYear = "1";
+		renderSections(); updateAcademicBreadcrumb("sections");
+	}
+	function showAcademicList() {
+		document.getElementById("academic-list-view").hidden = false;
+		document.getElementById("program-sections-view").hidden = true;
+		document.getElementById("section-details").hidden = true;
+		updateAcademicBreadcrumb("list");
+	}
+	function showProgramSections() {
+		if (!activeProgramId) return showAcademicList();
+		document.getElementById("academic-list-view").hidden = true;
+		document.getElementById("program-sections-view").hidden = false;
+		document.getElementById("section-details").hidden = true;
+		renderSections(); updateAcademicBreadcrumb("sections");
+	}
+	function renderSections() {
+		const grid = document.getElementById("section-grid");
+		const empty = document.getElementById("sectionEmpty");
+		if (!grid) return;
+		const program = state.programs.find((item) => String(item.id) === String(activeProgramId)) || selectedAcademicProgram();
+		const allSections = program ? state.sections.filter((section) => String(section.programId) === String(program.id)) : [];
+		const tabs = document.getElementById("sectionYearTabs");
+		if (tabs) {
+			tabs.replaceChildren();
+			academicConfig.yearLevels.forEach((item) => {
+				const button = makeEl("button", `academic-tab${activeSectionYear === item.value ? " is-active" : ""}`, item.label); button.type = "button"; button.setAttribute("role", "tab"); button.setAttribute("aria-selected", String(activeSectionYear === item.value)); button.addEventListener("click", () => { activeSectionYear = item.value; renderSections(); }); tabs.appendChild(button);
+			});
+		}
+		const matching = allSections.filter((section) => String(section.year) === activeSectionYear);
+		grid.replaceChildren();
+		if (empty) { empty.hidden = matching.length > 0; empty.textContent = program ? `No sections for ${academicYearLabel(activeSectionYear)} yet. Create a section to begin organizing students and courses for this year.` : "Select a saved program to manage sections."; }
+		const studentTotal = allSections.reduce((sum, section) => sum + state.users.filter((user) => user.role === "student" && String(user.sectionId) === String(section.id)).length, 0);
+		setText("programSectionCount", String(allSections.length)); setText("programStudentCount", String(studentTotal));
+		matching.forEach((section) => {
+			const card = makeEl("article", "academic-section-card");
+			const content = makeEl("div", "academic-section-card-content");
+			content.append(makeEl("h4", "", sectionDisplayName(section, program)), makeEl("p", "", `${academicYearLabel(section.year)} · Section ${String(section.letter || "").toUpperCase()}`));
+			const students = state.users.filter((user) => user.role === "student" && String(user.sectionId) === String(section.id)).length;
+			const courseCount = Array.isArray(section.courseIds) ? section.courseIds.length : 0;
+			const professorCount = getSectionProfessorAssignments(section).length;
+			const counts = makeEl("p", "academic-section-counts", `${students} students · ${courseCount} courses · ${professorCount} professors`);
+			const details = makeEl("button", "btn-cancel academic-section-details-link", "Details"); details.type = "button"; details.innerHTML = 'Details <i class="fas fa-chevron-right" aria-hidden="true"></i>'; details.addEventListener("click", () => openSectionDetails(section.id));
+			const remove = makeEl("button", "btn-cancel delete academic-delete-btn", "Delete"); remove.type = "button"; remove.addEventListener("click", () => confirmDelete("section", section.id, `section ${sectionDisplayName(section, program)}`));
+			const actions = makeEl("div", "academic-section-actions"); actions.append(details, remove);
+			card.append(content, counts, actions); grid.appendChild(card);
 		});
 	}
 
 	function editProgram(id) {
-		const p = state.programs.find((p) => p.id === id);
+		const p = state.programs.find((p) => String(p.id) === String(id));
 		if (!p) return;
 		state.editTarget = { type: "program", id };
-		document.getElementById("programModalTitle").textContent = "Edit Program";
-		document.getElementById("saveProgramBtn").textContent = "Update Program";
-		document.getElementById("m-programName").value = p.name;
+		setText("programModalTitle", "Edit Academic Program");
+		setText("saveProgramBtn", "Save Changes");
+		const isConfiguredProgram = !!configuredProgram(p.catalogId);
+		document.getElementById("programCatalogFields").hidden = !isConfiguredProgram;
+		document.getElementById("legacyProgramEditNote").hidden = true;
+		document.getElementById("legacyProgramNameGroup").hidden = isConfiguredProgram;
+		document.getElementById("m-programNameLegacy").value = p.name || "";
+		document.getElementById("m-programName").value = p.name || "";
 		document.getElementById("m-programCode").value = p.code;
+		document.getElementById("m-programIdDisplay").value = String(p.id);
+		if (isConfiguredProgram) {
+			const option = configuredProgram(p.catalogId);
+			document.getElementById("m-programCampus").value = p.campusId || "";
+			document.getElementById("m-programUnit").value = option?.unitId || academicConfig.exampleUnits[0].id;
+			populateProgramModalCatalog(p.catalogId);
+			document.getElementById("m-programCode").readOnly = true;
+			document.getElementById("m-programCampus").disabled = true;
+			document.getElementById("m-programUnit").disabled = true;
+			document.getElementById("m-programCatalogOption").disabled = true;
+		} else {
+			document.getElementById("m-programCampus").value = "";
+			document.getElementById("m-programUnit").value = "";
+		}
 		document.getElementById("m-programDesc").value = p.desc || "";
-		document.getElementById("m-programStatus").value = p.status;
+		document.getElementById("m-programStatus").value = p.status || "Active";
 		setSelectedColor("m-colorPicker", p.color);
 		clearErrors("m-programNameErr", "m-programCodeErr", "m-programColorErr");
+		programModalDirty = false;
 		openModal("programModal");
 	}
-
-	document
-		.getElementById("program-search")
-		?.addEventListener("input", renderPrograms);
-	document
-		.getElementById("program-status-filter")
-		?.addEventListener("change", function () {
-			this.classList.toggle("filtered", this.value !== "");
-			renderPrograms();
-		});
 
 	/* ═══════════════════════════════════════════
 		SECTIONS
@@ -1173,15 +1611,22 @@ document.addEventListener("DOMContentLoaded", () => {
 	document
 		.getElementById("openAddSectionBtn")
 		?.addEventListener("click", () => {
+			const program = state.programs.find((item) => String(item.id) === String(activeProgramId));
+			if (!program) {
+				showToast("Choose a saved program first.", true);
+				return;
+			}
 			state.editTarget = null;
 			document.getElementById("sectionModalTitle").textContent = "Add Section";
 			document.getElementById("saveSectionBtn").textContent = "Save Section";
-			document.getElementById("m-sectionProgram").value = "";
-			document.getElementById("m-sectionYear").value = "1";
+			document.getElementById("m-sectionProgram").value = program.id;
+			document.getElementById("m-sectionYear").value = "";
 			document.getElementById("m-sectionLetter").value = "";
-			document.getElementById("m-sectionCapacity").value = "1";
+			document.getElementById("m-sectionCapacity").value = "40";
+			updateGeneratedSectionName();
 			clearErrors(
 				"m-sectionProgramErr",
+				"m-sectionYearErr",
 				"m-sectionLetterErr",
 				"m-sectionCapacityErr",
 			);
@@ -1189,14 +1634,15 @@ document.addEventListener("DOMContentLoaded", () => {
 		});
 
 	document.getElementById("saveSectionBtn")?.addEventListener("click", () => {
-		const programId = parseInt(
-			document.getElementById("m-sectionProgram").value,
-		);
+		const programIdValue = document.getElementById("m-sectionProgram").value || (state.editTarget?.type === "section" ? state.sections.find((item) => String(item.id) === String(state.editTarget.id))?.programId : activeProgramId);
+		const prog = state.programs.find((program) => String(program.id) === String(programIdValue));
+		const programId = prog?.id;
 		const year = document.getElementById("m-sectionYear").value;
 		const letter = document
 			.getElementById("m-sectionLetter")
 			.value.toUpperCase()
 			.trim();
+		const validYear = academicConfig.yearLevels.some((item) => item.value === String(year));
 		const rawCapacity = parseInt(
 			document.getElementById("m-sectionCapacity").value,
 		);
@@ -1204,16 +1650,17 @@ document.addEventListener("DOMContentLoaded", () => {
 			? 1
 			: Math.min(Math.max(rawCapacity, 1), 50);
 
-		const vProgram = programId
+		const vProgram = prog
 			? true
 			: (setError("m-sectionProgramErr", "Please select a program."), false);
 		const vLetter = validateField(letter, "m-sectionLetterErr", [
 			{ test: required, msg: "Section letter is required." },
 			{
-				test: (v) => /^[A-Z]{1,2}$/.test(v),
-				msg: "Use 1–2 letters only (e.g. A, B).",
+				test: (v) => academicConfig.sectionLetters.includes(v),
+				msg: "Choose section A or B.",
 			},
 		]);
+		const vYear = validYear || (setError("m-sectionYearErr", "Choose a year level from 1st Year to 4th Year."), false);
 		const vCapacity = validateField(
 			String(rawCapacity),
 			"m-sectionCapacityErr",
@@ -1223,114 +1670,68 @@ document.addEventListener("DOMContentLoaded", () => {
 				{ test: (v) => parseInt(v) <= 50, msg: "Capacity cannot exceed 50." },
 			],
 		);
-		if (!vProgram || !vLetter || !vCapacity) return;
+		if (!vProgram || !vYear || !vLetter || !vCapacity) return;
 
-		const prog = state.programs.find((p) => p.id === programId);
-		const label = `${prog.code} ${year}-${letter}`;
+		if (!prog) {
+			setError("m-sectionProgramErr", "Choose an existing program.");
+			return;
+		}
+		const label = `${prog.code || "?"} - ${year}${letter}`;
 
 		const duplicate = state.sections.find(
 			(s) =>
 				String(s.programId) === String(programId) &&
-				s.year === year &&
-				s.letter === letter &&
+				String(s.year) === String(year) &&
+				String(s.letter).toUpperCase() === letter &&
 				s.id !== state.editTarget?.id,
 		);
 		if (duplicate) {
 			setError("m-sectionLetterErr", "This section already exists.");
 			return;
 		}
-
-		if (state.editTarget?.type === "section") {
-			const sec = state.sections.find((s) => s.id === state.editTarget.id);
-			Object.assign(sec, { programId, year, letter, capacity });
-			logActivity({
-				entityType: "section",
-				action: "updated",
-				entityId: sec.id,
-				entityLabel: label,
-				description: `Updated section ${label}`,
-			});
-			showToast(`Section "${label}" updated.`);
+		const isEditing = state.editTarget?.type === "section";
+		const previousSections = state.sections;
+		const previousNextId = state.nextId;
+		let savedSection;
+		if (isEditing) {
+			const existing = state.sections.find((item) => String(item.id) === String(state.editTarget.id));
+			if (!existing) return;
+			savedSection = { ...existing, programId, year, letter, capacity };
+			state.sections = state.sections.map((item) => String(item.id) === String(existing.id) ? savedSection : item);
 		} else {
-			const newSec = { id: uid(), programId, year, letter, capacity };
-			state.sections.push(newSec);
-			logActivity({
-				entityType: "section",
-				action: "created",
-				entityId: newSec.id,
-				entityLabel: label,
-				description: `Created section ${label}`,
-			});
-			showToast(`Section "${label}" created.`);
+			savedSection = { id: uid(), programId, year, letter, capacity };
+			state.sections = [...state.sections, savedSection];
 		}
-
-		renderSections();
-		updateStats();
-		persistState();
-		closeAllModals();
-	});
-
-	function renderSections() {
-		const grid = document.getElementById("section-grid");
-		const search = document
-			.getElementById("section-search")
-			.value.toLowerCase();
-		const progFilt =
-			parseInt(document.getElementById("section-program-filter").value) || null;
-		const yearFilt = document.getElementById("section-year-filter").value;
-
-		const filtered = state.sections.filter((s) => {
-			const prog = state.programs.find((p) => p.id === s.programId);
-			const label = `${prog?.code || ""} ${s.year}${s.letter}`.toLowerCase();
-			return (
-				label.includes(search) &&
-				(!progFilt || String(s.programId) === String(progFilt)) &&
-				(!yearFilt || s.year === yearFilt)
-			);
-		});
-
-		grid.innerHTML = "";
-		if (filtered.length === 0) {
-			grid.innerHTML =
-				'<p class="empty-state full-span">No sections found.</p>';
+		const saveButton = document.getElementById("saveSectionBtn");
+		setButtonLoading(saveButton, true, isEditing ? "Update Section" : "Save Section");
+		if (!persistState()) {
+			state.sections = previousSections; state.nextId = previousNextId;
+			setButtonLoading(saveButton, false, isEditing ? "Update Section" : "Save Section");
+			showToast("Section could not be saved. Check browser storage and try again.", true);
 			return;
 		}
+		syncAcademicHierarchy(); renderSections(); renderPrograms(); updateStats(); closeAllModals();
+		logActivity({ entityType: "section", action: isEditing ? "updated" : "created", entityId: savedSection.id, entityLabel: label, description: `${isEditing ? "Updated" : "Created"} section ${label}` });
+		showToast(`Section "${label}" ${isEditing ? "updated" : "created"}.`);
+	});
 
-		filtered.forEach((s) => {
-			const prog = state.programs.find((p) => p.id === s.programId);
-			const label = `${prog?.code || "?"} ${s.year}-${s.letter}`;
-			const yearLabel =
-				["1st", "2nd", "3rd", "4th"][parseInt(s.year) - 1] + " Year";
-			const card = document.createElement("div");
-			card.className = "section-card";
-			card.style.setProperty("--section-color", prog?.color || "#9b1c1c");
-			card.innerHTML = `
-                <div class="program-top">
-                    <div class="section-name">${label}</div>
-                    <div class="program-actions">
-                        <button class="icon-btn edit sec-edit-btn" title="Edit"><i class="fas fa-edit"></i></button>
-                        <button class="icon-btn delete sec-delete-btn" title="Delete"><i class="fas fa-trash"></i></button>
-                    </div>
-                </div>
-                <div class="section-meta">
-                    <span><i class="fas fa-sitemap"></i> ${prog?.name || "Unknown"}</span>
-                    <span><i class="fas fa-layer-group"></i> ${yearLabel}</span>
-                    <span><i class="fas fa-users"></i> Cap: ${s.capacity}</span>
-                </div>
-                <div class="section-click-hint"><i class="fas fa-eye"></i> Click to view details</div>
-            `;
-			card.querySelector(".sec-edit-btn").addEventListener("click", (e) => {
-				e.stopPropagation();
-				editSection(s.id);
-			});
-			card.querySelector(".sec-delete-btn").addEventListener("click", (e) => {
-				e.stopPropagation();
-				confirmDelete("section", s.id, `section "${label}"`);
-			});
-			card.addEventListener("click", () => openSectionDetails(s.id));
-			grid.appendChild(card);
-		});
+	function updateGeneratedSectionName() {
+		const output = document.getElementById("m-sectionGeneratedName");
+		if (!output) return;
+		const programId = document.getElementById("m-sectionProgram")?.value;
+		const program = state.programs.find((item) => String(item.id) === String(programId));
+		const year = document.getElementById("m-sectionYear")?.value;
+		const letter = document.getElementById("m-sectionLetter")?.value;
+		output.textContent = program && year && letter ? `${program.code || "?"} - ${year}${letter}` : "Select a program and section";
 	}
+	["m-sectionProgram", "m-sectionYear", "m-sectionLetter"].forEach((id) => {
+		document.getElementById(id)?.addEventListener("change", () => {
+			updateGeneratedSectionName();
+			if (id === "m-sectionProgram") setError("m-sectionProgramErr", "");
+			if (id === "m-sectionYear") setError("m-sectionYearErr", "");
+			if (id === "m-sectionLetter") setError("m-sectionLetterErr", "");
+		});
+	});
 
 	function editSection(id) {
 		const s = state.sections.find((s) => s.id === id);
@@ -1339,26 +1740,21 @@ document.addEventListener("DOMContentLoaded", () => {
 		document.getElementById("sectionModalTitle").textContent = "Edit Section";
 		document.getElementById("saveSectionBtn").textContent = "Update Section";
 		document.getElementById("m-sectionProgram").value = s.programId;
+		document.getElementById("m-sectionProgram").disabled = false;
 		document.getElementById("m-sectionYear").value = s.year;
-		document.getElementById("m-sectionLetter").value = s.letter;
-		document.getElementById("m-sectionCapacity").value = s.capacity;
+		document.getElementById("m-sectionLetter").value = academicConfig.sectionLetters.includes(String(s.letter).toUpperCase()) ? String(s.letter).toUpperCase() : "";
+		document.getElementById("m-sectionCapacity").value = s.capacity || 40;
+		updateGeneratedSectionName();
 		clearErrors(
 			"m-sectionProgramErr",
+			"m-sectionYearErr",
 			"m-sectionLetterErr",
 			"m-sectionCapacityErr",
 		);
 		openModal("sectionModal");
 	}
 
-	document
-		.getElementById("section-search")
-		?.addEventListener("input", renderSections);
-	document
-		.getElementById("section-program-filter")
-		?.addEventListener("change", renderSections);
-	document
-		.getElementById("section-year-filter")
-		?.addEventListener("change", renderSections);
+	document.getElementById("program-search")?.addEventListener("input", renderPrograms);
 
 	/* ═══════════════════════════════════════════
 		COURSES
@@ -1513,7 +1909,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		const statFilt = document
 			.getElementById("course-status-filter")
 			.value.toLowerCase();
-		const yearLabels = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
+		const yearLabels = academicConfig.yearLevels.map((item) => item.label);
 
 		const filtered = state.courses.filter((c) => {
 			const pids = c.programIds || (c.programId ? [c.programId] : []);
@@ -1544,7 +1940,7 @@ document.addEventListener("DOMContentLoaded", () => {
 					.filter(Boolean)
 					.join(" ") ||
 				'<span style="color:var(--text-4);font-size:12px;">—</span>';
-			const yearLabel = yearLabels[(parseInt(c.year) || 1) - 1] || "1st Year";
+			const yearLabel = yearLabels[(parseInt(c.year) || 1) - 1] || `Legacy year ${c.year}`;
 			const card = document.createElement("div");
 			card.className = "course-card";
 			card.innerHTML = `
@@ -1564,7 +1960,7 @@ document.addEventListener("DOMContentLoaded", () => {
 					<span class="status ${c.status.toLowerCase()}">${c.status}</span>
 					<div style="display:flex; gap:5px;">
 						<button class="icon-btn edit" title="Edit"><i class="fas fa-edit"></i></button>
-						<button class="icon-btn delete" title="Delete"><i class="fas fa-trash"></i></button>
+						<button class="btn-cancel delete academic-delete-btn" title="Delete course"><i class="fas fa-trash" aria-hidden="true"></i> Delete</button>
 					</div>
 				</div>
 			`;
@@ -1635,7 +2031,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			.filter((s) => !programId || s.programId === programId)
 			.forEach((s) => {
 				const prog = state.programs.find((p) => p.id === s.programId);
-				const label = `${prog?.code || "?"} ${s.year}-${s.letter}`;
+				const label = sectionDisplayName(s, prog);
 				const opt = document.createElement("option");
 				opt.value = s.id;
 				opt.textContent = label;
@@ -1680,7 +2076,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		wrap.innerHTML = "";
 		state.sections.forEach((s) => {
 			const prog = state.programs.find((p) => p.id === s.programId);
-			const label = `${prog?.code || "?"} ${s.year}-${s.letter}`;
+			const label = sectionDisplayName(s, prog);
 			const item = document.createElement("label");
 			item.className = "checklist-item";
 			item.innerHTML = `
@@ -2104,7 +2500,7 @@ document.addEventListener("DOMContentLoaded", () => {
 				const sec = state.sections.find((s) => s.id === u.sectionId);
 				const prog = state.programs.find((p) => p.id === sec?.programId);
 				if (sec)
-					return `<span class="assign-section">${prog?.code || ""} ${sec.year}-${sec.letter}</span>`;
+					return `<span class="assign-section">${sectionDisplayName(sec, prog)}</span>`;
 			}
 			return '<span class="assign-unset">—</span>';
 		}
@@ -2115,7 +2511,7 @@ document.addEventListener("DOMContentLoaded", () => {
 						const sec = state.sections.find((s) => s.id === sid);
 						const prog = state.programs.find((p) => p.id === sec?.programId);
 						return sec
-							? `<span class="assign-section">${prog?.code || ""} ${sec.year}-${sec.letter}</span>`
+							? `<span class="assign-section">${sectionDisplayName(sec, prog)}</span>`
 							: "";
 					})
 					.filter(Boolean)
@@ -2275,7 +2671,7 @@ document.addEventListener("DOMContentLoaded", () => {
 					.filter((s) => !pid || s.programId === pid)
 					.forEach((s) => {
 						const p = state.programs.find((p) => p.id === s.programId);
-						const lbl = `${p?.code || "?"} ${s.year}-${s.letter}`;
+						const lbl = sectionDisplayName(s, p);
 						const opt = document.createElement("option");
 						opt.value = s.id;
 						opt.textContent = lbl;
@@ -2336,7 +2732,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			const sec = state.sections.find((s) => s.id === sectionId);
 			const prog = state.programs.find((p) => p.id === sec?.programId);
 			const lbl = sec
-				? `${prog?.code || ""} ${sec.year}${sec.letter}`
+				? sectionDisplayName(sec, prog)
 				: "no section";
 			logActivity({
 				entityType: "user",
@@ -2419,6 +2815,64 @@ document.addEventListener("DOMContentLoaded", () => {
 	const annScheduleCheckbox = document.getElementById("m-annSchedule");
 	const annScheduleGroup = document.getElementById("schedulePickerGroup");
 	const annScheduledDateInput = document.getElementById("m-annScheduledDate");
+	const annMediaInput = document.getElementById("m-annMedia");
+	let annMediaURL = null;
+	let annStatusFilter = "all";
+	const ANN_CATEGORIES = { academic: "Academic", events: "Events", examinations: "Examinations", scholarships: "Scholarships", general: "General" };
+	const ANN_AUDIENCES = { all: "All Users", students: "Students", professors: "Professors" };
+	const announcementToday = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+	const announcementTodayKey = () => { const d = announcementToday(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+	function announcementStatus(a) {
+		if (!a || typeof a !== "object") return "draft";
+		if (a.status === "draft") return "draft";
+		if (a.scheduledDate) {
+			const d = new Date(`${a.scheduledDate}T00:00:00`);
+			if (!Number.isNaN(d.getTime()) && d > announcementToday()) return "scheduled";
+		}
+		return "published";
+	}
+	function announcementDate(a) {
+		if (a.scheduledDate && announcementStatus(a) === "scheduled") return a.scheduledDate;
+		return a.publishedAt || a.createdAt || a.date || "";
+	}
+	function formatAnnouncementDate(value) {
+		if (!value) return "Date unavailable";
+		const d = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T00:00:00`) : new Date(value);
+		return Number.isNaN(d.getTime()) ? String(value) : d.toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" });
+	}
+	function safeAnnouncementCategory(a) { return ANN_CATEGORIES[a.category] ? a.category : "general"; }
+	function previewAnnouncement() {
+		const title = document.getElementById("m-annTitle").value.trim();
+		const body = document.getElementById("m-annBody").value.trim();
+		const category = document.getElementById("m-annCategory").value;
+		const audience = document.getElementById("m-annAudience").value;
+		const scheduled = annScheduleCheckbox?.checked;
+		const date = annScheduledDateInput?.value || window._calendarSelectedDate;
+		setText("annPreviewTitle", title || "Your announcement title");
+		setText("annPreviewBody", body || "Your full announcement content will appear here. Use the preview to check readability before publishing.");
+		setText("annPreviewCategory", ANN_CATEGORIES[category] || "General");
+		setText("annPreviewMeta", `Preview · ${ANN_AUDIENCES[audience] || "All Users"} · ${scheduled ? date ? `Scheduled for ${formatAnnouncementDate(date)}` : "Choose a publication date" : "Will publish immediately"}`);
+	}
+	window._previewAnnouncement = previewAnnouncement;
+	function clearAnnouncementMedia() {
+		if (annMediaURL) URL.revokeObjectURL(annMediaURL);
+		annMediaURL = null;
+		const preview = document.getElementById("m-annMediaPreview");
+		if (preview) { preview.replaceChildren(); preview.hidden = true; }
+		document.getElementById("annPreviewMedia")?.replaceChildren();
+		if (annMediaInput) annMediaInput.value = "";
+	}
+	window._clearAnnouncementMedia = clearAnnouncementMedia;
+	function previewAnnouncementMedia(file) {
+		clearAnnouncementMedia();
+		if (!file) return;
+		const isImage = file.type.startsWith("image/"), isVideo = file.type.startsWith("video/");
+		if ((!isImage && !isVideo) || file.size > 15 * 1024 * 1024) { showToast("Choose an image or video under 15 MB.", true); return; }
+		annMediaURL = URL.createObjectURL(file);
+		const makeMedia = () => { const el = document.createElement(isImage ? "img" : "video"); el.src = annMediaURL; el.alt = isImage ? "Announcement media preview" : "Announcement video preview"; if (isVideo) { el.controls = true; el.preload = "metadata"; } return el; };
+		const preview = document.getElementById("m-annMediaPreview"); preview.replaceChildren(makeMedia()); preview.hidden = false;
+		document.getElementById("annPreviewMedia")?.replaceChildren(makeMedia());
+	}
 
 	function syncScheduleUI(forceDate = null) {
 		if (!annScheduleCheckbox || !annScheduleGroup) return;
@@ -2432,6 +2886,9 @@ document.addEventListener("DOMContentLoaded", () => {
 			annScheduledDateInput.value = "";
 			setError("m-annScheduledDateErr", "");
 		}
+		const saveButton = document.getElementById("saveAnnouncementBtn");
+		if (saveButton) saveButton.textContent = isChecked ? "Schedule Announcement" : "Publish Announcement";
+		previewAnnouncement();
 	}
 
 	annScheduleCheckbox?.addEventListener("change", () => {
@@ -2447,15 +2904,21 @@ document.addEventListener("DOMContentLoaded", () => {
 			state.editTarget = null;
 			window._calendarSelectedDate = null;
 			document.getElementById("announcementModalTitle").textContent =
-				"New Announcement";
+				"Create Announcement";
+			setText("announcementModalSubtitle", "Compose, preview, and publish an official campus update.");
 			document.getElementById("saveAnnouncementBtn").textContent =
-				"Post Announcement";
+				"Publish Announcement";
+			document.getElementById("saveAnnouncementDraftBtn").textContent = "Save as Draft";
 			document.getElementById("m-annTitle").value = "";
 			document.getElementById("m-annBody").value = "";
 			document.getElementById("m-annType").value = "info";
+			document.getElementById("m-annCategory").value = "academic";
 			document.getElementById("m-annAudience").value = "all";
+			document.getElementById("m-annFeatured").checked = false;
+			document.getElementById("m-annEventDate").value = "";
 			if (annScheduleCheckbox) annScheduleCheckbox.checked = false;
 			if (annScheduledDateInput) annScheduledDateInput.value = "";
+			clearAnnouncementMedia();
 			syncScheduleUI();
 			const badge = document.getElementById("annDateBadge");
 			if (badge) badge.style.display = "none";
@@ -2463,187 +2926,151 @@ document.addEventListener("DOMContentLoaded", () => {
 			openModal("announcementModal");
 		});
 
-	document
-		.getElementById("saveAnnouncementBtn")
-		?.addEventListener("click", () => {
-			const title = document.getElementById("m-annTitle").value;
-			const body = document.getElementById("m-annBody").value;
-			const type = document.getElementById("m-annType").value;
-			const audience = document.getElementById("m-annAudience").value;
+	["m-annTitle", "m-annBody", "m-annCategory", "m-annAudience", "m-annType", "m-annEventDate"].forEach((id) =>
+		document.getElementById(id)?.addEventListener("input", previewAnnouncement),
+	);
+	["m-annCategory", "m-annAudience", "m-annType", "m-annEventDate"].forEach((id) =>
+		document.getElementById(id)?.addEventListener("change", previewAnnouncement),
+	);
+	document.getElementById("m-annFeatured")?.addEventListener("change", previewAnnouncement);
+	annMediaInput?.addEventListener("change", () => previewAnnouncementMedia(annMediaInput.files?.[0]));
 
-			const vTitle = validateField(title, "m-annTitleErr", [
-				{ test: required, msg: "Title is required." },
-			]);
-			const vBody = validateField(body, "m-annBodyErr", [
-				{ test: required, msg: "Content is required." },
-			]);
-
-			const isScheduled = annScheduleCheckbox?.checked ?? false;
-			const scheduledDateRaw = annScheduledDateInput?.value ?? "";
-
-			let vDate = true;
-			if (isScheduled) {
-				vDate = validateField(scheduledDateRaw, "m-annScheduledDateErr", [
-					{
-						test: required,
-						msg: "Please pick a date to schedule this announcement.",
-					},
-				]);
-			}
-
-			if (!vTitle || !vBody || !vDate) return;
-
-			const scheduledDate = isScheduled
-				? scheduledDateRaw || window._calendarSelectedDate || null
-				: null;
-
-			const ann = {
-				id: uid(),
-				title: title.trim(),
-				body: body.trim(),
-				type,
-				audience,
-				date: now(),
-				scheduledDate,
-				eventDate: scheduledDate,
-				// who posted it: the author is never notified about their own post
-				authorId: CognitiaSession.get()?.id ?? null,
-			};
-
-			state.announcements.unshift(ann);
-			logActivity({
-				entityType: "announcement",
-				action: "created",
-				entityId: ann.id,
-				entityLabel: ann.title,
-				description: `Posted announcement "${ann.title}"`,
-				details: {
-					type: ann.type,
-					audience: ann.audience,
-					scheduledDate: ann.scheduledDate,
-				},
-			});
-
-			const successMsg = scheduledDate
-				? `Announcement scheduled for ${scheduledDate}.`
-				: "Announcement posted.";
-			showToast(successMsg);
-
+	function saveAnnouncement(asDraft = false) {
+		if (!Array.isArray(state.announcements)) state.announcements = [];
+		const previousAnnouncements = state.announcements.slice();
+		const title = document.getElementById("m-annTitle").value.trim();
+		const body = document.getElementById("m-annBody").value.trim();
+		const isScheduled = !asDraft && (annScheduleCheckbox?.checked ?? false);
+		const scheduledDateRaw = annScheduledDateInput?.value || window._calendarSelectedDate || "";
+		const vTitle = validateField(title, "m-annTitleErr", [{ test: required, msg: "Title is required." }]);
+		const vBody = validateField(body, "m-annBodyErr", [{ test: required, msg: "Content is required." }]);
+		let vDate = true;
+		if (isScheduled) vDate = validateField(scheduledDateRaw, "m-annScheduledDateErr", [{ test: required, msg: "Please pick a date to schedule this announcement." }]);
+		if (!vTitle || !vBody || !vDate) return;
+		const existing = state.editTarget?.type === "announcement" ? state.announcements.find((a) => String(a.id) === String(state.editTarget.id)) : null;
+		if (state.editTarget?.type === "announcement" && !existing) { showToast("This announcement was removed in another tab.", true); closeAllModals(); return; }
+		const nowISO = new Date().toISOString();
+		const scheduledDate = isScheduled ? scheduledDateRaw : null;
+		const announcement = {
+			...(existing || {}),
+			id: existing?.id ?? uid(),
+			title, body,
+			type: document.getElementById("m-annType").value,
+			category: document.getElementById("m-annCategory").value,
+			audience: document.getElementById("m-annAudience").value,
+			featured: document.getElementById("m-annFeatured").checked,
+			status: asDraft ? "draft" : isScheduled && scheduledDate > announcementTodayKey() ? "scheduled" : "published",
+			date: existing?.date || now(),
+			createdAt: existing?.createdAt || nowISO,
+			publishedAt: asDraft || (isScheduled && scheduledDate > announcementTodayKey()) ? existing?.publishedAt || null : nowISO,
+			scheduledDate,
+			eventDate: document.getElementById("m-annEventDate").value || null,
+			authorId: existing?.authorId ?? CognitiaSession.get()?.id ?? null,
+		};
+		if (existing) state.announcements = state.announcements.map((a) => String(a.id) === String(existing.id) ? announcement : a);
+		else state.announcements.unshift(announcement);
+		logActivity({ entityType: "announcement", action: existing ? "updated" : asDraft ? "drafted" : "created", entityId: announcement.id, entityLabel: announcement.title, description: `${existing ? "Updated" : asDraft ? "Saved draft" : announcement.status === "scheduled" ? "Scheduled" : "Published"} announcement "${announcement.title}"`, details: { type: announcement.type, category: announcement.category, audience: announcement.audience, status: announcement.status, scheduledDate: announcement.scheduledDate } });
+		if (!persistState()) {
+			state.announcements = previousAnnouncements;
 			renderAnnouncements();
-			persistState();
-			closeAllModals();
-		});
+			showToast("The announcement could not be saved. Check available browser storage and try again.", true);
+			return;
+		}
+		showToast(asDraft ? "Announcement saved as a draft." : announcement.status === "scheduled" ? `Announcement scheduled for ${scheduledDate}.` : existing ? "Announcement updated." : "Announcement published.");
+		closeAllModals();
+		state.editTarget = null;
+		clearAnnouncementMedia();
+	}
+	document.getElementById("saveAnnouncementBtn")?.addEventListener("click", () => saveAnnouncement(false));
+	document.getElementById("saveAnnouncementDraftBtn")?.addEventListener("click", () => saveAnnouncement(true));
+
+	function openEditAnnouncement(id) {
+		const a = state.announcements.find((item) => String(item.id) === String(id));
+		if (!a) return;
+		state.editTarget = { type: "announcement", id: a.id };
+		window._calendarSelectedDate = a.scheduledDate || null;
+		setText("announcementModalTitle", "Edit Announcement");
+		setText("announcementModalSubtitle", "Update the announcement details and preview before saving.");
+		document.getElementById("m-annTitle").value = a.title || "";
+		document.getElementById("m-annBody").value = a.body || a.message || a.content || "";
+		document.getElementById("m-annType").value = ["info", "warning", "urgent"].includes(a.type) ? a.type : "info";
+		document.getElementById("m-annCategory").value = safeAnnouncementCategory(a);
+		document.getElementById("m-annAudience").value = ["students", "professors"].includes(a.audience) ? a.audience : "all";
+		document.getElementById("m-annFeatured").checked = a.featured === true;
+		document.getElementById("m-annEventDate").value = a.eventDate || "";
+		annScheduleCheckbox.checked = announcementStatus(a) === "scheduled";
+		annScheduledDateInput.value = a.scheduledDate || "";
+		syncScheduleUI();
+		document.getElementById("announcementModalTitle").textContent = "Edit Announcement";
+		document.getElementById("saveAnnouncementDraftBtn").textContent = "Save Changes as Draft";
+		document.getElementById("saveAnnouncementBtn").textContent = announcementStatus(a) === "scheduled" ? "Update Schedule" : "Update Announcement";
+		clearErrors("m-annTitleErr", "m-annBodyErr", "m-annScheduledDateErr");
+		previewAnnouncement();
+		openModal("announcementModal");
+	}
+	const announcementModal = document.getElementById("announcementModal");
+	if (announcementModal) new MutationObserver(() => {
+		if (!announcementModal.classList.contains("active")) {
+			clearAnnouncementMedia();
+			if (state.editTarget?.type === "announcement") state.editTarget = null;
+			document.getElementById("saveAnnouncementDraftBtn").textContent = "Save as Draft";
+		}
+	}).observe(announcementModal, { attributes: true, attributeFilter: ["class"] });
 
 	function renderAnnouncements() {
 		const grid = document.getElementById("announcement-grid");
-		const filterValue = document.getElementById("ann-filter")?.value || "all";
-		grid.innerHTML = "";
-
-		const today = new Date();
-		today.setHours(0, 0, 0, 0);
-
-		const filtered = state.announcements.filter((a) => {
-			if (filterValue === "all") return true;
-			if (!a.eventDate) return filterValue === "past";
-			const [y, m, d] = a.eventDate.split("-").map(Number);
-			const eventDay = new Date(y, m - 1, d);
-			eventDay.setHours(0, 0, 0, 0);
-			if (filterValue === "upcoming") return eventDay >= today;
-			if (filterValue === "past") return eventDay < today;
-			return true;
-		});
-
-		if (filtered.length === 0) {
-			const msg =
-				filterValue === "upcoming"
-					? "No upcoming events found."
-					: filterValue === "past"
-						? "No past events found."
-						: "No announcements yet. Post the first one!";
-			grid.appendChild(makeEl("p", "empty-state full-span", msg));
-			return;
+		if (!grid) return;
+		const users = Array.isArray(state.announcements) ? state.announcements.filter((a) => a && typeof a === "object") : [];
+		const counts = { published: 0, scheduled: 0, draft: 0 };
+		users.forEach((a) => counts[announcementStatus(a)]++);
+		setText("annPublishedCount", counts.published);
+		setText("annScheduledCount", counts.scheduled);
+		setText("annDraftCount", counts.draft);
+		const query = document.getElementById("ann-search")?.value.trim().toLocaleLowerCase() || "";
+		const category = document.getElementById("ann-category-filter")?.value || "all";
+		const audience = document.getElementById("ann-audience-filter")?.value || "all";
+		const filtered = users.filter((a) => {
+			const status = announcementStatus(a), cat = safeAnnouncementCategory(a);
+			const matchesSearch = !query || `${a.title || ""} ${a.body || ""}`.toLocaleLowerCase().includes(query);
+			const matchesAudience = audience === "all" || (audience === "all-users" ? !a.audience || a.audience === "all" : a.audience === audience);
+			return matchesSearch && (annStatusFilter === "all" || status === annStatusFilter) && (category === "all" || cat === category) && matchesAudience;
+		}).slice().sort((a,b) => Date.parse(announcementDate(b) || 0) - Date.parse(announcementDate(a) || 0));
+		setText("annResultsCount", `${filtered.length} shown`);
+		grid.replaceChildren();
+		if (!filtered.length) {
+			const empty = makeEl("div", "bulletin-empty", users.length ? "No announcements match these filters." : "No announcements yet. Create the first campus update.");
+			grid.appendChild(empty); return;
 		}
-
 		filtered.forEach((a) => {
-			const card = document.createElement("div");
-			card.className =
-				"announcement-card" +
-				(a.scheduledDate ? " announcement-card--scheduled" : "");
-
-			let eventDateDisplay = "";
-			if (a.eventDate) {
-				const [y, m, d] = a.eventDate.split("-").map(Number);
-				eventDateDisplay = new Date(y, m - 1, d).toLocaleDateString("en-PH", {
-					year: "numeric",
-					month: "short",
-					day: "numeric",
-				});
-			}
-
-			// Built with textContent (never innerHTML): title, body, audience and
-			// dates are user-controlled and must show as literal text.
-			const iconText = (iconClass, text, iconStyle) => {
-				const i = makeEl("i", iconClass);
-				if (iconStyle) i.style.marginRight = iconStyle;
-				return [i, document.createTextNode(` ${text}`)];
-			};
-			const typeClass = String(a.type ?? "").replace(/[^a-z0-9_-]/gi, "");
-
-			const top = makeEl("div", "ann-card-top");
-			top.appendChild(
-				makeEl("span", `ann-type-badge ${typeClass}`.trim(), String(a.type ?? "")),
-			);
-			if (a.scheduledDate) {
-				const badge = makeEl("span", "ann-scheduled-badge");
-				badge.append(...iconText("fas fa-calendar-check", "Scheduled"));
-				top.appendChild(badge);
-			}
-			if (a.eventDate) {
-				const badge = makeEl("span", "ann-event-date-badge");
-				badge.append(...iconText("fas fa-calendar-day", eventDateDisplay));
-				top.appendChild(badge);
-			}
-
-			const meta = makeEl("div");
-			meta.style.cssText = "display:flex; flex-direction:column; gap:3px;";
-			const aud = makeEl("span");
-			aud.append(...iconText("fas fa-users", String(a.audience ?? ""), "5px"));
-			meta.appendChild(aud);
-			if (a.scheduledDate) {
-				const sd = makeEl("span", "ann-scheduled-date");
-				sd.append(...iconText("fas fa-calendar-day", String(a.scheduledDate), "5px"));
-				meta.appendChild(sd);
-			} else {
-				const d = makeEl("span", "", String(a.date ?? ""));
-				d.style.cssText = "font-size:11.5px; color:var(--text-4);";
-				meta.appendChild(d);
-			}
-
-			const delBtn = makeEl("button", "icon-btn delete");
-			delBtn.title = "Delete";
-			delBtn.appendChild(makeEl("i", "fas fa-trash"));
-			const actions = makeEl("div", "ann-actions");
-			actions.appendChild(delBtn);
-			const footer = makeEl("div", "ann-footer");
-			footer.append(meta, actions);
-
-			card.append(
-				top,
-				makeEl("div", "ann-title", String(a.title ?? "")),
-				makeEl("div", "ann-body", String(a.body ?? "")),
-				footer,
-			);
-
-			delBtn.addEventListener("click", () =>
-				confirmDelete("announcement", a.id, `announcement "${a.title}"`),
-			);
-			grid.appendChild(card);
+			const status = announcementStatus(a), categoryKey = safeAnnouncementCategory(a);
+			const card = makeEl("article", "bulletin-admin-card");
+			const top = makeEl("div", "bulletin-admin-card__top");
+			top.appendChild(makeEl("h4", "bulletin-admin-card__title", String(a.title || "Announcement")));
+			const statusBadge = makeEl("span", `bulletin-status bulletin-status--${status}`, status);
+			top.appendChild(statusBadge);
+			const meta = makeEl("div", "bulletin-admin-card__meta");
+			meta.append(makeEl("span", "bulletin-type-chip", ANN_CATEGORIES[categoryKey]), makeEl("span", "", ANN_AUDIENCES[a.audience] || "All Users"));
+			meta.appendChild(makeEl("span", "bulletin-type-chip", { warning: "Important", urgent: "Urgent" }[a.type] || "Standard"));
+			if (a.featured) meta.appendChild(makeEl("span", "", "★ Featured"));
+			const body = makeEl("p", "bulletin-admin-card__body", String(a.body || a.message || a.content || ""));
+			if (body.textContent.length > 240) body.textContent = `${body.textContent.slice(0, 237)}…`;
+			const footer = makeEl("div", "bulletin-admin-card__footer");
+			footer.appendChild(makeEl("span", "", `${status === "scheduled" ? "Publishes" : status === "draft" ? "Saved" : "Published"} · ${formatAnnouncementDate(announcementDate(a))}`));
+			const actions = makeEl("div", "bulletin-card-actions");
+			const edit = makeEl("button", "", "Edit"); edit.type = "button"; edit.addEventListener("click", () => openEditAnnouncement(a.id));
+			const remove = makeEl("button", "delete", "Delete"); remove.type = "button"; remove.addEventListener("click", () => confirmDelete("announcement", a.id, `announcement "${a.title || ""}"`));
+			actions.append(edit, remove); footer.appendChild(actions); card.append(top, meta, body, footer); grid.appendChild(card);
 		});
 	}
 
-	document
-		.getElementById("ann-filter")
-		?.addEventListener("change", renderAnnouncements);
+	document.getElementById("ann-search")?.addEventListener("input", renderAnnouncements);
+	document.getElementById("ann-category-filter")?.addEventListener("change", renderAnnouncements);
+	document.getElementById("ann-audience-filter")?.addEventListener("change", renderAnnouncements);
+	document.querySelectorAll("[data-ann-status]").forEach((button) => button.addEventListener("click", () => {
+		annStatusFilter = button.dataset.annStatus;
+		document.querySelectorAll("[data-ann-status]").forEach((item) => item.classList.toggle("is-active", item === button));
+		renderAnnouncements();
+	}));
 
 	/* ═══════════════════════════════════════════
 		CONFIRM DELETE
@@ -2652,27 +3079,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	function confirmDelete(type, id, label) {
 		pendingDelete = { type, id };
-		document.getElementById("confirmMessage").textContent =
-			`Are you sure you want to delete ${label}? This action cannot be undone.`;
+		let impact = "This action cannot be undone.";
+		if (type === "program") impact = "Its sections and program links will be removed. Student and professor accounts and shared course records will be kept.";
+		if (type === "section") impact = "Section enrollments and teaching links will be removed. Student, professor, and course records will be kept.";
+		if (type === "course") impact = "The course and its program, section, and professor links will be removed.";
+		document.getElementById("confirmMessage").textContent = `Delete ${label}? ${impact}`;
 		openModal("confirmModal");
 	}
 
 	// Name + description of the item about to be deleted (null if not found)
 	function describeForDelete(type, id) {
 		if (type === "program") {
-			const p = state.programs.find((x) => x.id === id);
+			const p = state.programs.find((x) => String(x.id) === String(id));
 			return p && { label: p.code, text: `program ${p.code} (${p.name})` };
 		}
 		if (type === "section") {
-			const s = state.sections.find((x) => x.id === id);
+			const s = state.sections.find((x) => String(x.id) === String(id));
 			return s && { label: sectionLabel(s), text: `section ${sectionLabel(s)}` };
 		}
 		if (type === "course") {
-			const c = state.courses.find((x) => x.id === id);
+			const c = state.courses.find((x) => String(x.id) === String(id));
 			return c && { label: c.code, text: `course ${c.code} (${c.name})` };
 		}
 		if (type === "user") {
-			const u = state.users.find((x) => x.id === id);
+			const u = state.users.find((x) => String(x.id) === String(id));
 			return (
 				u && {
 					label: userName(u),
@@ -2682,7 +3112,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			);
 		}
 		if (type === "announcement") {
-			const a = state.announcements.find((x) => x.id === id);
+			const a = state.announcements.find((x) => String(x.id) === String(id));
 			return a && { label: a.title, text: `announcement "${a.title}"` };
 		}
 		return null;
@@ -2691,46 +3121,68 @@ document.addEventListener("DOMContentLoaded", () => {
 	document.getElementById("confirmDeleteBtn")?.addEventListener("click", () => {
 		if (!pendingDelete) return;
 		const { type, id } = pendingDelete;
-		const deleted = describeForDelete(type, id); // read the name before it is gone
+		const deleted = describeForDelete(type, id);
+		if (!deleted) { pendingDelete = null; closeAllModals(); return; }
+		const previous = { programs: state.programs, sections: state.sections, courses: state.courses, users: state.users, announcements: state.announcements };
+		const matches = (value) => String(value) === String(id);
 		const map = {
 			program: () => {
-				state.programs = state.programs.filter((p) => p.id !== id);
-				renderPrograms();
-				syncProgramDropdowns();
+				const removedSectionIds = new Set(state.sections.filter((section) => matches(section.programId)).map((section) => String(section.id)));
+				state.programs = state.programs.filter((program) => !matches(program.id));
+				state.sections = state.sections.filter((section) => !matches(section.programId));
+				state.courses = state.courses.map((course) => {
+					const programIds = getCourseProgramIds(course).filter((programId) => !matches(programId));
+					const programYears = { ...(course.programYears || {}) }; delete programYears[String(id)];
+					return { ...course, programIds, programId: matches(course.programId) ? (programIds[0] ?? null) : course.programId, programYears };
+				});
+				state.users = state.users.map((user) => ({
+					...user,
+					programId: matches(user.programId) ? null : user.programId,
+					sectionId: removedSectionIds.has(String(user.sectionId)) ? null : user.sectionId,
+					...(Array.isArray(user.sectionIds) ? { sectionIds: user.sectionIds.filter((sectionId) => !removedSectionIds.has(String(sectionId))) } : {}),
+					...(Array.isArray(user.sections) ? { sections: user.sections.filter((sectionId) => !removedSectionIds.has(String(sectionId))) } : {}),
+				}));
 			},
 			section: () => {
-				state.sections = state.sections.filter((s) => s.id !== id);
-				renderSections();
+				state.sections = state.sections.filter((section) => !matches(section.id));
+				state.users = state.users.map((user) => ({
+					...user,
+					sectionId: matches(user.sectionId) ? null : user.sectionId,
+					...(Array.isArray(user.sectionIds) ? { sectionIds: user.sectionIds.filter((sectionId) => !matches(sectionId)) } : {}),
+					...(Array.isArray(user.sections) ? { sections: user.sections.filter((sectionId) => !matches(sectionId)) } : {}),
+				}));
 			},
 			course: () => {
-				state.courses = state.courses.filter((c) => c.id !== id);
-				renderCourses();
+				state.courses = state.courses.filter((course) => !matches(course.id));
+				state.sections = state.sections.map((section) => ({
+					...section,
+					courseIds: getSectionCourseIds(section).filter((courseId) => !matches(courseId)),
+					professorAssignments: (section.professorAssignments || []).map((assignment) => ({ ...assignment, courseIds: (assignment.courseIds || []).filter((courseId) => !matches(courseId)) })).filter((assignment) => assignment.courseIds.length),
+				}));
+				state.users = state.users.map((user) => Array.isArray(user.courseIds) ? { ...user, courseIds: user.courseIds.filter((courseId) => !matches(courseId)) } : user);
 			},
 			user: () => {
-				state.users = state.users.filter((u) => u.id !== id);
-				renderUsers();
+				state.users = state.users.filter((user) => !matches(user.id));
 			},
 			announcement: () => {
-				state.announcements = state.announcements.filter((a) => a.id !== id);
-				renderAnnouncements();
+				state.announcements = state.announcements.filter((announcement) => !matches(announcement.id));
 			},
 		};
-		map[type]?.();
-		if (deleted)
-			logActivity({
-				entityType: type,
-				action: "deleted",
-				entityId: id,
-				entityLabel: deleted.label,
-				description: `Deleted ${deleted.text}`,
-				details: deleted.details,
-			});
-		showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted.`);
-		updateStats();
-		persistState();
+		if (!map[type]) return;
+		map[type]();
+		if (!persistState()) {
+			Object.assign(state, previous);
+			renderPrograms(); renderSections(); renderCourses(); renderUsers(); updateStats();
+			pendingDelete = null; closeAllModals(); showToast("Delete could not be saved. Check browser storage and try again.", true); return;
+		}
+		logActivity({ entityType: type, action: "deleted", entityId: id, entityLabel: deleted.label, description: `Deleted ${deleted.text}`, details: deleted.details });
+		syncProgramDropdowns(); renderPrograms(); renderSections(); renderCourses(); renderUsers(); renderAnnouncements(); updateStats();
+		if (type === "program" && matches(activeProgramId)) { activeProgramId = null; _currentSectionId = null; showAcademicList(); }
+		else if (type === "section" && matches(_currentSectionId)) { _currentSectionId = null; showProgramSections(); }
 		pendingDelete = null;
 		closeAllModals();
-		maybeRefreshSectionDetails();
+		if (type !== "program" && type !== "section") maybeRefreshSectionDetails();
+		showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted.`);
 	});
 
 	/* ═══════════════════════════════════════════
@@ -3161,146 +3613,251 @@ document.addEventListener("DOMContentLoaded", () => {
 	};
 
 	/* ═══════════════════════════════════════════
-		SECTION DETAILS PAGE
+		SECTION DETAILS INSIDE ACADEMIC MANAGEMENT
 	═══════════════════════════════════════════ */
 	let _currentSectionId = null;
+	let _currentSectionStudents = [];
+
+	function renderSectionStudents() {
+		const tbody = document.getElementById("sdStudentsTbody");
+		const empty = document.getElementById("sdStudentsEmpty");
+		if (!tbody) return;
+		const query = (document.getElementById("sdStudentSearch")?.value || "").toLowerCase().trim();
+		const students = _currentSectionStudents.filter((student) => `${userName(student)} ${student.studentId || ""} ${student.email || ""} ${student.status || ""}`.toLowerCase().includes(query));
+		tbody.replaceChildren();
+		students.forEach((student) => {
+			const row = document.createElement("tr");
+			row.append(makeEl("td", "", student.studentId || student.id || "—"), makeEl("td", "", userName(student)), makeEl("td", "", student.enrollmentStatus || student.status || "Enrolled"));
+			const actions = makeEl("td", "academic-row-actions");
+			const edit = makeEl("button", "btn-cancel", "Edit assignment"); edit.type = "button"; edit.addEventListener("click", () => editUser(student.id));
+			const unassign = makeEl("button", "icon-btn delete", "Unassign"); unassign.type = "button"; unassign.addEventListener("click", () => unassignStudentFromSection(student.id));
+			actions.append(edit, unassign); row.appendChild(actions);
+			tbody.appendChild(row);
+		});
+		if (empty) { empty.hidden = students.length > 0; empty.textContent = _currentSectionStudents.length ? "No students match your search." : "No students are assigned to this section."; }
+	}
+	document.getElementById("sdStudentSearch")?.addEventListener("input", renderSectionStudents);
+	document.getElementById("assignSectionStudentsBtn")?.addEventListener("click", openStudentAssignmentModal);
+	document.getElementById("saveSectionStudentAssignmentsBtn")?.addEventListener("click", saveSectionStudentAssignments);
+	function openStudentAssignmentModal() {
+		const section = state.sections.find((item) => String(item.id) === String(_currentSectionId));
+		const program = section && state.programs.find((item) => String(item.id) === String(section.programId));
+		const wrap = document.getElementById("sectionStudentOptions");
+		if (!section || !program || !wrap) return;
+		wrap.replaceChildren();
+		setText("studentAssignmentSub", `Choose existing ${program.code} students who are not assigned to another section. No accounts are created here.`);
+		const candidates = state.users.filter((user) => user.role === "student" && String(user.programId) === String(program.id) && (user.sectionId == null || user.sectionId === ""));
+		if (!candidates.length) wrap.appendChild(makeEl("p", "empty-state", "No unassigned student accounts are available for this program."));
+		candidates.forEach((student) => {
+			const label = makeEl("label", "checklist-item");
+			const input = document.createElement("input"); input.type = "checkbox"; input.value = String(student.id);
+			label.append(input, makeEl("span", "checklist-label", `${userName(student)} · ${student.studentId || student.email || "ID unavailable"}`)); wrap.appendChild(label);
+		});
+		setError("sectionStudentAssignErr", "");
+		openModal("studentAssignmentModal");
+	}
+	function saveSectionStudentAssignments() {
+		const section = state.sections.find((item) => String(item.id) === String(_currentSectionId));
+		const program = section && state.programs.find((item) => String(item.id) === String(section.programId));
+		if (!section || !program) return;
+		const ids = new Set([...document.querySelectorAll("#sectionStudentOptions input:checked")].map((input) => input.value));
+		if (!ids.size) { setError("sectionStudentAssignErr", "Select at least one unassigned student."); return; }
+		const eligible = state.users.filter((user) => ids.has(String(user.id)) && user.role === "student" && String(user.programId) === String(program.id) && (user.sectionId == null || user.sectionId === ""));
+		if (!eligible.length || eligible.length !== ids.size) { setError("sectionStudentAssignErr", "Some selected students are no longer available for assignment. Review the list and try again."); return; }
+		const previousUsers = state.users;
+		state.users = state.users.map((user) => ids.has(String(user.id)) ? { ...user, sectionId: section.id } : user);
+		if (!persistState()) { state.users = previousUsers; showToast("Student assignments could not be saved. Try again.", true); return; }
+		closeAllModals(); renderSectionStudents(); renderSections(); renderPrograms(); updateStats();
+		showToast(`${eligible.length} student${eligible.length === 1 ? "" : "s"} assigned to the section.`);
+	}
+	function unassignStudentFromSection(studentId) {
+		const student = state.users.find((user) => String(user.id) === String(studentId));
+		if (!student || String(student.sectionId) !== String(_currentSectionId) || !confirm(`Remove ${userName(student)} from this section? Their account and program remain unchanged.`)) return;
+		const previousUsers = state.users;
+		state.users = state.users.map((user) => String(user.id) === String(studentId) ? { ...user, sectionId: null } : user);
+		if (!persistState()) { state.users = previousUsers; showToast("Student assignment could not be removed. Try again.", true); return; }
+		openSectionDetails(_currentSectionId); renderSections(); renderPrograms(); updateStats(); showToast("Student unassigned from the section.");
+	}
 
 	function openSectionDetails(sectionId) {
-		_currentSectionId = sectionId;
-		const s = state.sections.find((s) => s.id === sectionId);
-		if (!s) return;
-		const prog = state.programs.find((p) => p.id === s.programId);
-		const yearLabels = ["1st", "2nd", "3rd", "4th"];
-		const label = `${prog?.code || "?"} ${s.year}-${s.letter}`;
-		const yearLabel = yearLabels[(parseInt(s.year) || 1) - 1] + " Year";
+		const section = state.sections.find((item) => String(item.id) === String(sectionId));
+		if (!section) return;
+		_currentSectionId = section.id;
+		activeProgramId = section.programId;
+		const program = state.programs.find((item) => String(item.id) === String(section.programId));
+		const label = sectionDisplayName(section, program);
+		const yearLabel = academicYearLabel(section.year);
+		setText("sectionDetailsTitle", label);
+		setText("sectionDetailsSub", `${program?.name || "Unknown program"} · ${yearLabel}`);
 
-		// Update header
-		sectionCrumbLabel = label; // shown as the last breadcrumb
-		setText(
-			"sectionDetailsSub",
-			`${prog?.name || "Unknown Program"} · ${yearLabel} · Capacity: ${s.capacity}`,
-		);
-
-		// Students enrolled in this section
-		const students = state.users.filter(
-			(u) => u.role === "student" && u.sectionId === sectionId,
-		);
-		setText("sdStudentCount", students.length);
-		setText("sdCapacity", s.capacity);
-
-		const tbody = document.getElementById("sdStudentsTbody");
-		if (tbody) {
-			if (students.length === 0) {
-				tbody.innerHTML =
-					'<tr><td colspan="3" class="empty-state">No students enrolled.</td></tr>';
-			} else {
-				tbody.innerHTML = students
-					.map(
-						(u) => `
-					<tr>
-						<td>
-							<div class="user-cell">
-								<div class="user-avatar" style="width:28px;height:28px;font-size:11px;">${initials(u.firstname, u.lastname)}</div>
-								<span>${u.displayName || u.firstname + " " + u.lastname}</span>
-							</div>
-						</td>
-						<td style="font-size:13px;">${u.email}</td>
-						<td><span class="status ${u.status}">${u.status.charAt(0).toUpperCase() + u.status.slice(1)}</span></td>
-					</tr>
-				`,
-					)
-					.join("");
-			}
-		}
-
-		// Courses for this section's program (+ year level filter if course has year set)
-		const sectionCourses = state.courses.filter((c) => {
-			const pids = c.programIds || (c.programId ? [c.programId] : []);
-			const yearMatch = !c.year || String(c.year) === String(s.year);
-			return pids.includes(s.programId) && yearMatch;
-		});
-		setText("sdCourseCount", sectionCourses.length);
+		_currentSectionStudents = state.users.filter((user) => user.role === "student" && String(user.sectionId) === String(section.id));
+		const courseIds = getSectionCourseIds(section);
+		const professors = getSectionProfessorAssignments(section);
+		setText("sdStudentCount", _currentSectionStudents.length);
+		setText("sdCourseCount", courseIds.length);
+		setText("sdProfessorCount", professors.length);
+		const search = document.getElementById("sdStudentSearch"); if (search) search.value = "";
+		renderSectionStudents();
 
 		const coursesList = document.getElementById("sdCoursesList");
-		if (coursesList) {
-			if (sectionCourses.length === 0) {
-				coursesList.innerHTML =
-					'<p class="empty-state">No courses assigned to this section.</p>';
-			} else {
-				const yearLabelsArr = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
-				coursesList.innerHTML = sectionCourses
-					.map((c) => {
-						// Find professor assigned to this course
-						const prof = state.users.find(
-							(u) =>
-								u.role === "professor" && (u.courseIds || []).includes(c.id),
-						);
-						const profName = prof
-							? `<span class="sd-course-meta"><i class="fas fa-chalkboard-teacher"></i> ${prof.displayName || prof.firstname + " " + prof.lastname}</span>`
-							: `<span class="sd-no-professor"><i class="fas fa-chalkboard-teacher"></i> No professor assigned</span>`;
-						const pids = c.programIds || (c.programId ? [c.programId] : []);
-						const progCodes =
-							pids
-								.map((pid) => {
-									const p = state.programs.find((p) => p.id === pid);
-									return p?.code || "";
-								})
-								.filter(Boolean)
-								.join(", ") || "—";
-						const courseYear = yearLabelsArr[(parseInt(c.year) || 1) - 1];
-						return `
-						<div class="sd-course-item">
-							<div class="sd-course-header">
-								<span class="sd-course-code">${c.code}</span>
-								<span class="sd-course-name">${c.name}</span>
-								<span class="sd-course-year-badge">${courseYear}</span>
-							</div>
-							<div class="sd-course-meta">
-								<span><i class="fas fa-sitemap"></i> ${progCodes}</span>
-								<span><i class="fas fa-star-half-alt"></i> ${c.units} units</span>
-							</div>
-							<div style="margin-top:6px;font-size:12.5px;color:var(--text-3);">${profName}</div>
-						</div>
-					`;
-					})
-					.join("");
-			}
+		coursesList.replaceChildren();
+		const assignedCourses = state.courses.filter((course) => courseIds.includes(String(course.id)));
+		if (!assignedCourses.length) coursesList.appendChild(makeEl("p", "empty-state", "No courses are assigned to this section yet. Add a program course to include it here."));
+		else {
+			const table = document.createElement("table"); table.className = "academic-table";
+			const head = document.createElement("thead"); const headRow = document.createElement("tr");
+			["Course Code", "Course Title", "Units", "Professor", "Actions"].forEach((text) => headRow.appendChild(makeEl("th", "", text))); head.appendChild(headRow);
+			const body = document.createElement("tbody");
+			assignedCourses.forEach((course) => {
+				const row = document.createElement("tr");
+				const assignedTeacher = professors.find((item) => item.courseIds.includes(String(course.id)));
+				const teacher = assignedTeacher && state.users.find((user) => String(user.id) === String(assignedTeacher.professorId));
+				row.append(makeEl("td", "", course.code || "—"), makeEl("td", "", course.name || "Unnamed course"), makeEl("td", "", course.units ?? "—"), makeEl("td", "", teacher ? userName(teacher) : "—"));
+				const actions = makeEl("td", "academic-row-actions"); const remove = makeEl("button", "icon-btn delete", "Unassign"); remove.type = "button"; remove.addEventListener("click", () => unassignCourseFromSection(course.id)); actions.appendChild(remove); row.appendChild(actions); body.appendChild(row);
+			});
+			table.append(head, body); const wrap = makeEl("div", "academic-table-wrap"); wrap.appendChild(table); coursesList.appendChild(wrap);
 		}
 
-		// Navigate to section-details page
-		navigateToPage("section-details");
+		const professorsList = document.getElementById("sdProfessorsList");
+		professorsList.replaceChildren();
+		if (!professors.length) professorsList.appendChild(makeEl("p", "empty-state", "No professors are assigned to this section yet."));
+		else {
+			const table = document.createElement("table"); table.className = "academic-table";
+			const head = document.createElement("thead"); const headRow = document.createElement("tr");
+			["Professor Name", "School Email", "Assigned Course(s)", "Actions"].forEach((text) => headRow.appendChild(makeEl("th", "", text))); head.appendChild(headRow);
+			const body = document.createElement("tbody");
+			professors.forEach((assignment) => {
+				const professor = state.users.find((user) => String(user.id) === String(assignment.professorId)); if (!professor) return;
+				const courses = assignment.courseIds.map((id) => state.courses.find((course) => String(course.id) === String(id))).filter(Boolean);
+				const row = document.createElement("tr"); row.append(makeEl("td", "", userName(professor)), makeEl("td", "", professor.email || "—"), makeEl("td", "", courses.map((course) => course.code || course.name).join(", ") || "—"));
+				const actions = makeEl("td", "academic-row-actions"); const remove = makeEl("button", "icon-btn delete", "Unassign"); remove.type = "button"; remove.addEventListener("click", () => unassignProfessorFromSection(professor.id)); actions.appendChild(remove); row.appendChild(actions); body.appendChild(row);
+			});
+			table.append(head, body); const wrap = makeEl("div", "academic-table-wrap"); wrap.appendChild(table); professorsList.appendChild(wrap);
+		}
+
+		document.getElementById("academic-list-view").hidden = true;
+		document.getElementById("program-sections-view").hidden = true;
+		document.getElementById("section-details").hidden = false;
+		selectSectionDetailTab("students");
+		updateAcademicBreadcrumb("details");
 	}
 
-	// ── Navigate (internal helper that doesn't close mobile more menu) ──
-	function navigateToPage(target) {
-		navLinks.forEach((l) =>
-			l.classList.toggle("active", isNavActive(l, target, "")),
-		);
-		if (target === "manage-users") setUserView("");
-		mobileItems.forEach((b) =>
-			b.classList.toggle("active", b.dataset.target === target),
-		);
-		moreItems.forEach((b) =>
-			b.classList.toggle("active", b.dataset.target === target),
-		);
-		pages.forEach((p) => p.classList.toggle("active", p.id === target));
-		updateBreadcrumb(target);
-		window.scrollTo({ top: 0, behavior: "smooth" });
-	}
+	document.getElementById("assignSectionCourseBtn")?.addEventListener("click", openSectionCourseAssignment);
+	document.getElementById("saveSectionCourseBtn")?.addEventListener("click", saveSectionCourseAssignment);
+	document.getElementById("assignSectionProfessorBtn")?.addEventListener("click", openSectionProfessorAssignment);
+	document.getElementById("saveSectionProfessorBtn")?.addEventListener("click", saveSectionProfessorAssignment);
 
-	// ── Back button: section-details → sections ──
-	document
-		.getElementById("backToSectionsBtn")
-		?.addEventListener("click", () => {
-			navigateTo("sections");
+	function openSectionCourseAssignment() {
+		const section = state.sections.find((item) => String(item.id) === String(_currentSectionId));
+		if (!section) return;
+		const select = document.getElementById("sectionCourseSelect");
+		const assigned = new Set(getSectionCourseIds(section));
+	const options = state.courses.filter((course) => getCourseProgramIds(course).some((id) => String(id) === String(section.programId)) && getProgramCourseYears(course, section.programId).includes(String(section.year)) && !assigned.has(String(course.id)));
+		select.replaceChildren(new Option("Select a program course", ""), ...options.map((course) => new Option(`${course.code || "No code"} — ${course.name || "Unnamed course"} · ${course.units ?? "—"} units`, String(course.id))));
+		const empty = document.getElementById("sectionCourseEmpty");
+	if (empty) { empty.hidden = options.length > 0; empty.textContent = state.courses.some((course) => getCourseProgramIds(course).some((id) => String(id) === String(section.programId)) && getProgramCourseYears(course, section.programId).includes(String(section.year))) ? "All program courses for this year are already assigned to this section." : "No courses are linked to this program and year yet. Add a course in Manage Program Courses first."; }
+		select.hidden = options.length === 0;
+		setText("sectionCourseAssignmentHelp", `Choose a course already assigned to ${state.programs.find((item) => String(item.id) === String(section.programId))?.code || "this program"}.`);
+		setError("sectionCourseAssignErr", "");
+		document.getElementById("saveSectionCourseBtn").disabled = options.length === 0;
+		openModal("sectionCourseAssignmentModal");
+	}
+	function saveSectionCourseAssignment() {
+		const section = state.sections.find((item) => String(item.id) === String(_currentSectionId));
+		const courseId = document.getElementById("sectionCourseSelect").value;
+		const course = state.courses.find((item) => String(item.id) === String(courseId));
+	if (!section || !course || !getCourseProgramIds(course).some((id) => String(id) === String(section.programId)) || !getProgramCourseYears(course, section.programId).includes(String(section.year))) { setError("sectionCourseAssignErr", "Choose a course assigned to this program and year."); return; }
+		const ids = getSectionCourseIds(section);
+		if (ids.includes(String(course.id))) { setError("sectionCourseAssignErr", "This course is already assigned to this section."); return; }
+		const previousSections = state.sections;
+		state.sections = state.sections.map((item) => String(item.id) === String(section.id) ? { ...item, courseIds: [...ids, String(course.id)] } : item);
+		if (!persistState()) { state.sections = previousSections; showToast("Course assignment could not be saved.", true); return; }
+		closeAllModals(); openSectionDetails(section.id); renderSections(); showToast("Course assigned to section.");
+	}
+	function unassignCourseFromSection(courseId) {
+		const section = state.sections.find((item) => String(item.id) === String(_currentSectionId));
+		if (!section || !confirm("Remove this course from the section? The program course record will remain.")) return;
+		const previousSections = state.sections; const previousUsers = state.users;
+		const removedProfessorIds = (Array.isArray(section.professorAssignments) ? section.professorAssignments : []).filter((item) => (item.courseIds || []).some((id) => String(id) === String(courseId))).map((item) => String(item.professorId ?? item.userId));
+		state.sections = state.sections.map((item) => String(item.id) === String(section.id) ? { ...item, courseIds: getSectionCourseIds(item).filter((id) => id !== String(courseId)), professorAssignments: (item.professorAssignments || []).map((assignment) => ({ ...assignment, courseIds: (assignment.courseIds || []).filter((id) => String(id) !== String(courseId)) })).filter((assignment) => (assignment.courseIds || []).length > 0) } : item);
+		state.users = state.users.map((user) => {
+			if (!removedProfessorIds.includes(String(user.id))) return user;
+			const stillTeachingHere = state.sections.some((item) => String(item.id) === String(section.id) && (item.professorAssignments || []).some((assignment) => String(assignment.professorId ?? assignment.userId) === String(user.id)));
+			return stillTeachingHere ? user : { ...user, sectionIds: (user.sectionIds || []).filter((id) => String(id) !== String(section.id)) };
 		});
+		if (!persistState()) { state.sections = previousSections; state.users = previousUsers; showToast("Course assignment could not be removed.", true); return; }
+		openSectionDetails(section.id); renderSections(); showToast("Course removed from section.");
+	}
+	function openSectionProfessorAssignment() {
+		const section = state.sections.find((item) => String(item.id) === String(_currentSectionId));
+		if (!section) return;
+		const professorSelect = document.getElementById("sectionProfessorSelect");
+		const courseSelect = document.getElementById("sectionProfessorCourseSelect");
+		const assignments = getSectionProfessorAssignments(section);
+		const courses = state.courses.filter((course) => getSectionCourseIds(section).includes(String(course.id)));
+		const professors = state.users.filter((user) => user.role === "professor");
+		professorSelect.replaceChildren(new Option("Select professor", ""), ...professors.map((user) => new Option(`${userName(user)} · ${user.email || "No email"}`, String(user.id))));
+		courseSelect.replaceChildren(new Option("Select course", ""), ...courses.map((course) => new Option(`${course.code || "No code"} — ${course.name || "Unnamed course"}`, String(course.id))));
+		const empty = document.getElementById("sectionProfessorEmpty");
+		if (empty) { empty.hidden = professors.length > 0 && courses.length > 0; empty.textContent = !professors.length ? "No professor accounts exist yet. Add professor accounts from User Management first." : "Assign a course to this section before assigning its professor."; }
+		setError("sectionProfessorSelectErr", ""); setError("sectionProfessorCourseErr", "");
+		document.getElementById("saveSectionProfessorBtn").disabled = !professors.length || !courses.length;
+		openModal("sectionProfessorAssignmentModal");
+	}
+	function saveSectionProfessorAssignment() {
+		const section = state.sections.find((item) => String(item.id) === String(_currentSectionId));
+		const professorId = document.getElementById("sectionProfessorSelect").value;
+		const courseId = document.getElementById("sectionProfessorCourseSelect").value;
+		const professor = state.users.find((user) => user.role === "professor" && String(user.id) === String(professorId));
+		const course = state.courses.find((item) => String(item.id) === String(courseId));
+		if (!professor) setError("sectionProfessorSelectErr", "Choose an existing professor account.");
+		if (!course || !getSectionCourseIds(section).includes(String(course.id))) setError("sectionProfessorCourseErr", "Choose a course assigned to this section.");
+		if (!section || !professor || !course || !getSectionCourseIds(section).includes(String(course.id))) return;
+		const current = getSectionProfessorAssignments(section);
+		if (current.some((item) => item.professorId === String(professor.id) && item.courseIds.includes(String(course.id)))) { setError("sectionProfessorCourseErr", "This professor is already assigned to this course."); return; }
+		const previousSections = state.sections; const previousUsers = state.users;
+		const assignments = current.map((item) => ({ ...item, courseIds: [...item.courseIds] }));
+		const existing = assignments.find((item) => item.professorId === String(professor.id));
+		if (existing) existing.courseIds.push(String(course.id)); else assignments.push({ professorId: String(professor.id), courseIds: [String(course.id)] });
+		state.sections = state.sections.map((item) => String(item.id) === String(section.id) ? { ...item, professorAssignments: assignments } : item);
+		state.users = state.users.map((user) => String(user.id) === String(professor.id) ? { ...user, sectionIds: [...new Set([...(user.sectionIds || []), section.id])], courseIds: [...new Set([...(user.courseIds || []), course.id])] } : user);
+		if (!persistState()) { state.sections = previousSections; state.users = previousUsers; showToast("Professor assignment could not be saved.", true); return; }
+		closeAllModals(); openSectionDetails(section.id); renderSections(); showToast("Professor assigned to course and section.");
+	}
+	function unassignProfessorFromSection(professorId) {
+		const section = state.sections.find((item) => String(item.id) === String(_currentSectionId));
+		if (!section || !confirm("Remove this professor's assignments from the section? The professor account remains.")) return;
+		const previousSections = state.sections; const previousUsers = state.users;
+			const remaining = (Array.isArray(section.professorAssignments) ? section.professorAssignments : []).filter((item) => String(item.professorId ?? item.userId) !== String(professorId));
+		state.sections = state.sections.map((item) => String(item.id) === String(section.id) ? { ...item, professorAssignments: remaining } : item);
+		state.users = state.users.map((user) => String(user.id) === String(professorId) ? { ...user, sectionIds: (user.sectionIds || []).filter((id) => String(id) !== String(section.id)), sections: (user.sections || []).filter((id) => String(id) !== String(section.id)) } : user);
+		if (!persistState()) { state.sections = previousSections; state.users = previousUsers; showToast("Professor assignment could not be removed.", true); return; }
+		openSectionDetails(section.id); renderSections(); showToast("Professor unassigned from section.");
+	}
+
+	function selectSectionDetailTab(tabName) {
+		document.querySelectorAll("[data-detail-tab]").forEach((tab) => {
+			const active = tab.dataset.detailTab === tabName;
+			tab.classList.toggle("is-active", active); tab.setAttribute("aria-selected", String(active)); tab.tabIndex = active ? 0 : -1;
+		});
+		["students", "courses", "professors"].forEach((name) => { const panel = document.getElementById(`sd${name[0].toUpperCase()}${name.slice(1)}Panel`); if (panel) panel.hidden = name !== tabName; });
+	}
+	document.querySelectorAll("[data-detail-tab]").forEach((tab) => {
+		tab.addEventListener("click", () => selectSectionDetailTab(tab.dataset.detailTab));
+		tab.addEventListener("keydown", (event) => {
+			if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+			event.preventDefault();
+			const tabs = [...document.querySelectorAll("[data-detail-tab]")];
+			const current = tabs.indexOf(tab);
+			const next = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (current + (event.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length;
+			tabs[next]?.focus();
+			tabs[next] && selectSectionDetailTab(tabs[next].dataset.detailTab);
+		});
+	});
 
 	// ── Refresh section details if already open after any state change ──
 	function maybeRefreshSectionDetails() {
-		if (
-			_currentSectionId &&
-			document.getElementById("section-details")?.classList.contains("active")
-		) {
+		if (_currentSectionId && !document.getElementById("section-details")?.hidden) {
 			openSectionDetails(_currentSectionId);
 		}
 	}
@@ -3511,6 +4068,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		});
 	})();
 
+	populateAcademicConfiguration();
 	renderUsers();
 	renderCourses();
 	renderPrograms();
@@ -3629,7 +4187,7 @@ document.addEventListener("DOMContentLoaded", () => {
 				const prog = state.programs.find((p) => p.id === s.programId);
 				const opt = document.createElement("option");
 				opt.value = s.id;
-				opt.textContent = `${prog?.code || "?"} ${s.year}-${s.letter}`;
+				opt.textContent = sectionDisplayName(s, prog);
 				secSel.appendChild(opt);
 			});
 			secSel.disabled = false;
@@ -3682,7 +4240,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			const count = rawCount;
 			const sec = state.sections.find((s) => s.id === secId);
 			const prog = state.programs.find((p) => p.id === progId);
-			const label = `${prog?.code || "?"} ${sec?.year}-${sec?.letter}`;
+			const label = sectionDisplayName(sec || {}, prog);
 			let added = 0;
 
 			for (let i = 1; i <= count; i++) {
