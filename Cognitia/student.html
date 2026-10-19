@@ -7,6 +7,8 @@
 		<link rel="stylesheet" href="styles/student.css" />
 		<link rel="stylesheet" href="styles/dark-mode.css" />
 		<script src="js/theme.js"></script>
+		<script src="js/session.js"></script>
+		<script src="js/notification.js"></script>
 		<script src="js/student-id.js"></script>
 		<link rel="icon" type="image/png" href="assets/icons/Logo-Icon-Red.png" />
 		<link
@@ -145,9 +147,16 @@
 							aria-controls="notifMenu"
 						>
 							<i class="fas fa-bell"></i>
+							<span class="notif-badge" id="notifBadge" hidden></span>
 						</button>
+						<span class="visually-hidden" id="notifLive" role="status"></span>
 						<div class="topbar-menu topbar-menu-notif" id="notifMenu" hidden>
-							<div class="topbar-menu-head">Latest announcements</div>
+							<div class="topbar-menu-head notif-head">
+								<span id="notifHeadText">Announcements</span
+								><button class="notif-markall" id="notifMarkAll" type="button">
+									Mark all read
+								</button>
+							</div>
 							<ul class="notif-list" id="notifList"></ul>
 							<button class="topbar-menu-foot" id="notifViewAll" type="button">
 								View all announcements
