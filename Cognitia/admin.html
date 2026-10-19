@@ -472,51 +472,43 @@
 							</div>
 						</section>
 
-						<!-- Calendar interactions and event indicators are driven by calendar.js. -->
-						<div class="card calendar-card">
-							<div class="calendar-header">
-								<div class="calendar-title-row">
-									<h3
-										class="card-title"
-										style="border: none; margin: 0; padding: 0"
-									>
-										<i class="fas fa-calendar-alt"></i> Calendar
+						<section
+							class="card dashboard-pending-card"
+							aria-labelledby="dashboardPendingTitle"
+						>
+							<div class="dashboard-pending-heading">
+								<div class="dashboard-pending-heading-copy">
+									<h3 class="card-title" id="dashboardPendingTitle">
+										Pending User Approvals
 									</h3>
-									<p class="calendar-hint">
-										Scheduled events and important dates
+									<p class="dashboard-pending-subtitle">
+										Users awaiting review
 									</p>
 								</div>
-								<div class="calendar-nav">
-									<button
-										class="cal-nav-btn"
-										id="calPrev"
-										aria-label="Previous month"
-									>
-										<i class="fas fa-chevron-left"></i>
-									</button>
-									<span class="cal-month-label" id="calMonthLabel"></span>
-									<button
-										class="cal-nav-btn"
-										id="calNext"
-										aria-label="Next month"
-									>
-										<i class="fas fa-chevron-right"></i>
-									</button>
-								</div>
+								<span
+									class="dashboard-pending-count"
+									id="dashboardPendingCount"
+									aria-label="0 pending users"
+									>0</span
+								>
 							</div>
-							<div class="calendar-grid-wrap">
-								<div class="cal-weekdays">
-									<span>Su</span><span>Mo</span><span>Tu</span> <span>We</span
-									><span>Th</span><span>Fr</span><span>Sa</span>
-								</div>
-								<div class="cal-days" id="calDays"></div>
+							<div
+								class="dashboard-pending-list"
+								id="dashboardPendingList"
+								aria-live="polite"
+							>
+								<p class="dashboard-pending-empty">
+									Loading pending approvals…
+								</p>
 							</div>
-							<div class="cal-legend">
-								<span class="cal-legend-dot today-dot"></span><span>Today</span>
-								<span class="cal-legend-dot ann-dot"></span
-								><span>Scheduled</span>
-							</div>
-						</div>
+							<a
+								class="dashboard-pending-link dashboard-nav-link"
+								href="#approval-requests"
+								data-target="approval-requests"
+								>View All Pending Users
+								<i class="fas fa-arrow-right" aria-hidden="true"></i
+							></a>
+						</section>
 					</div>
 
 					<section
@@ -817,7 +809,7 @@
 						</div>
 						<div class="academic-programs-heading">
 							<div class="academic-year-heading">
-								<h3 id="sectionYearTitle">1st Year Sections</h3>
+								<h3 id="sectionYearTitle">Sections</h3>
 								<select
 									id="sectionYearSelect"
 									class="academic-year-select"
@@ -2122,8 +2114,18 @@
 								type="file"
 								id="m-annMedia"
 								accept="image/*,video/*"
-							/><small>Media is saved in this browser, separately from announcement text.</small>
-							<button type="button" id="m-annMediaRemove" class="btn-cancel bulletin-remove-media" hidden>Remove attachment</button>
+							/><small
+								>Media is saved in this browser, separately from announcement
+								text.</small
+							>
+							<button
+								type="button"
+								id="m-annMediaRemove"
+								class="btn-cancel bulletin-remove-media"
+								hidden
+							>
+								Remove attachment
+							</button>
 							<div
 								id="m-annMediaPreview"
 								class="bulletin-media-preview"
@@ -2132,12 +2134,36 @@
 						</div>
 					</div>
 					<aside class="bulletin-live-preview-wrap">
-						<div class="bulletin-preview-toolbar" role="group" aria-label="Preview controls">
-							<span class="bulletin-editor-kicker"><span>Live preview</span></span>
-							<div class="bulletin-zoom-controls" role="group" aria-label="Preview zoom">
-								<button type="button" id="annPreviewZoomOut" aria-label="Zoom out">−</button>
-								<output id="annPreviewZoomValue" aria-live="polite">100%</output>
-								<button type="button" id="annPreviewZoomIn" aria-label="Zoom in">+</button>
+						<div
+							class="bulletin-preview-toolbar"
+							role="group"
+							aria-label="Preview controls"
+						>
+							<span class="bulletin-editor-kicker"
+								><span>Live preview</span></span
+							>
+							<div
+								class="bulletin-zoom-controls"
+								role="group"
+								aria-label="Preview zoom"
+							>
+								<button
+									type="button"
+									id="annPreviewZoomOut"
+									aria-label="Zoom out"
+								>
+									−
+								</button>
+								<output id="annPreviewZoomValue" aria-live="polite"
+									>100%</output
+								>
+								<button
+									type="button"
+									id="annPreviewZoomIn"
+									aria-label="Zoom in"
+								>
+									+
+								</button>
 								<button type="button" id="annPreviewZoomReset">Reset</button>
 							</div>
 						</div>
@@ -2152,11 +2178,16 @@
 									<div class="bulletin-preview-brand">
 										<i class="fas fa-bullhorn"></i> COGNITIA CAMPUS BULLETIN
 									</div>
-									<span id="annPreviewCategory" class="bulletin-category-pill">Academic</span>
+									<span id="annPreviewCategory" class="bulletin-category-pill"
+										>Academic</span
+									>
 									<h3 id="annPreviewTitle">Your announcement title</h3>
-									<div class="bulletin-preview-meta" id="annPreviewMeta">Preview · All Users</div>
+									<div class="bulletin-preview-meta" id="annPreviewMeta">
+										Preview · All Users
+									</div>
 									<div class="bulletin-preview-body" id="annPreviewBody">
-										Your full announcement content will appear here. Use the preview to check readability before publishing.
+										Your full announcement content will appear here. Use the
+										preview to check readability before publishing.
 									</div>
 									<div id="annPreviewMedia"></div>
 								</article>
@@ -2317,6 +2348,7 @@
 
 		<script src="js/academic-config.js"></script>
 		<script src="js/sidebar.js"></script>
+		<script src="js/search-controls.js"></script>
 		<script src="js/bulletin-media.js"></script>
 		<script src="js/admin.js"></script>
 		<script src="js/approval.js"></script>

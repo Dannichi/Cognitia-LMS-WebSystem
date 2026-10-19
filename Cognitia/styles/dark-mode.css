@@ -9,6 +9,12 @@ html[data-theme="dark"] {
 	--brand-light: rgba(139, 26, 26, 0.16);
 	--brand-mid: rgba(139, 26, 26, 0.34);
 	--brand-glow: rgba(139, 26, 26, 0.24);
+	--action-view-bg: rgba(139, 26, 26, 0.18);
+	--action-view-text: #f0b6b6;
+	--action-view-border: rgba(240, 182, 182, 0.26);
+	--action-danger-bg: rgba(255, 143, 143, 0.08);
+	--action-danger-text: #ffaaaa;
+	--action-danger-border: rgba(255, 170, 170, 0.28);
 
 	/* Deep surfaces, visible borders, and high-contrast text. */
 	--bg: #080808;
@@ -74,6 +80,9 @@ html[data-theme="dark"] input,
 html[data-theme="dark"] select,
 html[data-theme="dark"] textarea {
 	color-scheme: dark;
+}
+html[data-theme="dark"] #academic-list-view .academic-management-toolbar .academic-selectors select:not(.academic-context-select) {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23c6c2c2' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
 }
 html[data-theme="dark"] ::placeholder {
 	color: var(--text-4);

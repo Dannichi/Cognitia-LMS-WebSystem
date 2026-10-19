@@ -152,6 +152,8 @@ document.addEventListener("DOMContentLoaded", () => {
 		nextId: 1,
 		editTarget: null,
 	};
+	let academicOverviewObserver = null;
+	let redrawAcademicOverview = null;
 	const academicConfig = window.COGNITIA_ACADEMIC_CONFIG;
 	let activeProgramId = null;
 	let activeProgramCatalogId = null;
@@ -250,6 +252,47 @@ document.addEventListener("DOMContentLoaded", () => {
 		if (sectionsEl) sectionsEl.textContent = sections;
 		document.getElementById("stat-courses").textContent = courses;
 		renderAcademicOverview();
+		renderPendingApprovalsPreview();
+	}
+
+	function renderPendingApprovalsPreview() {
+		const list = document.getElementById("dashboardPendingList");
+		const countBadge = document.getElementById("dashboardPendingCount");
+		if (!list || !countBadge) return;
+
+		const stored = readStoredState();
+		const users = Array.isArray(stored?.users) ? stored.users : Array.isArray(state.users) ? state.users : null;
+		if (!users) {
+			countBadge.textContent = "0";
+			countBadge.setAttribute("aria-label", "Approval data unavailable");
+			list.replaceChildren(makeEl("p", "dashboard-pending-empty", "Approval data is unavailable"));
+			return;
+		}
+		const pendingUsers = users.filter((user) =>
+			user && ["student", "professor"].includes(user.role) && user.approvalStatus === "pending",
+		);
+		countBadge.textContent = String(pendingUsers.length);
+		countBadge.setAttribute("aria-label", `${pendingUsers.length} pending ${pendingUsers.length === 1 ? "user" : "users"}`);
+		list.replaceChildren();
+
+		if (!pendingUsers.length) {
+			list.appendChild(makeEl("p", "dashboard-pending-empty", "No pending approvals"));
+			return;
+		}
+
+		pendingUsers.slice(0, 3).forEach((user) => {
+			const name = String(user.displayName || [user.firstname, user.middlename, user.lastname].filter(Boolean).join(" ") || "Unnamed applicant");
+			const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0)).join("").toLocaleUpperCase() || "U";
+			const row = makeEl("div", "dashboard-pending-row");
+			row.appendChild(makeEl("span", "dashboard-pending-avatar", initials));
+			const details = makeEl("div", "dashboard-pending-details");
+			details.append(
+				makeEl("span", "dashboard-pending-name", name),
+				makeEl("span", "dashboard-pending-role", user.role === "professor" ? "Professor" : "Student"),
+			);
+			row.append(details, makeEl("span", "dashboard-pending-status", "Pending"));
+			list.appendChild(row);
+		});
 	}
 
 	/* ═══════════════════════════════════════════
@@ -382,19 +425,21 @@ document.addEventListener("DOMContentLoaded", () => {
 		return n;
 	}
 
-	// This chart uses only current student records grouped by their saved program.
+	// Render the chart at its actual container size so it stays readable when the
+	// dashboard grid or sidebar changes width.
 	function renderAcademicOverview() {
 		const chart = document.getElementById("academicOverviewChart");
 		if (!chart) return;
 		const students = state.users.filter((user) => user.role === "student");
-		if (!students.length) {
+		if (!students.length && !state.programs.length) {
+			redrawAcademicOverview = null;
 			chart.replaceChildren(
 				makeEl("p", "academic-overview-empty", "Enrollment data will appear when student records are available."),
 			);
 			return;
 		}
 
-		const counts = new Map();
+		const counts = new Map(state.programs.map((program) => [program.name || program.code || "Program", 0]));
 		students.forEach((student) => {
 			const program = state.programs.find((item) => String(item.id) === String(student.programId));
 			const label = program ? (program.name || program.code || "Program") : "Unassigned";
@@ -407,68 +452,95 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 
 		const svgNS = "http://www.w3.org/2000/svg";
-		const svg = document.createElementNS(svgNS, "svg");
-		svg.setAttribute("class", "academic-enrollment-chart");
-		svg.setAttribute("viewBox", "0 0 720 260");
-		svg.setAttribute("role", "img");
-		svg.setAttribute("aria-label", `Student enrollment by program. ${rows.map(([label, count]) => `${label}: ${count}`).join("; ")}`);
-		const plot = { left: 56, right: 708, top: 22, bottom: 210 };
-		const maxValue = Math.max(...rows.map(([, count]) => count));
-		const axisMax = Math.max(4, Math.ceil(maxValue / 4) * 4);
-		const yFor = (value) => plot.bottom - (value / axisMax) * (plot.bottom - plot.top);
-		for (let tick = 0; tick <= 4; tick += 1) {
-			const value = Math.round((axisMax * tick) / 4);
-			const y = yFor(value);
-			const line = document.createElementNS(svgNS, "line");
-			line.setAttribute("x1", plot.left);
-			line.setAttribute("x2", plot.right);
-			line.setAttribute("y1", y);
-			line.setAttribute("y2", y);
-			line.setAttribute("class", "academic-chart-gridline");
-			svg.append(line);
-			const tickLabel = document.createElementNS(svgNS, "text");
-			tickLabel.setAttribute("x", plot.left - 10);
-			tickLabel.setAttribute("y", y + 4);
-			tickLabel.setAttribute("text-anchor", "end");
-			tickLabel.setAttribute("class", "academic-chart-tick");
-			tickLabel.textContent = value.toLocaleString();
-			svg.append(tickLabel);
+		const draw = (containerWidth) => {
+			const width = Math.max(1, Math.round(containerWidth || chart.clientWidth || 720));
+			const height = Math.round(Math.max(220, Math.min(280, width * 0.26)));
+			const svg = document.createElementNS(svgNS, "svg");
+			svg.setAttribute("class", "academic-enrollment-chart");
+			svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+			svg.setAttribute("width", String(width));
+			svg.setAttribute("height", String(height));
+			svg.setAttribute("role", "img");
+			svg.setAttribute("aria-label", `Student enrollment by program. ${rows.map(([label, count]) => `${label}: ${count}`).join("; ")}`);
+
+			const maxValue = Math.max(...rows.map(([, count]) => count));
+			const axisMax = Math.max(4, Math.ceil(maxValue / 4) * 4);
+			const axisLabelWidth = axisMax.toLocaleString().length * 7;
+			const plot = { left: Math.max(52, axisLabelWidth + 16), right: width - 16, top: 24, bottom: height - 40 };
+			const yFor = (value) => plot.bottom - (value / axisMax) * (plot.bottom - plot.top);
+			for (let tick = 0; tick <= 4; tick += 1) {
+				const value = Math.round((axisMax * tick) / 4);
+				const y = yFor(value);
+				const line = document.createElementNS(svgNS, "line");
+				line.setAttribute("x1", plot.left);
+				line.setAttribute("x2", plot.right);
+				line.setAttribute("y1", y);
+				line.setAttribute("y2", y);
+				line.setAttribute("class", "academic-chart-gridline");
+				svg.append(line);
+				const tickLabel = document.createElementNS(svgNS, "text");
+				tickLabel.setAttribute("x", plot.left - 10);
+				tickLabel.setAttribute("y", y + 4);
+				tickLabel.setAttribute("text-anchor", "end");
+				tickLabel.setAttribute("class", "academic-chart-tick");
+				tickLabel.textContent = value.toLocaleString();
+				svg.append(tickLabel);
+			}
+
+			const slot = (plot.right - plot.left) / rows.length;
+			const preferredBarWidth = rows.length === 1 ? 160 : rows.length === 2 ? 124 : 82;
+			const barWidth = Math.min(preferredBarWidth, slot * (rows.length <= 2 ? 0.48 : 0.62));
+			const maxLabelLength = Math.max(4, Math.floor((slot - 10) / 6.5));
+			rows.forEach(([label, count], index) => {
+				const x = plot.left + slot * index + (slot - barWidth) / 2;
+				const y = yFor(count);
+				const bar = document.createElementNS(svgNS, "rect");
+				bar.setAttribute("x", x);
+				bar.setAttribute("y", y);
+				bar.setAttribute("width", barWidth);
+				bar.setAttribute("height", Math.max(plot.bottom - y, 0));
+				bar.setAttribute("rx", "3");
+				bar.setAttribute("class", "academic-chart-bar");
+				const title = document.createElementNS(svgNS, "title");
+				title.textContent = `${label}: ${count} students`;
+				bar.append(title);
+				svg.append(bar);
+
+				const value = document.createElementNS(svgNS, "text");
+				value.setAttribute("x", x + barWidth / 2);
+				value.setAttribute("y", Math.max(y - 9, 14));
+				value.setAttribute("text-anchor", "middle");
+				value.setAttribute("class", "academic-chart-value");
+				value.textContent = count.toLocaleString();
+				svg.append(value);
+
+				const category = document.createElementNS(svgNS, "text");
+				category.setAttribute("x", x + barWidth / 2);
+				category.setAttribute("y", height - 12);
+				category.setAttribute("text-anchor", "middle");
+				category.setAttribute("class", "academic-chart-category");
+				category.textContent = label.length > maxLabelLength ? `${label.slice(0, maxLabelLength - 1)}…` : label;
+				const categoryTitle = document.createElementNS(svgNS, "title");
+				categoryTitle.textContent = label;
+				category.append(categoryTitle);
+				svg.append(category);
+			});
+
+			chart._academicOverviewRenderedWidth = width;
+			chart.replaceChildren(svg);
+		};
+
+		redrawAcademicOverview = draw;
+		if ("ResizeObserver" in window && !academicOverviewObserver) {
+			academicOverviewObserver = new ResizeObserver(([entry]) => {
+				const width = Math.round(entry?.contentRect.width || 0);
+				if (width > 0 && Math.abs(width - (chart._academicOverviewRenderedWidth || 0)) > 1) {
+					redrawAcademicOverview?.(width);
+				}
+			});
+			academicOverviewObserver.observe(chart);
 		}
-		const slot = (plot.right - plot.left) / rows.length;
-		const barWidth = Math.min(82, slot * 0.62);
-		rows.forEach(([label, count], index) => {
-			const x = plot.left + slot * index + (slot - barWidth) / 2;
-			const y = yFor(count);
-			const bar = document.createElementNS(svgNS, "rect");
-			bar.setAttribute("x", x);
-			bar.setAttribute("y", y);
-			bar.setAttribute("width", barWidth);
-			bar.setAttribute("height", Math.max(plot.bottom - y, 1));
-			bar.setAttribute("rx", "3");
-			bar.setAttribute("class", "academic-chart-bar");
-			const title = document.createElementNS(svgNS, "title");
-			title.textContent = `${label}: ${count} students`;
-			bar.append(title);
-			svg.append(bar);
-			const value = document.createElementNS(svgNS, "text");
-			value.setAttribute("x", x + barWidth / 2);
-			value.setAttribute("y", Math.max(y - 9, 14));
-			value.setAttribute("text-anchor", "middle");
-			value.setAttribute("class", "academic-chart-value");
-			value.textContent = count.toLocaleString();
-			svg.append(value);
-			const category = document.createElementNS(svgNS, "text");
-			category.setAttribute("x", x + barWidth / 2);
-			category.setAttribute("y", 242);
-			category.setAttribute("text-anchor", "middle");
-			category.setAttribute("class", "academic-chart-category");
-			category.textContent = label.length > 19 ? `${label.slice(0, 18)}…` : label;
-			const categoryTitle = document.createElementNS(svgNS, "title");
-			categoryTitle.textContent = label;
-			category.append(categoryTitle);
-			svg.append(category);
-		});
-		chart.replaceChildren(svg);
+		draw(chart.clientWidth || 720);
 	}
 
 	// Dashboard card: the newest few events. (A "View all" link can later
@@ -663,6 +735,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	window.addEventListener("cognitia:activity-recorded", refreshActivityViews);
 	window.addEventListener("storage", (e) => {
 		if (e.key !== null && e.key !== DB_KEY) return;
+		renderPendingApprovalsPreview();
 		// A user registered (or was removed) in another tab: show it here too
 		if (syncUsersFromStorage()) {
 			renderUsers();
@@ -670,6 +743,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 		refreshActivityViews();
 	});
+	window.addEventListener("cognitia:state-saved", renderPendingApprovalsPreview);
 
 	function syncProgramDropdowns() {
 		const selectors = [
@@ -704,20 +778,43 @@ document.addEventListener("DOMContentLoaded", () => {
 		const campusFilter = document.getElementById("academic-campus-filter");
 		const oldCampus = campusFilter?.value || "";
 		if (campusFilter) {
-			campusFilter.replaceChildren(new Option("All Campuses", ""), ...academicConfig.campuses.map((campus) => new Option(campus.name, campus.id)));
-			campusFilter.value = academicConfig.campuses.some((campus) => campus.id === oldCampus) ? oldCampus : "";
+			const configuredCampuses = academicConfig.campuses.map((campus) => ({ id: String(campus.id), name: campus.name }));
+			const campusOptions = new Map(configuredCampuses.map((campus) => [campus.id, campus.name]));
+			state.programs.forEach((program) => {
+				if (program.campusId == null || program.campusId === "") return;
+				const id = String(program.campusId);
+				if (!campusOptions.has(id)) campusOptions.set(id, id);
+			});
+			campusFilter.replaceChildren(new Option("All Campuses", ""), ...[...campusOptions].map(([id, name]) => new Option(name, id)));
+			campusFilter.value = campusOptions.has(oldCampus) ? oldCampus : "";
 		}
 		const priorProgram = programSelect.value;
 		const priorUnit = unitSelect.value;
 		const selectedCampus = campusFilter?.value || "";
-		const departmentList = academicConfig.exampleUnits.filter((unit) => !selectedCampus || String(unit.campusId || "") === selectedCampus);
-		unitSelect.replaceChildren(new Option("All Colleges", ""), ...departmentList.map((unit) => new Option(unit.name, unit.id)));
+		const departmentOptions = new Map();
+		academicConfig.exampleUnits
+			.filter((unit) => !selectedCampus || String(unit.campusId || "") === selectedCampus)
+			.forEach((unit) => departmentOptions.set(String(unit.id), { id: String(unit.id), name: unit.name }));
+		state.programs.forEach((program) => {
+			const meta = academicProgramMetadata(program);
+			if (!meta.departmentName || (selectedCampus && String(meta.campusId || "") !== selectedCampus)) return;
+			const id = meta.departmentId ? String(meta.departmentId) : `legacy:${meta.departmentName}`;
+			if (!departmentOptions.has(id)) departmentOptions.set(id, { id, name: meta.departmentName });
+		});
+		unitSelect.replaceChildren(new Option("All Departments", ""), ...[...departmentOptions.values()].map((unit) => new Option(unit.name, unit.id)));
 		unitSelect.value = [...unitSelect.options].some((option) => option.value === priorUnit) ? priorUnit : "";
 		programSelect.replaceChildren(new Option("Choose a program", ""));
-		departmentList.forEach((unit) => {
+		[...departmentOptions.values()].forEach((unit) => {
 			const group = document.createElement("optgroup");
 			group.label = unit.name;
-			unit.programs.forEach((program) => group.appendChild(new Option(`${program.code} — ${program.displayName}`, `example:${program.id}`)));
+			const configuredUnit = academicConfig.exampleUnits.find((item) => String(item.id) === String(unit.id));
+			(configuredUnit?.programs || []).forEach((program) => group.appendChild(new Option(`${program.code} — ${program.displayName}`, `example:${program.id}`)));
+			state.programs.filter((program) => {
+				if (configuredUnit) return false;
+				const meta = academicProgramMetadata(program);
+				return (meta.departmentId ? String(meta.departmentId) : `legacy:${meta.departmentName}`) === unit.id;
+			}).forEach((program) => group.appendChild(new Option(`${program.code || "No code"} — ${program.name || "Unnamed program"}`, `legacy:${program.id}`)));
+			if (!group.children.length) return;
 			programSelect.appendChild(group);
 		});
 		const configuredIds = new Set(academicConfig.exampleUnits.flatMap((unit) => unit.programs.map((program) => program.id)));
@@ -749,6 +846,17 @@ document.addEventListener("DOMContentLoaded", () => {
 		syncAcademicHierarchy();
 		programSelect.value = value;
 		renderSections();
+	}
+	function academicProgramMetadata(program) {
+		const catalog = configuredProgram(program?.catalogId);
+		const departmentName = String(program?.department || catalog?.unitName || "").trim();
+		const unit = academicConfig.exampleUnits.find((item) => String(item.id) === String(catalog?.unitId || program?.departmentId))
+			|| academicConfig.exampleUnits.find((item) => item.name.toLowerCase() === departmentName.toLowerCase());
+		return {
+			campusId: program?.campusId || unit?.campusId || "",
+			departmentId: unit?.id || program?.departmentId || "",
+			departmentName: departmentName || unit?.name || "",
+		};
 	}
 
 	/* ═══════════════════════════════════════════
@@ -1353,12 +1461,12 @@ document.addEventListener("DOMContentLoaded", () => {
 	function makeProgramCardInteractive(card, programId, programName) {
 		card.tabIndex = 0;
 		card.setAttribute("role", "group");
-		card.setAttribute("aria-label", `Program ${programName}. Press Enter to open details.`);
+		card.setAttribute("aria-label", `Open sections for ${programName}. Press Enter to open sections.`);
 		card.setAttribute("aria-keyshortcuts", "Enter Space");
-		card.addEventListener("click", (event) => { if (!event.target.closest("button")) viewProgram(programId); });
+		card.addEventListener("click", (event) => { if (!event.target.closest("button")) openProgramSections(programId); });
 		card.addEventListener("keydown", (event) => {
 			if (event.target !== card || (event.key !== "Enter" && event.key !== " ")) return;
-			event.preventDefault(); viewProgram(programId);
+			event.preventDefault(); openProgramSections(programId);
 		});
 	}
 	function renderPrograms() {
@@ -1371,13 +1479,11 @@ document.addEventListener("DOMContentLoaded", () => {
 		const clearFilters = document.getElementById("clearAcademicFilters");
 		if (clearFilters) clearFilters.hidden = !(search || unitFilter || campusFilter);
 		const options = academicConfig.exampleUnits.flatMap((unit) => unit.programs.map((program) => ({ ...program, unitId: unit.id, unitName: unit.name, campusId: unit.campusId })))
-			.filter((program) => (!unitFilter || program.unitId === unitFilter) && `${program.name} ${program.displayName} ${program.code} ${program.unitName}`.toLowerCase().includes(search));
+			.filter((program) => (!unitFilter || String(program.unitId) === unitFilter) && (!campusFilter || String(program.campusId || "") === campusFilter) && `${program.name} ${program.displayName} ${program.code} ${program.unitName}`.toLowerCase().includes(search));
 		grid.replaceChildren();
 		options.forEach((catalog) => {
 			const saved = state.programs.find((program) => program.catalogId === catalog.id);
 			if (!saved) return;
-			const programCampus = saved.campusId || catalog.campusId;
-			if (campusFilter && String(programCampus || "") !== String(campusFilter)) return;
 			const card = makeEl("article", "program-card academic-program-card");
 			const top = makeEl("div", "academic-program-card-top");
 			top.append(makeEl("h3", "", saved.name || catalog.displayName));
@@ -1390,8 +1496,12 @@ document.addEventListener("DOMContentLoaded", () => {
 			actions.append(edit, remove); card.appendChild(actions); grid.appendChild(card);
 		});
 		const configuredIds = new Set(academicConfig.exampleUnits.flatMap((unit) => unit.programs.map((program) => program.id)));
-		const selectedUnitName = academicConfig.exampleUnits.find((unit) => unit.id === unitFilter)?.name;
-		const legacy = state.programs.filter((program) => !configuredIds.has(program.catalogId) && (!unitFilter || program.department === selectedUnitName) && (!campusFilter || !program.campusId || String(program.campusId) === String(campusFilter)) && `${program.name || ""} ${program.code || ""} ${program.department || ""}`.toLowerCase().includes(search));
+		const legacy = state.programs.filter((program) => {
+			if (configuredIds.has(program.catalogId)) return false;
+			const meta = academicProgramMetadata(program);
+			const legacyDepartmentFilter = meta.departmentId ? String(meta.departmentId) : `legacy:${meta.departmentName}`;
+			return (!unitFilter || legacyDepartmentFilter === unitFilter) && (!campusFilter || String(meta.campusId || "") === campusFilter) && `${program.name || ""} ${program.code || ""} ${meta.departmentName}`.toLowerCase().includes(search);
+		});
 		legacy.forEach((program) => {
 			const card = makeEl("article", "program-card academic-program-card legacy-program-card");
 			const top = makeEl("div", "academic-program-card-top"); top.append(makeEl("h3", "", program.name || "Unnamed program"), makeEl("span", `program-status${String(program.status).toLowerCase() === "active" ? " is-active" : ""}`, program.status || "Active"));
@@ -3291,9 +3401,8 @@ document.addEventListener("DOMContentLoaded", () => {
 			footer.appendChild(makeEl("span", "", `${status === "scheduled" ? "Publishes" : status === "draft" ? "Saved" : "Published"} · ${formatAnnouncementDate(announcementDate(a))}`));
 			const actions = makeEl("div", "bulletin-card-actions");
 			const view = makeEl("button", "view", "View Announcement"); view.type = "button"; view.addEventListener("click", () => openAnnouncementViewer(a));
-			const edit = makeEl("button", "", "Edit"); edit.type = "button"; edit.addEventListener("click", () => openEditAnnouncement(a.id));
 			const remove = makeEl("button", "delete", "Delete"); remove.type = "button"; remove.addEventListener("click", () => confirmDelete("announcement", a.id, `announcement "${a.title || ""}"`));
-			actions.append(view, edit, remove); footer.appendChild(actions); card.append(top, meta, body, footer); grid.appendChild(card);
+			actions.append(view, remove); footer.appendChild(actions); card.append(top, meta, body, footer); grid.appendChild(card);
 		});
 	}
 

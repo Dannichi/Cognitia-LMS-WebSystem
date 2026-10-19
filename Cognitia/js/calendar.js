@@ -14,8 +14,6 @@
 	const annDateClear = document.getElementById("annDateClear");
 	const upcomingList = document.getElementById("upcoming-list");
 
-	if (!calDays) return;
-
 	/* ─── Helpers ─────────────────────────────────────── */
 	function toISO(year, month, day) {
 		return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
@@ -54,6 +52,10 @@
 
 	/* ─── Render calendar ─────────────────────────────── */
 	function renderCalendar() {
+		if (!calDays || !calMonthLabel) {
+			renderUpcoming();
+			return;
+		}
 		const today = new Date();
 		const todayISO = toISO(today.getFullYear(), today.getMonth(), today.getDate());
 
@@ -290,7 +292,7 @@
 
 	/* ─── Reactivity poll ─────────────────────────────── */
 	let _lastAnnCount = -1;
-	setInterval(() => {
+	if (calDays || upcomingList) setInterval(() => {
 		const count = getAnnouncements().length;
 		if (count !== _lastAnnCount) { _lastAnnCount = count; renderCalendar(); }
 	}, 300);
