@@ -49,6 +49,7 @@
 				</div>
 				<nav aria-label="Student navigation">
 					<ul class="navbar">
+						<li class="nav-label"><span>Overview</span></li>
 						<li>
 							<a href="#" data-target="dashboard" class="active"
 								><i class="fas fa-home"></i
@@ -61,6 +62,13 @@
 								><span class="nav-text">Bulletin</span></a
 							>
 						</li>
+						<li>
+							<a href="#" data-target="calendar"
+								><i class="fas fa-calendar-alt"></i
+								><span class="nav-text">My Calendar</span></a
+							>
+						</li>
+						<li class="nav-label"><span>Learning</span></li>
 						<li>
 							<a href="#" data-target="courses"
 								><i class="fas fa-book-open"></i
@@ -85,18 +93,14 @@
 								><span class="nav-text">Quizzes</span></a
 							>
 						</li>
+						<li class="nav-label"><span>Progress</span></li>
 						<li>
 							<a href="#" data-target="grades"
 								><i class="fas fa-chart-bar"></i
 								><span class="nav-text">My Grades</span></a
 							>
 						</li>
-						<li>
-							<a href="#" data-target="calendar"
-								><i class="fas fa-calendar-alt"></i
-								><span class="nav-text">My Calendar</span></a
-							>
-						</li>
+						<li class="nav-label"><span>Account</span></li>
 						<li>
 							<a href="#" data-target="profile"
 								><i class="fas fa-user-circle"></i
@@ -106,6 +110,7 @@
 					</ul>
 				</nav>
 				<div class="sidebar-bottom">
+					<div class="sidebar-section-label">Profile</div>
 					<div class="sidebar-profile-row">
 						<div class="user-info">
 							<div class="avatar" id="sidebarAvatar">ST</div>
@@ -1048,7 +1053,6 @@
 			<i class="fas fa-check-circle"></i><span id="toastMsg"></span>
 		</div>
 
-		<script src="js/session.js"></script>
 		<script>if (!CognitiaSession.requireRole("student")) document.documentElement.style.visibility = "hidden";</script>
 		<script src="js/student.js"></script>
 		<script src="js/bulletin-reader.js"></script>

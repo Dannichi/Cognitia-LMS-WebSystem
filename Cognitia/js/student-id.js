@@ -6,7 +6,7 @@
 const StudentIDManager = (() => {
 	const DB_KEY = "cognitia_state";
 	const STUDENT_ID_KEY = "cognitia_next_student_id";
-	const START_ID = 2026000;
+	const START_ID = 2026001;
 
 	function initializeStudentIDCounter() {
 		try {
