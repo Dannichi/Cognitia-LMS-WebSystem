@@ -51,6 +51,26 @@ const AnnouncementNotifs = (() => {
         );
     }
 
+    function visibleAnnouncements(state, userId) {
+        const user = (Array.isArray(state?.users) ? state.users : []).find(
+            (item) => String(item.id) === String(userId),
+        );
+        const roleAudience = user?.role === "student" ? "students" : user?.role === "professor" ? "professors" : "all";
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return announcementsOf(state).filter((announcement) => {
+            if (announcement.status === "draft") return false;
+            if (announcement.status === "scheduled" && !announcement.scheduledDate) return false;
+            if (announcement.audience === "students" && roleAudience !== "students") return false;
+            if (announcement.audience === "professors" && roleAudience !== "professors") return false;
+            if (announcement.scheduledDate) {
+                const publishDate = new Date(`${announcement.scheduledDate}T00:00:00`);
+                if (!Number.isNaN(publishDate.getTime()) && publishDate > today) return false;
+            }
+            return true;
+        });
+    }
+
     function readSetOf(state, userId) {
         const all = state?.[READS_KEY];
         const ids = all && !Array.isArray(all) ? all[keyFor(userId)] : null;
@@ -66,7 +86,7 @@ const AnnouncementNotifs = (() => {
 
     function list(userId, limit = 10) {
         const state = readState();
-        const anns = announcementsOf(state);
+        const anns = visibleAnnouncements(state, userId);
         const readSet = readSetOf(state, userId);
         const flagged = anns.map((a) => ({
             announcement: a,
@@ -85,7 +105,7 @@ const AnnouncementNotifs = (() => {
             const anns = announcementsOf(state);
             const live = new Set(anns.map((a) => a.id));
             const readSet = readSetOf(state, userId);
-            mutate(readSet, anns, userId);
+            mutate(readSet, visibleAnnouncements(state, userId), userId);
             const reads =
                 state[READS_KEY] && !Array.isArray(state[READS_KEY])
                     ? state[READS_KEY]

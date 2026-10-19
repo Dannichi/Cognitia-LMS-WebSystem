@@ -44,13 +44,17 @@
 	}
 
 	function readUsers() {
-		try {
-			const raw = localStorage.getItem(DB_KEY);
-			const state = raw ? JSON.parse(raw) : {};
-			return Array.isArray(state.users) ? state.users : [];
-		} catch {
-			return [];
+		const raw = localStorage.getItem(DB_KEY);
+		if (!raw) return [];
+		const state = JSON.parse(raw);
+		if (!state || typeof state !== "object" || Array.isArray(state)) {
+			throw new Error("Saved account data has an invalid format.");
 		}
+		if (state.users == null) return [];
+		if (!Array.isArray(state.users)) {
+			throw new Error("Saved account data does not contain a valid users list.");
+		}
+		return state.users;
 	}
 
 	// ── Shared values ─────────────────────────────
@@ -130,6 +134,9 @@
 
 	// Already logged in? Go straight to the dashboard.
 	try {
+		if (typeof CognitiaSession === "undefined") {
+			throw new Error("The session helper did not load before the login script.");
+		}
 		const current = CognitiaSession.get();
 		if (current?.role) {
 			if (redirectForRole(current.role)) return;
@@ -137,7 +144,10 @@
 			// otherwise this page would redirect to itself forever.
 			localStorage.removeItem(SESSION_KEY);
 		}
-	} catch { }
+	} catch (error) {
+		console.error("Cognitia login: saved-session check failed", error);
+		showError("We couldn't check your saved session. You can still try signing in.");
+	}
 
 	const form = document.querySelector(".loginform");
 	if (!form) return;
@@ -285,48 +295,61 @@
 		setLoading(true);
 
 		setTimeout(() => {
-			const users = readUsers();
-			const user = users.find((u) => {
-				const emailMatch = u.email?.trim().toLowerCase() === credential;
-				const studentIdMatch =
-					u.role === "student" && u.studentId === credential;
-				return (emailMatch || studentIdMatch) && u.password === password;
-			});
+			let redirectStarted = false;
+			try {
+				const users = readUsers();
+				const user = users.find((u) => {
+					if (!u || typeof u !== "object") return false;
+					const emailMatch =
+						String(u.email || "").trim().toLowerCase() === credential;
+					const studentIdMatch =
+						u.role === "student" && String(u.studentId ?? "") === credential;
+					return (emailMatch || studentIdMatch) && u.password === password;
+				});
 
-			if (!user) {
-				showError("Incorrect credentials. Please try again.");
-				setLoading(false);
-				pwInput.value = "";
-				pwInput.focus();
-				return;
+				if (!user) {
+					showError("Incorrect credentials. Please try again.");
+					pwInput.value = "";
+					pwInput.focus();
+					return;
+				}
+
+				if (user.approvalStatus === "pending") {
+					showError("Your account is awaiting administrator approval.");
+					return;
+				}
+
+				if (user.approvalStatus === "rejected") {
+					showError("Your account request was rejected. Contact your administrator for assistance.");
+					return;
+				}
+
+				if (user.status === "inactive") {
+					showError("Your account is inactive. Contact your administrator.");
+					return;
+				}
+
+				if (!ROLE_PAGES[user.role]) {
+					showError("This account has an unknown role. Contact your administrator.");
+					return;
+				}
+
+				if (typeof CognitiaSession === "undefined" || !CognitiaSession.set(user)) {
+					showError("We couldn't create your sign-in session. Please try again.");
+					return;
+				}
+				if (!redirectForRole(user.role)) {
+					localStorage.removeItem(SESSION_KEY);
+					showError("This account has an unknown role. Contact your administrator.");
+					return;
+				}
+				redirectStarted = true;
+			} catch (error) {
+				console.error("Cognitia login: sign-in failed unexpectedly", error);
+				showError("We couldn't complete sign-in. Please reload and try again.");
+			} finally {
+				if (!redirectStarted) setLoading(false);
 			}
-
-			if (user.approvalStatus === "pending") {
-				showError("Your account is awaiting administrator approval.");
-				setLoading(false);
-				return;
-			}
-
-			if (user.approvalStatus === "rejected") {
-				showError("Your account request was rejected. Contact your administrator for assistance.");
-				setLoading(false);
-				return;
-			}
-
-			if (user.status === "inactive") {
-				showError("Your account is inactive. Contact your administrator.");
-				setLoading(false);
-				return;
-			}
-
-			if (!ROLE_PAGES[user.role]) {
-				showError("This account has an unknown role. Contact your administrator.");
-				setLoading(false);
-				return;
-			}
-
-			CognitiaSession.set(user);
-			redirectForRole(user.role);
 		}, 420);
 	});
 

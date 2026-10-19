@@ -12,7 +12,7 @@
    Public API (global `CognitiaSession`):
      toSession(user)      copy of the user without the password
      get()                the saved session (scrubs old saved passwords)
-     set(user)            save the session (password removed)
+     set(user)            save the session (password removed); true on success
      getStoredPassword(id) the demo password from the account table,
                           used only by the "view my password" profile field
 ═══════════════════════════════════════════ */
@@ -29,11 +29,13 @@ const CognitiaSession = (() => {
 
     function set(user) {
         const safe = toSession(user);
-        if (!safe) return;
+        if (!safe) return false;
         try {
             localStorage.setItem(SESSION_KEY, JSON.stringify(safe));
+            return true;
         } catch (e) {
-            console.warn("Cognitia: could not save session", e);
+            console.error("Cognitia: could not save session", e);
+            return false;
         }
     }
 
@@ -51,7 +53,8 @@ const CognitiaSession = (() => {
                 return safe;
             }
             return parsed;
-        } catch {
+        } catch (e) {
+            console.error("Cognitia: could not read session", e);
             return null;
         }
     }

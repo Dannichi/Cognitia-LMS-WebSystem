@@ -661,15 +661,18 @@ document.addEventListener("DOMContentLoaded", () => {
 				title: q.title,
 				subtitle: `${getCourseName(q.courseId)} · Quiz Due ${new Date(q.dueDate).toLocaleDateString("en-PH", { month: "short", day: "numeric" })}`,
 			}));
-		const bulletinItems = (db.announcements || [])
-			.filter((ann) => ann.date && new Date(ann.date) >= now)
-			.map((ann) => ({
-				type: "bulletin",
-				date: new Date(ann.date),
-				title: ann.title || "Announcement",
-				subtitle: `Bulletin · ${new Date(ann.date).toLocaleDateString("en-PH", { month: "short", day: "numeric" })}`,
-				badge: String(ann.type || "info").toLowerCase(),
-			}));
+		const today = new Date(now); today.setHours(0, 0, 0, 0);
+		const bulletinItems = (Array.isArray(db.announcements) ? db.announcements : [])
+			.filter((ann) => {
+				if (!ann || ann.status === "draft" || (ann.audience && !["all", "professors"].includes(ann.audience))) return false;
+				if (ann.status === "scheduled" && !ann.scheduledDate) return false;
+				if (ann.scheduledDate && new Date(`${ann.scheduledDate}T00:00:00`) > today) return false;
+				return ann.eventDate && new Date(`${ann.eventDate}T00:00:00`) >= today;
+			})
+			.map((ann) => {
+				const eventDate = new Date(`${ann.eventDate}T00:00:00`);
+				return { type: "bulletin", date: eventDate, title: ann.title || "Announcement", subtitle: `Bulletin · ${eventDate.toLocaleDateString("en-PH", { month: "short", day: "numeric" })}`, badge: ["warning", "urgent"].includes(ann.type) ? ann.type : "info" };
+			});
 		const items = [...assignmentItems, ...quizItems, ...bulletinItems]
 			.sort((a, b) => a.date - b.date)
 			.slice(0, 5);
@@ -682,19 +685,17 @@ document.addEventListener("DOMContentLoaded", () => {
 			const diff = Math.ceil((entry.date - now) / (1000 * 60 * 60 * 24));
 			const item = document.createElement("div");
 			item.className = "deadline-item";
-			item.innerHTML = `
-        <div class="deadline-dot ${entry.type === "bulletin" ? "bulletin" : diff <= 1 ? "due-soon" : diff <= 3 ? "in-progress" : "normal"}"></div>
-        <div class="deadline-info">
-          <div class="deadline-title">${entry.title}</div>
-          <div class="deadline-sub">${entry.subtitle}</div>
-        </div>
-        ${
-					entry.type === "bulletin"
-						? `<span class="deadline-badge bulletin">${entry.badge}</span>`
-						: diff <= 3
-							? `<span class="deadline-badge ${diff <= 1 ? "due-soon" : "in-progress"}">${diff === 0 ? "Today" : diff === 1 ? "Tomorrow" : `${diff}d`}</span>`
-							: ""
-				}`;
+			const dot = document.createElement("div");
+			dot.className = `deadline-dot ${entry.type === "bulletin" ? "bulletin" : diff <= 1 ? "due-soon" : diff <= 3 ? "in-progress" : "normal"}`;
+			const info = document.createElement("div"); info.className = "deadline-info";
+			const title = document.createElement("div"); title.className = "deadline-title"; title.textContent = String(entry.title || "");
+			const subtitle = document.createElement("div"); subtitle.className = "deadline-sub"; subtitle.textContent = String(entry.subtitle || "");
+			info.append(title, subtitle); item.append(dot, info);
+			if (entry.type === "bulletin") {
+				const badge = document.createElement("span"); badge.className = `deadline-badge bulletin ${entry.badge}`; badge.textContent = entry.badge; item.appendChild(badge);
+			} else if (diff <= 3) {
+				const badge = document.createElement("span"); badge.className = `deadline-badge ${diff <= 1 ? "due-soon" : "in-progress"}`; badge.textContent = diff === 0 ? "Today" : diff === 1 ? "Tomorrow" : `${diff}d`; item.appendChild(badge);
+			}
 			list.appendChild(item);
 		});
 	}
