@@ -30,9 +30,8 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 	})();
 
-	let profUser = JSON.parse(
-		localStorage.getItem("cognitia_current_user") || "null",
-	) || {
+	// CognitiaSession.get() never returns a password (and scrubs old saved ones)
+	let profUser = CognitiaSession.get() || {
 		id: 1,
 		firstname: "Professor",
 		lastname: "Demo",
@@ -66,17 +65,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	/* ─── DB HELPERS ─── */
 	function readDB() {
+		const LISTS = ["programs", "sections", "courses", "users", "announcements"];
 		try {
 			const r = localStorage.getItem(DB_KEY);
-			return r
-				? JSON.parse(r)
-				: {
-						programs: [],
-						sections: [],
-						courses: [],
-						users: [],
-						announcements: [],
-					};
+			const parsed = r ? JSON.parse(r) : null;
+			const state = parsed && typeof parsed === "object" ? parsed : {};
+			// Older or partial saves may lack a list; callers use .filter/.find on them
+			LISTS.forEach((k) => {
+				if (!Array.isArray(state[k])) state[k] = [];
+			});
+			return state;
 		} catch {
 			return {
 				programs: [],
@@ -86,6 +84,10 @@ document.addEventListener("DOMContentLoaded", () => {
 				announcements: [],
 			};
 		}
+	}
+	// Bulletin policy: professors see announcements for everyone or for professors
+	function isForProfessors(a) {
+		return a?.audience === "all" || a?.audience === "professors";
 	}
 	function readProfDB() {
 		try {
@@ -145,8 +147,9 @@ document.addEventListener("DOMContentLoaded", () => {
 			(u) => u.id === profUser.id && u.role === "professor",
 		);
 		if (latestProfUser) {
-			profUser = { ...profUser, ...latestProfUser };
-			localStorage.setItem("cognitia_current_user", JSON.stringify(profUser));
+			// toSession() drops the password so it never reaches the session
+			profUser = CognitiaSession.toSession({ ...profUser, ...latestProfUser });
+			CognitiaSession.set(profUser);
 		}
 		const myIds = profUser.courseIds || [];
 
@@ -661,6 +664,7 @@ document.addEventListener("DOMContentLoaded", () => {
 				title: q.title,
 				subtitle: `${getCourseName(q.courseId)} · Quiz Due ${new Date(q.dueDate).toLocaleDateString("en-PH", { month: "short", day: "numeric" })}`,
 			}));
+<<<<<<< HEAD
 		const today = new Date(now); today.setHours(0, 0, 0, 0);
 		const bulletinItems = (Array.isArray(db.announcements) ? db.announcements : [])
 			.filter((ann) => {
@@ -673,6 +677,18 @@ document.addEventListener("DOMContentLoaded", () => {
 				const eventDate = new Date(`${ann.eventDate}T00:00:00`);
 				return { type: "bulletin", date: eventDate, title: ann.title || "Announcement", subtitle: `Bulletin · ${eventDate.toLocaleDateString("en-PH", { month: "short", day: "numeric" })}`, badge: ["warning", "urgent"].includes(ann.type) ? ann.type : "info" };
 			});
+=======
+		const bulletinItems = (db.announcements || [])
+			.filter(isForProfessors)
+			.filter((ann) => ann.date && new Date(ann.date) >= now)
+			.map((ann) => ({
+				type: "bulletin",
+				date: new Date(ann.date),
+				title: ann.title || "Announcement",
+				subtitle: `Bulletin · ${new Date(ann.date).toLocaleDateString("en-PH", { month: "short", day: "numeric" })}`,
+				badge: String(ann.type || "info").toLowerCase(),
+			}));
+>>>>>>> c376ff212c79fa821f2ce73aabb5e57e30032035
 		const items = [...assignmentItems, ...quizItems, ...bulletinItems]
 			.sort((a, b) => a.date - b.date)
 			.slice(0, 5);
@@ -709,8 +725,9 @@ document.addEventListener("DOMContentLoaded", () => {
 		setText("sidebarName", `${profUser.firstname} ${profUser.lastname}`);
 		setText("profileEmail", profUser.email);
 		const _pwdView = document.getElementById("prof-view-password");
-		if (_pwdView && profUser.password) {
-			_pwdView.value = profUser.password;
+		const _storedPwd = CognitiaSession.getStoredPassword(profUser.id);
+		if (_pwdView && _storedPwd) {
+			_pwdView.value = _storedPwd;
 			_pwdView.type = "password";
 		}
 		setText("profileCourseCount", `${pState.myCourses.length} course(s)`);
@@ -741,7 +758,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		clearErrors("prof-firstnameErr", "prof-lastnameErr");
 		profUser.firstname = fn;
 		profUser.lastname = ln;
-		localStorage.setItem("cognitia_current_user", JSON.stringify(profUser));
+		CognitiaSession.set(profUser);
 		loadProfile();
 		showToast("Profile updated successfully.");
 	});
@@ -859,7 +876,7 @@ document.addEventListener("DOMContentLoaded", () => {
 							? `${program.code} ${s.year}${s.letter}`
 							: `Section ${s.id}`,
 					)
-					.join(" � ")
+					.join("   ")
 			: "No section assigned";
 		const students = pState.allStudents.filter(
 			(s) =>
@@ -2527,6 +2544,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
 		const announcements = (db.announcements || [])
+			.filter(isForProfessors)
 			.filter((ann) => {
 				if (!filter || !ann.date) return true;
 				const annDate = new Date(ann.date);

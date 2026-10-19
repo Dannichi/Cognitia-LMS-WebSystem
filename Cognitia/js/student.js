@@ -5,9 +5,8 @@ document.addEventListener("DOMContentLoaded", () => {
 	const PROF_KEY = "cognitia_prof_data";
 	const STUDENT_KEY = "cognitia_student_data";
 
-	let studentUser = JSON.parse(
-		localStorage.getItem("cognitia_current_user") || "null",
-	) || {
+	// CognitiaSession.get() never returns a password (and scrubs old saved ones)
+	let studentUser = CognitiaSession.get() || {
 		id: 10,
 		firstname: "Maria",
 		lastname: "Santos",
@@ -221,11 +220,12 @@ document.addEventListener("DOMContentLoaded", () => {
 			(u) => u.id === studentUser.id && u.role === "student",
 		);
 		if (latestStudentUser) {
-			studentUser = { ...studentUser, ...latestStudentUser };
-			localStorage.setItem(
-				"cognitia_current_user",
-				JSON.stringify(studentUser),
-			);
+			// toSession() drops the password so it never reaches the session
+			studentUser = CognitiaSession.toSession({
+				...studentUser,
+				...latestStudentUser,
+			});
+			CognitiaSession.set(studentUser);
 		}
 
 		const myProgramId = studentUser.programId;
@@ -444,8 +444,9 @@ document.addEventListener("DOMContentLoaded", () => {
 		setText("sidebarName", `${studentUser.firstname} ${studentUser.lastname}`);
 		setText("profileEmail", studentUser.email);
 		const _pwdView = document.getElementById("stu-view-password");
-		if (_pwdView && studentUser.password) {
-			_pwdView.value = studentUser.password;
+		const _storedPwd = CognitiaSession.getStoredPassword(studentUser.id);
+		if (_pwdView && _storedPwd) {
+			_pwdView.value = _storedPwd;
 			_pwdView.type = "password";
 		}
 		setText("profileCourseCount", `${sState.myCourses.length} course(s)`);
@@ -495,7 +496,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		clearErrors("student-firstnameErr", "student-lastnameErr");
 		studentUser.firstname = fn;
 		studentUser.lastname = ln;
-		localStorage.setItem("cognitia_current_user", JSON.stringify(studentUser));
+		CognitiaSession.set(studentUser);
 		loadProfile();
 		showToast("Profile updated.");
 	});
