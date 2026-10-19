@@ -100,6 +100,18 @@ body:has(.bulletin-detail-dialog[open]) {
 	padding: 4px 0 10px;
 	background: var(--surface);
 }
+.bulletin-detail-head .bulletin-category-pill {
+	border-radius: 5px;
+	padding: 6px 11px;
+	font-size: 13px;
+	font-weight: 700;
+	letter-spacing: .01em;
+}
+html:not([data-theme="dark"]) .bulletin-detail-head .bulletin-category-pill {
+	border: 1px solid rgba(139, 26, 26, .14);
+	background: var(--brand-light);
+	color: var(--brand);
+}
 .bulletin-detail-close {
 	flex: 0 0 auto;
 	border: 1px solid var(--border);
@@ -536,8 +548,15 @@ body:has(#announcementModal.active) {
 .bulletin-detail-media img { height: auto; }
 html[data-theme="dark"] .bulletin-editor-modal .bulletin-live-preview-wrap,
 html[data-theme="dark"] .bulletin-preview-toolbar { border-color: var(--bulletin-border); }
-html[data-theme="dark"] .bulletin-card-actions button.delete { color: var(--text-1); }
-html[data-theme="dark"] .bulletin-card-actions button.view { border-color: #f08b91; color: #f08b91; }
+html[data-theme="dark"] .bulletin-card-actions button.delete { color: #ff9696; }
+html[data-theme="dark"] .bulletin-card-actions button.delete:hover { border-color: #b34b56; background: transparent; color: #b34b56; }
+html[data-theme="dark"] .bulletin-card-actions button.view { border-color: var(--brand); color: var(--brand); }
+html[data-theme="dark"] .bulletin-editor-modal .btn-primary,
+html[data-theme="dark"] #openAddAnnouncementBtn { border-color: var(--brand); background: var(--brand); }
+html[data-theme="dark"] .bulletin-editor-modal .btn-primary:hover,
+html[data-theme="dark"] #openAddAnnouncementBtn:hover { border-color: var(--brand-dark); background: var(--brand-dark); box-shadow: var(--sh-brand); }
+html[data-theme="dark"] .bulletin-editor-modal .btn-cancel { border-color: var(--border); background: transparent; color: var(--text-3); }
+html[data-theme="dark"] .bulletin-editor-modal .btn-cancel:hover { border-color: var(--border); background: var(--surface-3); }
 
 @media (max-width: 900px) {
 	.bulletin-editor-modal {
@@ -583,7 +602,7 @@ html[data-theme="dark"] .bulletin-card-actions button.view { border-color: #f08b
 	}
 }
 :root { --bulletin-border: #858585; --bulletin-focus: #701515; }
-html[data-theme="dark"] { --bulletin-border: #696969; --bulletin-focus: #f08b91; }
+html[data-theme="dark"] { --bulletin-border: #696969; --bulletin-focus: var(--brand); }
 .bulletin-stat,
 .bulletin-admin-card,
 .bulletin-categories,
