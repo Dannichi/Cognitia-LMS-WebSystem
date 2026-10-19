@@ -4566,3 +4566,66 @@ html[data-theme="dark"] [data-ev-color="slate"] {
 		animation: none;
 	}
 }
+
+/* ─── Notification unread indicators (badge, "Mark all read", unread rows) ─── */
+.notif-badge {
+	position: absolute;
+	top: -4px;
+	right: -4px;
+	min-width: 18px;
+	height: 18px;
+	padding: 0 5px;
+	border-radius: 9px;
+	background: var(--brand);
+	color: var(--text-6);
+	border: 2px solid var(--surface);
+	font-size: 10px;
+	font-weight: 700;
+	line-height: 14px;
+	text-align: center;
+	pointer-events: none;
+}
+.notif-badge[hidden] {
+	display: none;
+}
+.notif-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+.notif-markall {
+	background: none;
+	border: 0;
+	padding: 2px 4px;
+	border-radius: var(--r-sm, 4px);
+	font: inherit;
+	font-size: 12px;
+	font-weight: 600;
+	text-transform: none;
+	letter-spacing: 0;
+	color: var(--brand);
+	cursor: pointer;
+}
+.notif-markall:hover:not(:disabled) {
+	text-decoration: underline;
+}
+.notif-markall:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--brand-glow);
+}
+.notif-markall:disabled {
+	color: var(--text-4);
+	cursor: default;
+}
+.notif-item span {
+	font-size: 12px;
+	color: var(--text-3);
+}
+.notif-item.is-unread {
+	background: var(--brand-light);
+	box-shadow: inset 3px 0 0 var(--brand);
+}
+.notif-item.is-unread strong {
+	font-weight: 700;
+}
