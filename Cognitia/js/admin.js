@@ -1376,8 +1376,9 @@ document.addEventListener("DOMContentLoaded", () => {
 			const courses = makeEl("button", "btn-cancel", "Courses"); courses.type = "button"; courses.addEventListener("click", () => openProgramCourses(saved.id));
 			const sections = makeEl("button", "btn-cancel", "Sections"); sections.type = "button"; sections.addEventListener("click", () => openProgramSections(saved.id));
 			const edit = makeEl("button", "btn-cancel", "Edit"); edit.type = "button"; edit.addEventListener("click", () => editProgram(saved.id));
+			const view = makeEl("button", "btn-cancel", "View"); view.type = "button"; view.addEventListener("click", () => viewProgram(saved.id));
 			const remove = makeEl("button", "btn-cancel delete academic-delete-btn", "Delete"); remove.type = "button"; remove.addEventListener("click", () => confirmDelete("program", saved.id, `program ${saved.code}`));
-			primaryActions.append(courses, sections); editActions.append(edit, remove); actions.append(primaryActions, editActions);
+			primaryActions.append(courses, sections); editActions.append(edit, view, remove); actions.append(primaryActions, editActions);
 			card.appendChild(actions); grid.appendChild(card);
 		});
 		const configuredIds = new Set(academicConfig.exampleUnits.flatMap((unit) => unit.programs.map((program) => program.id)));
@@ -1393,8 +1394,9 @@ document.addEventListener("DOMContentLoaded", () => {
 			const courses = makeEl("button", "btn-cancel", "Courses"); courses.type = "button"; courses.addEventListener("click", () => openProgramCourses(program.id));
 			const sections = makeEl("button", "btn-cancel", "Sections"); sections.type = "button"; sections.addEventListener("click", () => openProgramSections(program.id));
 			const edit = makeEl("button", "btn-cancel", "Edit"); edit.type = "button"; edit.addEventListener("click", () => editProgram(program.id));
+			const view = makeEl("button", "btn-cancel", "View"); view.type = "button"; view.addEventListener("click", () => viewProgram(program.id));
 			const remove = makeEl("button", "btn-cancel delete academic-delete-btn", "Delete"); remove.type = "button"; remove.addEventListener("click", () => confirmDelete("program", program.id, `program ${program.code || program.name}`));
-			primaryActions.append(courses, sections); editActions.append(edit, remove); actions.append(primaryActions, editActions); card.appendChild(actions); grid.appendChild(card);
+			primaryActions.append(courses, sections); editActions.append(edit, view, remove); actions.append(primaryActions, editActions); card.appendChild(actions); grid.appendChild(card);
 		});
 		if (legacyGrid) { legacyGrid.replaceChildren(); legacyGrid.hidden = true; }
 		if (!grid.children.length) {
@@ -1416,6 +1418,20 @@ document.addEventListener("DOMContentLoaded", () => {
 		renderProgramCourses();
 		updateAcademicBreadcrumb("sections");
 		openModal("programCoursesModal");
+	}
+	function viewProgram(programId) {
+		const program = state.programs.find((item) => String(item.id) === String(programId));
+		if (!program) return;
+		const catalog = configuredProgram(program.catalogId);
+		const campus = academicConfig.campuses.find((item) => String(item.id) === String(program.campusId));
+		setText("viewProgramName", program.name || "Unnamed program");
+		setText("viewProgramCode", program.code || catalog?.code || "Not specified");
+		setText("viewProgramDepartment", program.department || catalog?.unitName || "Not specified");
+		setText("viewProgramCampus", campus?.name || "Not specified");
+		setText("viewProgramStatus", program.status || "Not specified");
+		const description = document.getElementById("viewProgramDescription");
+		if (description) { description.textContent = String(program.desc || "").trim(); description.hidden = !description.textContent; }
+		openModal("viewProgramModal");
 	}
 	function getProgramCourseYears(course, programId) {
 		const map = course?.programYears;

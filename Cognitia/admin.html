@@ -407,8 +407,8 @@
 							data-stat="sections"
 							role="link"
 							tabindex="0"
-			data-target="programs"
-			title="View academic management"
+							data-target="programs"
+							title="View academic management"
 						>
 							<span class="stat-go" aria-hidden="true"
 								><i class="fas fa-arrow-up-right-from-square"></i
@@ -617,26 +617,76 @@
 					<div class="page-header">
 						<div>
 							<h2>Campus Bulletin</h2>
-							<p class="page-sub">Create and manage official campus announcements.</p>
+							<p class="page-sub">
+								Create and manage official campus announcements.
+							</p>
 						</div>
-						<button class="btn-add" id="openAddAnnouncementBtn" type="button"><i class="fas fa-plus"></i> New Announcement</button>
+						<button class="btn-add" id="openAddAnnouncementBtn" type="button">
+							<i class="fas fa-plus"></i> New Announcement
+						</button>
 					</div>
 					<div class="bulletin-stats" aria-live="polite">
-						<article class="bulletin-stat"><span>Published</span><strong id="annPublishedCount">0</strong><i class="fas fa-bullhorn"></i></article>
-						<article class="bulletin-stat"><span>Scheduled</span><strong id="annScheduledCount">0</strong><i class="fas fa-calendar-check"></i></article>
-						<article class="bulletin-stat"><span>Drafts</span><strong id="annDraftCount">0</strong><i class="fas fa-pen-to-square"></i></article>
+						<article class="bulletin-stat">
+							<span>Published</span><strong id="annPublishedCount">0</strong
+							><i class="fas fa-bullhorn"></i>
+						</article>
+						<article class="bulletin-stat">
+							<span>Scheduled</span><strong id="annScheduledCount">0</strong
+							><i class="fas fa-calendar-check"></i>
+						</article>
+						<article class="bulletin-stat">
+							<span>Drafts</span><strong id="annDraftCount">0</strong
+							><i class="fas fa-pen-to-square"></i>
+						</article>
 					</div>
 					<div class="bulletin-manage card">
-						<div class="bulletin-manage-heading"><h3>Manage announcements</h3><span id="annResultsCount"></span></div>
+						<div class="bulletin-manage-heading">
+							<h3>Manage announcements</h3>
+							<span id="annResultsCount"></span>
+						</div>
 						<div class="bulletin-manage-controls">
-							<div class="search-box"><i class="fas fa-search"></i><input type="search" id="ann-search" placeholder="Search announcements…" aria-label="Search announcements"></div>
-							<select id="ann-category-filter" aria-label="Filter by category"><option value="all">All categories</option><option value="academic">Academic</option><option value="events">Events</option><option value="examinations">Examinations</option><option value="scholarships">Scholarships</option><option value="general">General</option></select>
-							<select id="ann-audience-filter" aria-label="Filter by audience"><option value="all">All audiences</option><option value="all-users">Everyone</option><option value="students">Students</option><option value="professors">Professors</option></select>
+							<div class="search-box">
+								<i class="fas fa-search"></i
+								><input
+									type="search"
+									id="ann-search"
+									placeholder="Search announcements…"
+									aria-label="Search announcements"
+								/>
+							</div>
+							<select id="ann-category-filter" aria-label="Filter by category">
+								<option value="all">All categories</option>
+								<option value="academic">Academic</option>
+								<option value="events">Events</option>
+								<option value="examinations">Examinations</option>
+								<option value="scholarships">Scholarships</option>
+								<option value="general">General</option>
+							</select>
+							<select id="ann-audience-filter" aria-label="Filter by audience">
+								<option value="all">All audiences</option>
+								<option value="all-users">Everyone</option>
+								<option value="students">Students</option>
+								<option value="professors">Professors</option>
+							</select>
 						</div>
-						<div class="bulletin-tabs" role="group" aria-label="Filter announcements by status">
-							<button type="button" class="is-active" data-ann-status="all">All Announcements</button><button type="button" data-ann-status="published">Published</button><button type="button" data-ann-status="scheduled">Scheduled</button><button type="button" data-ann-status="draft">Draft</button>
+						<div
+							class="bulletin-tabs"
+							role="group"
+							aria-label="Filter announcements by status"
+						>
+							<button type="button" class="is-active" data-ann-status="all">
+								All Announcements</button
+							><button type="button" data-ann-status="published">
+								Published</button
+							><button type="button" data-ann-status="scheduled">
+								Scheduled</button
+							><button type="button" data-ann-status="draft">Draft</button>
 						</div>
-						<div id="announcement-grid" class="bulletin-admin-list" aria-live="polite"></div>
+						<div
+							id="announcement-grid"
+							class="bulletin-admin-list"
+							aria-live="polite"
+						></div>
 					</div>
 				</section>
 
@@ -685,35 +735,230 @@
 				<section id="programs" class="page">
 					<div id="academic-list-view">
 						<div class="page-header">
-							<div><h2>Academic Management</h2><p class="page-sub">Manage academic programs, courses, and sections.</p></div>
-							<button class="btn-add" id="openAddProgramBtn" type="button"><i class="fas fa-plus"></i> Add Program</button>
+							<div>
+								<h2>Academic Management</h2>
+								<p class="page-sub">
+									Manage academic programs, courses, and sections.
+								</p>
+							</div>
+							<button class="btn-add" id="openAddProgramBtn" type="button">
+								<i class="fas fa-plus"></i> Add Program
+							</button>
 						</div>
-						<div class="academic-hierarchy card">
-							<div class="academic-selectors">
-								<div class="form-group"><label for="academic-campus-filter">Campus</label><select id="academic-campus-filter" aria-label="Campus"></select></div>
-								<div class="form-group"><label for="academic-unit-select">College / Department</label><select id="academic-unit-select" aria-label="College or department"></select></div>
-								<select id="academic-program-select" class="academic-context-select" aria-hidden="true" tabindex="-1"></select>
+						<div class="toolbar academic-toolbar academic-management-toolbar">
+							<div class="search-box">
+								<i class="fas fa-search"></i
+								><input
+									type="search"
+									id="program-search"
+									placeholder="Search name, abbreviation, or college…"
+								/>
+							</div>
+			<div class="academic-selectors">
+				<select id="academic-campus-filter" aria-label="Campus"></select>
+				<select id="academic-unit-select" aria-label="College or department"></select>
+				<select id="academic-program-select" class="academic-context-select" aria-hidden="true" tabindex="-1"></select>
+			</div>
+							<button type="button" class="btn-cancel" id="clearAcademicFilters" hidden>Clear filters</button>
+						</div>
+						<div class="academic-programs-heading">
+							<h3 id="academicProgramsTitle">Academic Programs</h3>
+						</div>
+						<div
+							class="card-grid academic-program-grid"
+							id="program-grid"
+						></div>
+						<div
+							class="card-grid academic-program-grid"
+							id="legacy-program-grid"
+							hidden
+						></div>
+					</div>
+					<div
+						id="program-sections-view"
+						class="academic-section-details"
+						hidden
+					>
+						<div class="page-header section-details-header">
+							<div>
+								<h2 id="programSectionsTitle">BS Computer Science</h2>
+								<p class="page-sub" id="programSectionsSub"></p>
 							</div>
 						</div>
-						<div class="toolbar academic-toolbar"><div class="search-box"><i class="fas fa-search"></i><input type="search" id="program-search" placeholder="Search name, abbreviation, or college…" /></div><button type="button" class="btn-cancel" id="clearAcademicFilters" hidden>Clear filters</button></div>
-						<div class="academic-programs-heading"><h3 id="academicProgramsTitle">Academic Programs</h3></div>
-						<div class="card-grid academic-program-grid" id="program-grid"></div>
-						<div class="card-grid academic-program-grid" id="legacy-program-grid" hidden></div>
-					</div>
-					<div id="program-sections-view" class="academic-section-details" hidden>
-						<div class="page-header section-details-header"><div><h2 id="programSectionsTitle">BS Computer Science</h2><p class="page-sub" id="programSectionsSub"></p></div></div>
-						<div class="sd-stats"><article class="sd-stat-card"><div><small>Sections</small><span id="programSectionCount">0</span></div></article><article class="sd-stat-card"><div><small>Students</small><span id="programStudentCount">0</span></div></article></div>
-						<div class="academic-programs-heading"><h3>Sections</h3><button class="btn-add" id="openAddSectionBtn" type="button"><i class="fas fa-plus"></i> Add Section</button></div>
-						<div class="academic-years-tabs" id="sectionYearTabs" role="tablist" aria-label="Filter sections by year"></div>
-						<div class="academic-section-grid" id="section-grid"></div><p class="empty-state" id="sectionEmpty">No sections are saved for this program.</p>
+						<div class="sd-stats">
+							<article class="sd-stat-card">
+								<div>
+									<small>Sections</small><span id="programSectionCount">0</span>
+								</div>
+							</article>
+							<article class="sd-stat-card">
+								<div>
+									<small>Students</small><span id="programStudentCount">0</span>
+								</div>
+							</article>
+						</div>
+						<div class="academic-programs-heading">
+							<h3>Sections</h3>
+							<button class="btn-add" id="openAddSectionBtn" type="button">
+								<i class="fas fa-plus"></i> Add Section
+							</button>
+						</div>
+						<div
+							class="academic-years-tabs"
+							id="sectionYearTabs"
+							role="tablist"
+							aria-label="Filter sections by year"
+						></div>
+						<div class="academic-section-grid" id="section-grid"></div>
+						<p class="empty-state" id="sectionEmpty">
+							No sections are saved for this program.
+						</p>
 					</div>
 					<div id="section-details" class="academic-section-details" hidden>
-						<div class="page-header section-details-header"><div><h2 id="sectionDetailsTitle">BSCS - 1A</h2><p class="page-sub" id="sectionDetailsSub"></p></div></div>
-						<div class="sd-stats"><article class="sd-stat-card"><div><span id="sdStudentCount">0</span><small>Students</small></div></article><article class="sd-stat-card"><div><span id="sdCourseCount">0</span><small>Courses</small></div></article><article class="sd-stat-card"><div><span id="sdProfessorCount">0</span><small>Professors</small></div></article></div>
-						<div class="academic-detail-card card"><div class="academic-tabs" role="tablist" aria-label="Section details"><button type="button" role="tab" id="sdStudentsTab" aria-controls="sdStudentsPanel" aria-selected="true" class="academic-tab is-active" data-detail-tab="students">Students</button><button type="button" role="tab" id="sdCoursesTab" aria-controls="sdCoursesPanel" aria-selected="false" class="academic-tab" data-detail-tab="courses" tabindex="-1">Courses</button><button type="button" role="tab" id="sdProfessorsTab" aria-controls="sdProfessorsPanel" aria-selected="false" class="academic-tab" data-detail-tab="professors" tabindex="-1">Assigned Professors</button></div>
-							<div id="sdStudentsPanel" class="academic-tab-panel" role="tabpanel" aria-labelledby="sdStudentsTab"><div class="academic-programs-heading"><h3>Enrolled Students</h3><button class="btn-add" id="assignSectionStudentsBtn" type="button"><i class="fas fa-user-plus"></i> Assign Students</button></div><div class="toolbar academic-toolbar"><div class="search-box"><i class="fas fa-search"></i><input type="search" id="sdStudentSearch" placeholder="Search students…" /></div></div><div class="table-wrap"><table class="academic-table"><thead><tr><th>Student ID</th><th>Full Name</th><th>Enrollment Status</th><th>Actions</th></tr></thead><tbody id="sdStudentsTbody"></tbody></table></div><p id="sdStudentsEmpty" class="empty-state" hidden>No students are assigned to this section.</p></div>
-							<div id="sdCoursesPanel" class="academic-tab-panel" role="tabpanel" aria-labelledby="sdCoursesTab" hidden><div class="academic-programs-heading"><h3>Section Courses</h3><button class="btn-add" id="assignSectionCourseBtn" type="button"><i class="fas fa-plus"></i> Assign Course</button></div><div id="sdCoursesList"></div></div>
-							<div id="sdProfessorsPanel" class="academic-tab-panel" role="tabpanel" aria-labelledby="sdProfessorsTab" hidden><div class="academic-programs-heading"><h3>Assigned Professors</h3><button class="btn-add" id="assignSectionProfessorBtn" type="button"><i class="fas fa-plus"></i> Assign Professor</button></div><div id="sdProfessorsList"></div></div>
+						<div class="page-header section-details-header">
+							<div>
+								<h2 id="sectionDetailsTitle">BSCS - 1A</h2>
+								<p class="page-sub" id="sectionDetailsSub"></p>
+							</div>
+						</div>
+						<div class="sd-stats">
+							<article class="sd-stat-card">
+								<div>
+									<span id="sdStudentCount">0</span><small>Students</small>
+								</div>
+							</article>
+							<article class="sd-stat-card">
+								<div>
+									<span id="sdCourseCount">0</span><small>Courses</small>
+								</div>
+							</article>
+							<article class="sd-stat-card">
+								<div>
+									<span id="sdProfessorCount">0</span><small>Professors</small>
+								</div>
+							</article>
+						</div>
+						<div class="academic-detail-card card">
+							<div
+								class="academic-tabs"
+								role="tablist"
+								aria-label="Section details"
+							>
+								<button
+									type="button"
+									role="tab"
+									id="sdStudentsTab"
+									aria-controls="sdStudentsPanel"
+									aria-selected="true"
+									class="academic-tab is-active"
+									data-detail-tab="students"
+								>
+									Students</button
+								><button
+									type="button"
+									role="tab"
+									id="sdCoursesTab"
+									aria-controls="sdCoursesPanel"
+									aria-selected="false"
+									class="academic-tab"
+									data-detail-tab="courses"
+									tabindex="-1"
+								>
+									Courses</button
+								><button
+									type="button"
+									role="tab"
+									id="sdProfessorsTab"
+									aria-controls="sdProfessorsPanel"
+									aria-selected="false"
+									class="academic-tab"
+									data-detail-tab="professors"
+									tabindex="-1"
+								>
+									Assigned Professors
+								</button>
+							</div>
+							<div
+								id="sdStudentsPanel"
+								class="academic-tab-panel"
+								role="tabpanel"
+								aria-labelledby="sdStudentsTab"
+							>
+								<div class="academic-programs-heading">
+									<h3>Enrolled Students</h3>
+									<button
+										class="btn-add"
+										id="assignSectionStudentsBtn"
+										type="button"
+									>
+										<i class="fas fa-user-plus"></i> Assign Students
+									</button>
+								</div>
+								<div class="toolbar academic-toolbar">
+									<div class="search-box">
+										<i class="fas fa-search"></i
+										><input
+											type="search"
+											id="sdStudentSearch"
+											placeholder="Search students…"
+										/>
+									</div>
+								</div>
+								<div class="table-wrap">
+									<table class="academic-table">
+										<thead>
+											<tr>
+												<th>Student ID</th>
+												<th>Full Name</th>
+												<th>Enrollment Status</th>
+												<th>Actions</th>
+											</tr>
+										</thead>
+										<tbody id="sdStudentsTbody"></tbody>
+									</table>
+								</div>
+								<p id="sdStudentsEmpty" class="empty-state" hidden>
+									No students are assigned to this section.
+								</p>
+							</div>
+							<div
+								id="sdCoursesPanel"
+								class="academic-tab-panel"
+								role="tabpanel"
+								aria-labelledby="sdCoursesTab"
+								hidden
+							>
+								<div class="academic-programs-heading">
+									<h3>Section Courses</h3>
+									<button
+										class="btn-add"
+										id="assignSectionCourseBtn"
+										type="button"
+									>
+										<i class="fas fa-plus"></i> Assign Course
+									</button>
+								</div>
+								<div id="sdCoursesList"></div>
+							</div>
+							<div
+								id="sdProfessorsPanel"
+								class="academic-tab-panel"
+								role="tabpanel"
+								aria-labelledby="sdProfessorsTab"
+								hidden
+							>
+								<div class="academic-programs-heading">
+									<h3>Assigned Professors</h3>
+									<button
+										class="btn-add"
+										id="assignSectionProfessorBtn"
+										type="button"
+									>
+										<i class="fas fa-plus"></i> Assign Professor
+									</button>
+								</div>
+								<div id="sdProfessorsList"></div>
+							</div>
 						</div>
 					</div>
 				</section>
@@ -1053,23 +1298,60 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h3 id="programModalTitle">Add Program</h3>
-					<button class="close-btn" id="programModalCloseBtn" aria-label="Close">
+					<button
+						class="close-btn"
+						id="programModalCloseBtn"
+						aria-label="Close"
+					>
 						<i class="fas fa-times"></i>
 					</button>
 				</div>
 				<div class="modal-body">
 					<div id="programCatalogFields">
-						<div class="form-group"><label for="m-programCampus">Campus <span class="field-required">*</span></label><select id="m-programCampus"></select><small class="error-text" id="m-programCampusErr"></small></div>
-						<div class="form-group"><label for="m-programUnit">College / Department <span class="field-required">*</span></label><select id="m-programUnit"></select><small class="error-text" id="m-programUnitErr"></small></div>
-						<div class="form-group"><label for="m-programCatalogOption">Academic Program <span class="field-required">*</span></label><select id="m-programCatalogOption"><option value="">Select a predefined program</option></select><small class="error-text" id="m-programCatalogOptionErr"></small></div>
-						<div class="form-group"><label for="m-programCode">Program Abbreviation</label><input type="text" id="m-programCode" readonly placeholder="Populated from catalog" /><small class="error-text" id="m-programCodeErr"></small></div>
-						<input type="hidden" id="m-programIdDisplay" value="Generated on save" />
+						<div class="form-group">
+							<label for="m-programCampus"
+								>Campus <span class="field-required">*</span></label
+							><select id="m-programCampus"></select
+							><small class="error-text" id="m-programCampusErr"></small>
+						</div>
+						<div class="form-group">
+							<label for="m-programUnit"
+								>College / Department
+								<span class="field-required">*</span></label
+							><select id="m-programUnit"></select
+							><small class="error-text" id="m-programUnitErr"></small>
+						</div>
+						<div class="form-group">
+							<label for="m-programCatalogOption"
+								>Academic Program <span class="field-required">*</span></label
+							><select id="m-programCatalogOption">
+								<option value="">Select a predefined program</option></select
+							><small class="error-text" id="m-programCatalogOptionErr"></small>
+						</div>
+						<div class="form-group">
+							<label for="m-programCode">Program Abbreviation</label
+							><input
+								type="text"
+								id="m-programCode"
+								readonly
+								placeholder="Populated from catalog"
+							/><small class="error-text" id="m-programCodeErr"></small>
+						</div>
+						<input
+							type="hidden"
+							id="m-programIdDisplay"
+							value="Generated on save"
+						/>
 						<input type="hidden" id="m-programName" />
 					</div>
 					<div id="legacyProgramEditNote" hidden></div>
 					<div class="form-group" id="legacyProgramNameGroup" hidden>
 						<label for="m-programNameLegacy">Program Name</label>
-						<input type="text" id="m-programNameLegacy" placeholder="Program name" />
+						<input
+							type="text"
+							id="m-programNameLegacy"
+							placeholder="Program name"
+						/>
 						<small class="error-text" id="m-programNameErr"></small>
 					</div>
 					<div class="form-group" hidden>
@@ -1148,22 +1430,222 @@
 			</div>
 		</div>
 
+		<!-- READ-ONLY PROGRAM OVERVIEW -->
+		<div class="modal" id="viewProgramModal" role="dialog" aria-modal="true" aria-labelledby="viewProgramTitle">
+			<div class="modal-content">
+				<div class="modal-header">
+					<div><h3 id="viewProgramTitle">Program Overview</h3><p class="modal-subtitle" id="viewProgramName"></p></div>
+					<button class="close-btn modal-close" type="button" aria-label="Close"><i class="fas fa-times"></i></button>
+				</div>
+				<div class="modal-body">
+					<dl class="program-view-details">
+						<div><dt>Abbreviation</dt><dd id="viewProgramCode"></dd></div>
+						<div><dt>College / Department</dt><dd id="viewProgramDepartment"></dd></div>
+						<div><dt>Campus</dt><dd id="viewProgramCampus"></dd></div>
+						<div><dt>Status</dt><dd id="viewProgramStatus"></dd></div>
+					</dl>
+					<p class="program-view-description" id="viewProgramDescription" hidden></p>
+				</div>
+				<div class="modal-footer"><button class="btn-cancel modal-close" type="button">Close</button></div>
+			</div>
+		</div>
+
 		<!-- PROGRAM COURSES MODAL -->
-		<div class="modal" id="programCoursesModal" role="dialog" aria-modal="true" aria-labelledby="programCoursesTitle">
+		<div
+			class="modal"
+			id="programCoursesModal"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="programCoursesTitle"
+		>
 			<div class="modal-content modal-content--wide">
-				<div class="modal-header"><div><h3 id="programCoursesTitle">Program Courses</h3><p id="programCoursesSubtitle" class="modal-subtitle"></p></div><button class="close-btn" id="programCoursesCloseBtn" aria-label="Close"><i class="fas fa-times"></i></button></div>
-				<div class="modal-body"><div class="academic-years-tabs" id="programCourseYearTabs" role="tablist" aria-label="Filter courses by year"></div><div class="academic-programs-heading"><h4 id="programCourseYearTitle">Year 1 Courses</h4></div><p id="programCourseSummary" class="academic-course-summary"></p><div class="table-wrap academic-table-wrap" id="programCourseTableWrap"><table class="academic-table"><thead><tr><th>Course Code</th><th>Course Title</th><th>Units</th></tr></thead><tbody id="programCourseRows"></tbody></table></div><p id="programCourseEmpty" class="empty-state" hidden></p><p id="programCoursesNotice" class="academic-data-note" hidden></p></div>
-				<div class="modal-footer"><button class="btn-cancel" id="closeProgramCoursesBtn">Close</button></div>
+				<div class="modal-header">
+					<div>
+						<h3 id="programCoursesTitle">Program Courses</h3>
+						<p id="programCoursesSubtitle" class="modal-subtitle"></p>
+					</div>
+					<button
+						class="close-btn"
+						id="programCoursesCloseBtn"
+						aria-label="Close"
+					>
+						<i class="fas fa-times"></i>
+					</button>
+				</div>
+				<div class="modal-body">
+					<div
+						class="academic-years-tabs"
+						id="programCourseYearTabs"
+						role="tablist"
+						aria-label="Filter courses by year"
+					></div>
+					<div class="academic-programs-heading">
+						<h4 id="programCourseYearTitle">Year 1 Courses</h4>
+					</div>
+					<p id="programCourseSummary" class="academic-course-summary"></p>
+					<div
+						class="table-wrap academic-table-wrap"
+						id="programCourseTableWrap"
+					>
+						<table class="academic-table">
+							<thead>
+								<tr>
+									<th>Course Code</th>
+									<th>Course Title</th>
+									<th>Units</th>
+								</tr>
+							</thead>
+							<tbody id="programCourseRows"></tbody>
+						</table>
+					</div>
+					<p id="programCourseEmpty" class="empty-state" hidden></p>
+					<p id="programCoursesNotice" class="academic-data-note" hidden></p>
+				</div>
+				<div class="modal-footer">
+					<button class="btn-cancel" id="closeProgramCoursesBtn">Close</button>
+				</div>
 			</div>
 		</div>
 
 		<!-- ASSIGN EXISTING COURSE MODAL -->
-		<div class="modal modal--nested" id="programCourseAddModal" role="dialog" aria-modal="true" aria-labelledby="programCourseAddTitle">
-			<div class="modal-content"><div class="modal-header"><h3 id="programCourseAddTitle">Add Course</h3><button class="close-btn" id="programCourseAddCloseBtn" aria-label="Close"><i class="fas fa-times"></i></button></div><div class="modal-body"><p class="academic-data-note">Choose an existing course record to link it to this program.</p><div class="form-group"><label for="programCourseSelect">Course</label><select id="programCourseSelect" size="7"></select><small class="error-text" id="programCourseSelectErr"></small><small id="programCourseCatalogEmpty" hidden>No courses are available yet. Add a course from the Courses page first.</small></div></div><div class="modal-footer"><button class="btn-cancel" id="cancelProgramCourseAddBtn">Cancel</button><button class="btn-primary" id="saveProgramCourseBtn">Assign Course</button></div></div>
+		<div
+			class="modal modal--nested"
+			id="programCourseAddModal"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="programCourseAddTitle"
+		>
+			<div class="modal-content">
+				<div class="modal-header">
+					<h3 id="programCourseAddTitle">Add Course</h3>
+					<button
+						class="close-btn"
+						id="programCourseAddCloseBtn"
+						aria-label="Close"
+					>
+						<i class="fas fa-times"></i>
+					</button>
+				</div>
+				<div class="modal-body">
+					<p class="academic-data-note">
+						Choose an existing course record to link it to this program.
+					</p>
+					<div class="form-group">
+						<label for="programCourseSelect">Course</label
+						><select id="programCourseSelect" size="7"></select
+						><small class="error-text" id="programCourseSelectErr"></small
+						><small id="programCourseCatalogEmpty" hidden
+							>No courses are available yet. Add a course from the Courses page
+							first.</small
+						>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button class="btn-cancel" id="cancelProgramCourseAddBtn">
+						Cancel</button
+					><button class="btn-primary" id="saveProgramCourseBtn">
+						Assign Course
+					</button>
+				</div>
+			</div>
 		</div>
-		<div class="modal" id="studentAssignmentModal" role="dialog" aria-modal="true" aria-labelledby="studentAssignmentTitle"><div class="modal-content"><div class="modal-header"><h3 id="studentAssignmentTitle">Assign Students</h3><button class="close-btn modal-close" aria-label="Close"><i class="fas fa-times"></i></button></div><div class="modal-body"><p class="academic-data-note" id="studentAssignmentSub"></p><div class="program-checklist" id="sectionStudentOptions"></div><small class="error-text" id="sectionStudentAssignErr"></small></div><div class="modal-footer"><button class="btn-cancel modal-close">Cancel</button><button class="btn-primary" id="saveSectionStudentAssignmentsBtn">Assign Selected Students</button></div></div></div>
-		<div class="modal modal--nested" id="sectionCourseAssignmentModal" role="dialog" aria-modal="true" aria-labelledby="sectionCourseAssignmentTitle"><div class="modal-content"><div class="modal-header"><h3 id="sectionCourseAssignmentTitle">Assign Course</h3><button class="close-btn modal-close" aria-label="Close"><i class="fas fa-times"></i></button></div><div class="modal-body"><p id="sectionCourseAssignmentHelp" class="academic-data-note"></p><div class="form-group"><label for="sectionCourseSelect">Program course</label><select id="sectionCourseSelect"></select><small class="error-text" id="sectionCourseAssignErr"></small><small id="sectionCourseEmpty" hidden></small></div></div><div class="modal-footer"><button class="btn-cancel modal-close">Cancel</button><button class="btn-primary" id="saveSectionCourseBtn">Assign Course</button></div></div></div>
-		<div class="modal modal--nested" id="sectionProfessorAssignmentModal" role="dialog" aria-modal="true" aria-labelledby="sectionProfessorAssignmentTitle"><div class="modal-content"><div class="modal-header"><h3 id="sectionProfessorAssignmentTitle">Assign Professor</h3><button class="close-btn modal-close" aria-label="Close"><i class="fas fa-times"></i></button></div><div class="modal-body"><p class="academic-data-note">Select an existing professor and one course assigned to this section.</p><div class="form-group"><label for="sectionProfessorSelect">Professor</label><select id="sectionProfessorSelect"></select><small class="error-text" id="sectionProfessorSelectErr"></small></div><div class="form-group"><label for="sectionProfessorCourseSelect">Course</label><select id="sectionProfessorCourseSelect"></select><small class="error-text" id="sectionProfessorCourseErr"></small></div><small id="sectionProfessorEmpty" hidden></small></div><div class="modal-footer"><button class="btn-cancel modal-close">Cancel</button><button class="btn-primary" id="saveSectionProfessorBtn">Assign Professor</button></div></div></div>
+		<div
+			class="modal"
+			id="studentAssignmentModal"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="studentAssignmentTitle"
+		>
+			<div class="modal-content">
+				<div class="modal-header">
+					<h3 id="studentAssignmentTitle">Assign Students</h3>
+					<button class="close-btn modal-close" aria-label="Close">
+						<i class="fas fa-times"></i>
+					</button>
+				</div>
+				<div class="modal-body">
+					<p class="academic-data-note" id="studentAssignmentSub"></p>
+					<div class="program-checklist" id="sectionStudentOptions"></div>
+					<small class="error-text" id="sectionStudentAssignErr"></small>
+				</div>
+				<div class="modal-footer">
+					<button class="btn-cancel modal-close">Cancel</button
+					><button class="btn-primary" id="saveSectionStudentAssignmentsBtn">
+						Assign Selected Students
+					</button>
+				</div>
+			</div>
+		</div>
+		<div
+			class="modal modal--nested"
+			id="sectionCourseAssignmentModal"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="sectionCourseAssignmentTitle"
+		>
+			<div class="modal-content">
+				<div class="modal-header">
+					<h3 id="sectionCourseAssignmentTitle">Assign Course</h3>
+					<button class="close-btn modal-close" aria-label="Close">
+						<i class="fas fa-times"></i>
+					</button>
+				</div>
+				<div class="modal-body">
+					<p id="sectionCourseAssignmentHelp" class="academic-data-note"></p>
+					<div class="form-group">
+						<label for="sectionCourseSelect">Program course</label
+						><select id="sectionCourseSelect"></select
+						><small class="error-text" id="sectionCourseAssignErr"></small
+						><small id="sectionCourseEmpty" hidden></small>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button class="btn-cancel modal-close">Cancel</button
+					><button class="btn-primary" id="saveSectionCourseBtn">
+						Assign Course
+					</button>
+				</div>
+			</div>
+		</div>
+		<div
+			class="modal modal--nested"
+			id="sectionProfessorAssignmentModal"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="sectionProfessorAssignmentTitle"
+		>
+			<div class="modal-content">
+				<div class="modal-header">
+					<h3 id="sectionProfessorAssignmentTitle">Assign Professor</h3>
+					<button class="close-btn modal-close" aria-label="Close">
+						<i class="fas fa-times"></i>
+					</button>
+				</div>
+				<div class="modal-body">
+					<p class="academic-data-note">
+						Select an existing professor and one course assigned to this
+						section.
+					</p>
+					<div class="form-group">
+						<label for="sectionProfessorSelect">Professor</label
+						><select id="sectionProfessorSelect"></select
+						><small class="error-text" id="sectionProfessorSelectErr"></small>
+					</div>
+					<div class="form-group">
+						<label for="sectionProfessorCourseSelect">Course</label
+						><select id="sectionProfessorCourseSelect"></select
+						><small class="error-text" id="sectionProfessorCourseErr"></small>
+					</div>
+					<small id="sectionProfessorEmpty" hidden></small>
+				</div>
+				<div class="modal-footer">
+					<button class="btn-cancel modal-close">Cancel</button
+					><button class="btn-primary" id="saveSectionProfessorBtn">
+						Assign Professor
+					</button>
+				</div>
+			</div>
+		</div>
 
 		<!-- SECTION MODAL -->
 		<div
@@ -1185,17 +1667,31 @@
 					<small class="error-text" id="m-sectionProgramErr"></small>
 					<div class="form-row">
 						<div class="form-group">
-						<label for="m-sectionYear">Year Level <span class="field-required">*</span></label>
+							<label for="m-sectionYear"
+								>Year Level <span class="field-required">*</span></label
+							>
 							<select id="m-sectionYear"></select>
 							<small class="error-text" id="m-sectionYearErr"></small>
 						</div>
 						<div class="form-group">
-						<label for="m-sectionLetter">Section Letter <span class="field-required">*</span></label>
-							<select id="m-sectionLetter"><option value="">Select a letter</option></select>
+							<label for="m-sectionLetter"
+								>Section Letter <span class="field-required">*</span></label
+							>
+							<select id="m-sectionLetter">
+								<option value="">Select a letter</option>
+							</select>
 							<small class="error-text" id="m-sectionLetterErr"></small>
 						</div>
 					</div>
-					<div class="form-group"><label>Generated Section Name</label><output id="m-sectionGeneratedName" class="generated-section-name" aria-live="polite">Select a program and section</output></div>
+					<div class="form-group">
+						<label>Generated Section Name</label
+						><output
+							id="m-sectionGeneratedName"
+							class="generated-section-name"
+							aria-live="polite"
+							>Select a program and section</output
+						>
+					</div>
 					<input type="hidden" id="m-sectionCapacity" value="40" />
 				</div>
 				<div class="modal-footer">
@@ -1449,32 +1945,178 @@
 		</div>
 
 		<!-- ANNOUNCEMENT MODAL -->
-		<div class="modal" id="announcementModal" role="dialog" aria-modal="true" aria-labelledby="announcementModalTitle">
+		<div
+			class="modal"
+			id="announcementModal"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="announcementModalTitle"
+		>
 			<div class="modal-content modal-content--wide bulletin-editor-modal">
 				<div class="modal-header">
-					<div class="bulletin-modal-heading"><h3 id="announcementModalTitle">Create Announcement</h3><p id="announcementModalSubtitle">Compose, preview, and publish an official campus update.</p></div>
-					<button class="close-btn modal-close" aria-label="Close"><i class="fas fa-times"></i></button>
+					<div class="bulletin-modal-heading">
+						<h3 id="announcementModalTitle">Create Announcement</h3>
+						<p id="announcementModalSubtitle">
+							Compose, preview, and publish an official campus update.
+						</p>
+					</div>
+					<button class="close-btn modal-close" aria-label="Close">
+						<i class="fas fa-times"></i>
+					</button>
 				</div>
 				<div class="modal-body bulletin-editor-body">
 					<div class="bulletin-editor-panel">
-						<div class="bulletin-editor-kicker"><i class="fas fa-pen-to-square"></i> Announcement editor</div>
-						<div id="annDateBadge" class="ann-date-badge" style="display:none"><i class="fas fa-calendar-check"></i><span id="annDateBadgeText">Scheduled for —</span><button type="button" class="ann-date-clear" id="annDateClear" title="Remove date"><i class="fas fa-times"></i></button></div>
-						<div class="form-group"><label for="m-annTitle">Announcement title *</label><input type="text" id="m-annTitle" placeholder="e.g. Midterm Examination Schedule" maxlength="120" /><small class="error-text" id="m-annTitleErr"></small></div>
-						<div class="form-group"><label for="m-annBody">Announcement content *</label><textarea id="m-annBody" rows="5" placeholder="Write the full announcement here…" maxlength="5000"></textarea><small class="error-text" id="m-annBodyErr"></small></div>
-						<div class="bulletin-form-grid">
-							<div class="form-group"><label for="m-annCategory">Category</label><select id="m-annCategory"><option value="academic">Academic</option><option value="events">Events</option><option value="examinations">Examinations</option><option value="scholarships">Scholarships</option><option value="general">General</option></select></div>
-							<div class="form-group"><label for="m-annAudience">Audience</label><select id="m-annAudience"><option value="all">All Users</option><option value="students">Students</option><option value="professors">Professors</option></select></div>
-							<div class="form-group"><label for="m-annType">Priority style</label><select id="m-annType"><option value="info">Standard</option><option value="warning">Important</option><option value="urgent">Urgent</option></select></div>
-							<div class="form-group"><label for="m-annEventDate">Related event date (optional)</label><input type="date" id="m-annEventDate" /></div>
+						<div class="bulletin-editor-kicker">
+							<i class="fas fa-pen-to-square"></i> Announcement editor
 						</div>
-						<label class="bulletin-featured-toggle"><input type="checkbox" id="m-annFeatured" /> Feature this announcement in the main feed</label>
-						<div class="form-group schedule-toggle-group"><label class="schedule-toggle-label" for="m-annSchedule"><input type="checkbox" id="m-annSchedule" /><span class="schedule-toggle-text"><i class="fas fa-calendar-plus"></i> Schedule this announcement</span></label><p class="schedule-toggle-hint">Scheduled announcements appear in the Calendar.</p></div>
-						<div class="form-group" id="schedulePickerGroup" style="display:none"><label for="m-annScheduledDate">Scheduled publication date</label><input type="date" id="m-annScheduledDate" /><small class="error-text" id="m-annScheduledDateErr"></small></div>
-						<div class="bulletin-media-control"><label for="m-annMedia">Optional image or video preview</label><input type="file" id="m-annMedia" accept="image/*,video/*" /><small>Preview only. Media is not saved to localStorage or shared.</small><div id="m-annMediaPreview" class="bulletin-media-preview" hidden></div></div>
+						<div id="annDateBadge" class="ann-date-badge" style="display: none">
+							<i class="fas fa-calendar-check"></i
+							><span id="annDateBadgeText">Scheduled for —</span
+							><button
+								type="button"
+								class="ann-date-clear"
+								id="annDateClear"
+								title="Remove date"
+							>
+								<i class="fas fa-times"></i>
+							</button>
+						</div>
+						<div class="form-group">
+							<label for="m-annTitle">Announcement title *</label
+							><input
+								type="text"
+								id="m-annTitle"
+								placeholder="e.g. Midterm Examination Schedule"
+								maxlength="120"
+							/><small class="error-text" id="m-annTitleErr"></small>
+						</div>
+						<div class="form-group">
+							<label for="m-annBody">Announcement content *</label
+							><textarea
+								id="m-annBody"
+								rows="5"
+								placeholder="Write the full announcement here…"
+								maxlength="5000"
+							></textarea
+							><small class="error-text" id="m-annBodyErr"></small>
+						</div>
+						<div class="bulletin-form-grid">
+							<div class="form-group">
+								<label for="m-annCategory">Category</label
+								><select id="m-annCategory">
+									<option value="academic">Academic</option>
+									<option value="events">Events</option>
+									<option value="examinations">Examinations</option>
+									<option value="scholarships">Scholarships</option>
+									<option value="general">General</option>
+								</select>
+							</div>
+							<div class="form-group">
+								<label for="m-annAudience">Audience</label
+								><select id="m-annAudience">
+									<option value="all">All Users</option>
+									<option value="students">Students</option>
+									<option value="professors">Professors</option>
+								</select>
+							</div>
+							<div class="form-group">
+								<label for="m-annType">Priority style</label
+								><select id="m-annType">
+									<option value="info">Standard</option>
+									<option value="warning">Important</option>
+									<option value="urgent">Urgent</option>
+								</select>
+							</div>
+							<div class="form-group">
+								<label for="m-annEventDate">Related event date (optional)</label
+								><input type="date" id="m-annEventDate" />
+							</div>
+						</div>
+						<label class="bulletin-featured-toggle"
+							><input type="checkbox" id="m-annFeatured" /> Feature this
+							announcement in the main feed</label
+						>
+						<div class="form-group schedule-toggle-group">
+							<label class="schedule-toggle-label" for="m-annSchedule"
+								><input type="checkbox" id="m-annSchedule" /><span
+									class="schedule-toggle-text"
+									><i class="fas fa-calendar-plus"></i> Schedule this
+									announcement</span
+								></label
+							>
+							<p class="schedule-toggle-hint">
+								Scheduled announcements appear in the Calendar.
+							</p>
+						</div>
+						<div
+							class="form-group"
+							id="schedulePickerGroup"
+							style="display: none"
+						>
+							<label for="m-annScheduledDate">Scheduled publication date</label
+							><input type="date" id="m-annScheduledDate" /><small
+								class="error-text"
+								id="m-annScheduledDateErr"
+							></small>
+						</div>
+						<div class="bulletin-media-control">
+							<label for="m-annMedia">Optional image or video preview</label
+							><input
+								type="file"
+								id="m-annMedia"
+								accept="image/*,video/*"
+							/><small
+								>Preview only. Media is not saved to localStorage or
+								shared.</small
+							>
+							<div
+								id="m-annMediaPreview"
+								class="bulletin-media-preview"
+								hidden
+							></div>
+						</div>
 					</div>
-					<aside class="bulletin-live-preview-wrap"><div class="bulletin-editor-kicker"><span>Live preview</span><i class="far fa-eye"></i></div><article class="bulletin-live-preview"><div class="bulletin-preview-brand"><i class="fas fa-bullhorn"></i> COGNITIA CAMPUS BULLETIN</div><span id="annPreviewCategory" class="bulletin-category-pill">Academic</span><h3 id="annPreviewTitle">Your announcement title</h3><div class="bulletin-preview-meta" id="annPreviewMeta">Preview · All Users</div><div class="bulletin-preview-body" id="annPreviewBody">Your full announcement content will appear here. Use the preview to check readability before publishing.</div><div id="annPreviewMedia"></div></article><div class="bulletin-before-publish"><strong>Before publishing</strong><span>✓ Check the title and content.</span><span>✓ Confirm the intended audience.</span><span>✓ Verify the publication date.</span></div></aside>
+					<aside class="bulletin-live-preview-wrap">
+						<div class="bulletin-editor-kicker">
+							<span>Live preview</span><i class="far fa-eye"></i>
+						</div>
+						<article class="bulletin-live-preview">
+							<div class="bulletin-preview-brand">
+								<i class="fas fa-bullhorn"></i> COGNITIA CAMPUS BULLETIN
+							</div>
+							<span id="annPreviewCategory" class="bulletin-category-pill"
+								>Academic</span
+							>
+							<h3 id="annPreviewTitle">Your announcement title</h3>
+							<div class="bulletin-preview-meta" id="annPreviewMeta">
+								Preview · All Users
+							</div>
+							<div class="bulletin-preview-body" id="annPreviewBody">
+								Your full announcement content will appear here. Use the preview
+								to check readability before publishing.
+							</div>
+							<div id="annPreviewMedia"></div>
+						</article>
+						<div class="bulletin-before-publish">
+							<strong>Before publishing</strong
+							><span>✓ Check the title and content.</span
+							><span>✓ Confirm the intended audience.</span
+							><span>✓ Verify the publication date.</span>
+						</div>
+					</aside>
 				</div>
-				<div class="modal-footer"><button class="btn-cancel modal-close">Cancel</button><button class="btn-cancel" id="saveAnnouncementDraftBtn" type="button">Save as Draft</button><button class="btn-primary" id="saveAnnouncementBtn" type="button">Publish Announcement</button></div>
+				<div class="modal-footer">
+					<button class="btn-cancel modal-close">Cancel</button
+					><button
+						class="btn-cancel"
+						id="saveAnnouncementDraftBtn"
+						type="button"
+					>
+						Save as Draft</button
+					><button class="btn-primary" id="saveAnnouncementBtn" type="button">
+						Publish Announcement
+					</button>
+				</div>
 			</div>
 		</div>
 
