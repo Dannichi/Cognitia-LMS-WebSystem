@@ -5910,25 +5910,144 @@ body[data-role="admin"] #dashboard .dashboard-activity-card .activity-list {
 	width: 100%;
 }
 .academic-program-grid .academic-program-card {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
 	width: 100%;
 	min-width: 0;
-	padding: 17px 16px 14px;
+	padding: 20px;
 	gap: 6px;
-	border-radius: var(--r-md);
-	box-shadow: var(--sh-sm);
+	border: 1px solid var(--border);
+	border-radius: 5px;
+	box-shadow: none;
 }
+.academic-program-grid .academic-program-card::before { content: none; display: none; }
 .academic-program-grid .academic-program-card-top {
+	display: flex;
+	width: 100%;
+	min-width: 0;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+.academic-program-grid .academic-program-card h3 { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.academic-program-grid .academic-program-meta { margin: 2px 0 8px; color: var(--text-3); font-size: 14px; }
+.academic-program-grid .academic-card-actions {
+	display: flex;
 	width: 100%;
 	align-items: center;
-}
-.academic-program-grid .academic-card-actions {
-	width: 100%;
+	justify-content: space-between;
+	gap: 12px;
 	margin-top: 8px;
-	padding-top: 12px;
+	padding-top: 16px;
 	border-top: 1px solid var(--border);
 }
+.academic-program-grid .academic-card-action-group { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.academic-program-grid .academic-card-action-group .btn-cancel {
+	display: inline-flex;
+	flex: 0 0 100px;
+	width: 100px;
+	min-width: 100px;
+	height: 42px;
+	align-items: center;
+	justify-content: center;
+	padding: 8px 10px;
+	border-radius: 4px;
+	font-size: 13px;
+	text-align: center;
+	white-space: nowrap;
+}
+.academic-program-grid .academic-delete-btn { color: var(--red-fg); }
+.academic-years-tabs .academic-tab { border-radius: 4px; }
+.academic-course-summary { margin: 0 0 10px; color: var(--text-3); font-size: 13px; }
+#programCoursesSubtitle { white-space: pre-line; line-height: 1.5; }
+#programCourseEmpty { white-space: pre-line; }
+#programCourseTableWrap .academic-table { min-width: 0; }
 @media (max-width: 600px) {
 	.academic-program-grid .academic-card-actions {
-		gap: 7px;
+		align-items: flex-start;
+		flex-wrap: wrap;
+		gap: 10px;
 	}
+	.academic-program-grid .academic-card-action-group:last-child { margin-left: auto; justify-content: flex-end; }
+}
+
+/* Keep Academic Management filters and search together in one toolbar. */
+#academic-list-view .academic-management-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin: 0 0 12px;
+	flex-wrap: wrap;
+}
+#academic-list-view .academic-management-toolbar .academic-selectors { display: contents; }
+#academic-list-view .academic-management-toolbar .academic-selectors select:not(.academic-context-select) {
+	flex: 0 1 190px;
+	min-width: 150px;
+	height: 42px;
+	padding: 8px 12px;
+	border: 1px solid var(--border);
+	border-radius: 5px;
+	background: var(--surface);
+	color: var(--text-1);
+	font-size: 14px;
+	font-weight: 600;
+}
+#academic-list-view .academic-management-toolbar .search-box {
+	flex: 1 1 260px;
+	min-width: 220px;
+	height: 42px;
+	box-sizing: border-box;
+}
+@media (max-width: 560px) {
+	#academic-list-view .academic-management-toolbar .search-box { flex: 1 1 100%; min-width: 0; }
+	#academic-list-view .academic-management-toolbar .academic-selectors select:not(.academic-context-select) { flex: 1 1 calc(50% - 5px); min-width: 0; }
+}
+@media (max-width: 420px) {
+	#academic-list-view .academic-management-toolbar .academic-selectors select:not(.academic-context-select) { flex-basis: 100%; }
+}
+
+/* Program card Courses action and its theme-aware read-only overview table. */
+#programCourseTableWrap {
+	background: var(--surface);
+	border-color: var(--border);
+}
+#programCourseTableWrap .academic-table {
+	background: var(--surface);
+	color: var(--text-2);
+}
+#programCourseTableWrap .academic-table thead th {
+	background: var(--surface-2);
+	color: var(--text-2);
+	box-shadow: inset 0 -1px 0 var(--border);
+}
+#programCourseTableWrap .academic-table tbody tr { background: var(--surface); }
+#programCourseTableWrap .academic-table tbody tr:hover { background: var(--brand-light); }
+#programCourseTableWrap .academic-table td {
+	background: transparent;
+	color: var(--text-1);
+	border-color: var(--border);
+}
+.program-view-details {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	margin: 0;
+	border: 1px solid var(--border);
+	border-radius: 5px;
+	background: var(--surface);
+}
+.program-view-details > div {
+	display: grid;
+	grid-template-columns: minmax(130px, .8fr) minmax(0, 1.6fr);
+	gap: 14px;
+	padding: 12px 14px;
+	border-bottom: 1px solid var(--border);
+}
+.program-view-details > div:last-child { border-bottom: 0; }
+.program-view-details dt { color: var(--text-3); font-size: 13px; }
+.program-view-details dd { min-width: 0; margin: 0; color: var(--text-1); font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.program-view-description { margin-top: 14px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 5px; background: var(--surface-2); color: var(--text-2); line-height: 1.55; white-space: pre-line; }
+@media (max-width: 480px) {
+	.program-view-details > div { grid-template-columns: 1fr; gap: 4px; }
 }
