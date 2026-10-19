@@ -709,7 +709,8 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 		const priorProgram = programSelect.value;
 		const priorUnit = unitSelect.value;
-		const departmentList = academicConfig.exampleUnits;
+		const selectedCampus = campusFilter?.value || "";
+		const departmentList = academicConfig.exampleUnits.filter((unit) => !selectedCampus || String(unit.campusId || "") === selectedCampus);
 		unitSelect.replaceChildren(new Option("All Colleges", ""), ...departmentList.map((unit) => new Option(unit.name, unit.id)));
 		unitSelect.value = [...unitSelect.options].some((option) => option.value === priorUnit) ? priorUnit : "";
 		programSelect.replaceChildren(new Option("Choose a program", ""));
@@ -726,12 +727,13 @@ document.addEventListener("DOMContentLoaded", () => {
 		renderSections();
 	}
 
+	document.getElementById("academic-campus-filter")?.addEventListener("change", syncAcademicHierarchy);
 	document.getElementById("academic-unit-select")?.addEventListener("change", syncAcademicHierarchy);
 	document.getElementById("clearAcademicFilters")?.addEventListener("click", () => {
 		document.getElementById("academic-campus-filter").value = "";
 		document.getElementById("academic-unit-select").value = "";
 		document.getElementById("program-search").value = "";
-		renderPrograms();
+		syncAcademicHierarchy();
 	});
 	document.getElementById("academic-program-select")?.addEventListener("change", function () {
 		selectAcademicProgram(this.value);
@@ -1208,7 +1210,6 @@ document.addEventListener("DOMContentLoaded", () => {
 	});
 	document.querySelectorAll("#m-colorPicker .color-option").forEach((option) => option.addEventListener("click", () => { programModalDirty = true; }));
 	document.getElementById("m-programNameLegacy")?.addEventListener("input", function () { document.getElementById("m-programName").value = this.value; });
-	document.getElementById("academic-campus-filter")?.addEventListener("change", renderPrograms);
 	document.getElementById("m-programCampus")?.addEventListener("change", () => {
 		populateProgramModalCatalog();
 		programModalDirty = true;
@@ -1358,13 +1359,14 @@ document.addEventListener("DOMContentLoaded", () => {
 		const campusFilter = document.getElementById("academic-campus-filter")?.value || "";
 		const clearFilters = document.getElementById("clearAcademicFilters");
 		if (clearFilters) clearFilters.hidden = !(search || unitFilter || campusFilter);
-		const options = academicConfig.exampleUnits.flatMap((unit) => unit.programs.map((program) => ({ ...program, unitId: unit.id, unitName: unit.name })))
+		const options = academicConfig.exampleUnits.flatMap((unit) => unit.programs.map((program) => ({ ...program, unitId: unit.id, unitName: unit.name, campusId: unit.campusId })))
 			.filter((program) => (!unitFilter || program.unitId === unitFilter) && `${program.name} ${program.displayName} ${program.code} ${program.unitName}`.toLowerCase().includes(search));
 		grid.replaceChildren();
 		options.forEach((catalog) => {
 			const saved = state.programs.find((program) => program.catalogId === catalog.id);
 			if (!saved) return;
-			if (campusFilter && saved.campusId && String(saved.campusId) !== String(campusFilter)) return;
+			const programCampus = saved.campusId || catalog.campusId;
+			if (campusFilter && String(programCampus || "") !== String(campusFilter)) return;
 			const card = makeEl("article", "program-card academic-program-card");
 			const top = makeEl("div", "academic-program-card-top");
 			top.append(makeEl("h3", "", saved.name || catalog.displayName));

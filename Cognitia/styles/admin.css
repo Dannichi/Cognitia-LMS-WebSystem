@@ -5944,7 +5944,20 @@ body[data-role="admin"] #dashboard .dashboard-activity-card .activity-list {
 	border-top: 1px solid var(--border);
 }
 .academic-program-grid .academic-card-action-group { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-.academic-program-grid .academic-card-action-group .btn-cancel { min-height: 42px; padding: 8px 14px; border-radius: 4px; }
+.academic-program-grid .academic-card-action-group .btn-cancel {
+	display: inline-flex;
+	flex: 0 0 100px;
+	width: 100px;
+	min-width: 100px;
+	height: 42px;
+	align-items: center;
+	justify-content: center;
+	padding: 8px 10px;
+	border-radius: 4px;
+	font-size: 13px;
+	text-align: center;
+	white-space: nowrap;
+}
 .academic-program-grid .academic-delete-btn { color: var(--red-fg); }
 .academic-years-tabs .academic-tab { border-radius: 4px; }
 .academic-course-summary { margin: 0 0 10px; color: var(--text-3); font-size: 13px; }
@@ -5963,7 +5976,7 @@ body[data-role="admin"] #dashboard .dashboard-activity-card .activity-list {
 /* Keep Academic Management filters and search together in one toolbar. */
 #academic-list-view .academic-management-toolbar {
 	display: flex;
-	align-items: flex-end;
+	align-items: center;
 	gap: 10px;
 	margin: 0 0 12px;
 	flex-wrap: wrap;
@@ -5972,7 +5985,7 @@ body[data-role="admin"] #dashboard .dashboard-activity-card .activity-list {
 #academic-list-view .academic-management-toolbar .academic-selectors select:not(.academic-context-select) {
 	flex: 0 1 190px;
 	min-width: 150px;
-	min-height: 42px;
+	height: 42px;
 	padding: 8px 12px;
 	border: 1px solid var(--border);
 	border-radius: 5px;
@@ -5984,8 +5997,10 @@ body[data-role="admin"] #dashboard .dashboard-activity-card .activity-list {
 #academic-list-view .academic-management-toolbar .search-box {
 	flex: 1 1 260px;
 	min-width: 220px;
+	height: 42px;
+	box-sizing: border-box;
 }
-@media (max-width: 700px) {
+@media (max-width: 560px) {
 	#academic-list-view .academic-management-toolbar .search-box { flex: 1 1 100%; min-width: 0; }
 	#academic-list-view .academic-management-toolbar .academic-selectors select:not(.academic-context-select) { flex: 1 1 calc(50% - 5px); min-width: 0; }
 }
