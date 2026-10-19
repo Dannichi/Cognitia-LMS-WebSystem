@@ -396,7 +396,7 @@ textarea {
 	left: calc(
 		var(--sidebar-collapsed-w) + 24px
 	); /* clears the 29px toggle that straddles the rail edge */
-	width: 176px;
+	width: 220px;
 	max-height: none;
 	margin: 0;
 	padding: 8px;
