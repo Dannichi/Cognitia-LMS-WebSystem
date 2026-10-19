@@ -181,6 +181,12 @@
 							</button>
 							<ul class="nav-sub" id="usersSubnav">
 								<li>
+									<a href="#" data-target="approval-requests"
+										><i class="fas fa-user-check"></i
+										><span class="nav-text">Approval Requests</span></a
+									>
+								</li>
+								<li>
 									<a
 										href="#"
 										data-target="manage-users"
@@ -541,6 +547,74 @@
 							<p class="empty-state">No recent activity yet.</p>
 						</div>
 					</section>
+				</section>
+
+				<!-- ─── APPROVAL REQUESTS ─── -->
+				<section id="approval-requests" class="page">
+					<div class="page-header">
+						<div>
+							<h2>Approval Requests</h2>
+							<p class="page-sub">
+								Review newly registered student and professor accounts.
+							</p>
+						</div>
+					</div>
+					<div class="approval-summary" aria-live="polite">
+						<article class="approval-stat">
+							<span>Pending</span><strong id="approvalPendingCount">0</strong>
+						</article>
+						<article class="approval-stat">
+							<span>Approved Today</span
+							><strong id="approvalApprovedToday">0</strong>
+						</article>
+						<article class="approval-stat">
+							<span>Rejected Today</span
+							><strong id="approvalRejectedToday">0</strong>
+						</article>
+					</div>
+					<div class="toolbar approval-toolbar">
+						<div class="search-box">
+							<i class="fas fa-search"></i
+							><input
+								id="approvalSearch"
+								type="search"
+								placeholder="Search by name or school email…"
+								aria-label="Search approval requests"
+							/>
+						</div>
+						<select id="approvalRoleFilter" aria-label="Filter by account type">
+							<option value="all">All Requests</option>
+							<option value="student">Students Only</option>
+							<option value="professor">Professors Only</option>
+						</select>
+						<select id="approvalStatusFilter" aria-label="Filter by status">
+							<option value="pending">Pending</option>
+							<option value="approved">Approved</option>
+							<option value="rejected">Rejected</option>
+							<option value="all">All Statuses</option>
+						</select>
+						<select id="approvalSort" aria-label="Sort requests">
+							<option value="oldest">Oldest First</option>
+							<option value="newest">Newest First</option>
+							<option value="az">Name A–Z</option>
+							<option value="za">Name Z–A</option>
+						</select>
+					</div>
+					<div class="users-table-wrap approval-table-wrap">
+						<table class="users-table approval-table">
+							<thead>
+								<tr>
+									<th>Applicant</th>
+									<th>School Email</th>
+									<th>Account Type</th>
+									<th>Registration Date</th>
+									<th>Status</th>
+									<th>Actions</th>
+								</tr>
+							</thead>
+							<tbody id="approvalRequestsBody"></tbody>
+						</table>
+					</div>
 				</section>
 
 				<!-- ─── BULLETIN ─── -->
@@ -1738,6 +1812,7 @@
 
 		<script src="js/sidebar.js"></script>
 		<script src="js/admin.js"></script>
+		<script src="js/approval.js"></script>
 		<script src="js/calendar.js"></script>
 	</body>
 </html>
