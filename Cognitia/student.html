@@ -332,9 +332,15 @@
 							</div>
 							<div class="cal-legend">
 								<span class="cal-legend-dot today-dot"></span><span>Today</span>
-								<span class="cal-legend-dot ann-dot"></span
-								><span>Due date</span>
+								<span class="cal-legend-dot cal-legend-dot--official"></span
+								><span>Official</span>
+								<span class="cal-legend-dot cal-legend-dot--personal"></span
+								><span>Personal</span>
 							</div>
+							<button type="button" class="cal-view-all" data-goto="calendar">
+								<span>View full calendar</span>
+								<i class="fas fa-chevron-right" aria-hidden="true"></i>
+							</button>
 						</div>
 						<!-- Col 3: Recent Activity -->
 						<div class="card dashboard-col">
@@ -655,7 +661,7 @@
 								<span class="cal-legend-dot cal-legend-dot--personal"></span><span>Personal</span>
 							</div>
 						</div>
-						<div class="card">
+						<div class="card cal-upcoming-card">
 							<h3 class="card-title">
 								<i class="fas fa-clock"></i> Upcoming Events
 							</h3>
@@ -1067,6 +1073,16 @@
 		<script>if (!CognitiaSession.requireRole("student")) document.documentElement.style.visibility = "hidden";</script>
 		<script src="js/student.js"></script>
 		<script src="js/topbar.js"></script>
+		<script src="js/cal-tooltip.js"></script>
 		<script src="js/student-calendar.js"></script>
+			<script>
+			// Dashboard calendar card: "View full calendar" opens the My Calendar tab
+			document.querySelectorAll(".cal-view-all").forEach(function (btn) {
+				btn.addEventListener("click", function () {
+					var nav = document.querySelector('a[data-target="calendar"]');
+					if (nav) nav.click();
+				});
+			});
+		</script>
 	</body>
 </html>

@@ -75,115 +75,40 @@ document.addEventListener("DOMContentLoaded", () => {
 		return { student, myCourses, myCourseIds, assignments, quizzes };
 	}
 
-	/* ─── CALENDAR TOOLTIP ───────────────── */
-	let tooltipEl = null;
-
-	function createTooltip() {
-		if (tooltipEl) return tooltipEl;
-		tooltipEl = document.createElement("div");
-		tooltipEl.className = "cal-tooltip";
-		tooltipEl.id = "calTooltip";
-		document.body.appendChild(tooltipEl);
-		document.addEventListener("click", (e) => {
-			if (tooltipEl && tooltipEl.classList.contains("visible")) {
-				if (
-					!tooltipEl.contains(e.target) &&
-					!e.target.closest(".cal-day--has-ann")
-				) {
-					hideTooltip();
-				}
-			}
-		});
-		return tooltipEl;
-	}
-
-	function hideTooltip() {
-		if (!tooltipEl) return;
-		tooltipEl.classList.remove("visible");
-		tooltipEl.dataset.dateKey = "";
-	}
-
-	function showTooltip(cell, dateKey, items) {
-		const tip = createTooltip();
-		const dateObj = new Date(dateKey + "T00:00:00");
-		const label = dateObj.toLocaleDateString("en-PH", {
-			weekday: "short",
-			month: "short",
-			day: "numeric",
-		});
-
-		tip.innerHTML = `
-			<div class="cal-tooltip-header"><i class="fas fa-calendar-day" style="margin-right:5px;"></i>${label}</div>
-			${items
-				.map(
-					(item) => `
-				<div class="cal-tooltip-item">
-					<div class="cal-tooltip-dot"></div>
-					<div>
-						<div class="cal-tooltip-text">${item.title}</div>
-						<div class="cal-tooltip-course">${item.course}</div>
-					</div>
-				</div>
-			`,
-				)
-				.join("")}
-		`;
-		tip.dataset.dateKey = dateKey;
-
-		tip.style.visibility = "hidden";
-		tip.classList.add("visible");
-
-		requestAnimationFrame(() => {
-			const tipW = tip.offsetWidth || 220;
-			const tipH = tip.offsetHeight || 120;
-			const rect = cell.getBoundingClientRect();
-			const calCard = cell.closest(".calendar-card");
-			const calRect = calCard
-				? calCard.getBoundingClientRect()
-				: { left: 0, right: window.innerWidth };
-			const margin = 8;
-
-			let left = rect.left + rect.width / 2 - tipW / 2;
-			let top = rect.bottom + 8;
-
-			left = Math.max(
-				calRect.left + margin,
-				Math.min(left, calRect.right - tipW - margin),
-			);
-			left = Math.max(
-				margin,
-				Math.min(left, window.innerWidth - tipW - margin),
-			);
-
-			if (top + tipH > window.innerHeight - 16) {
-				top = rect.top - tipH - 8;
-			}
-			top = Math.max(8, top);
-
-			tip.style.left = left + "px";
-			tip.style.top = top + "px";
-			tip.style.visibility = "visible";
-		});
-	}
-
 	/* ─── CALENDAR ───────────────────────── */
+	// Assignment due dates (official, course-coded)
 	function getDueDatesMap() {
 		const { assignments, myCourses } = getMyData();
 		const map = new Map();
 		assignments.forEach((a) => {
 			if (!a.dueDate) return;
-			try {
-				const d = new Date(a.dueDate);
-				if (isNaN(d)) return;
-				const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-				if (!map.has(key)) map.set(key, []);
-				const course = myCourses.find((c) => c.id === a.courseId);
-				map
-					.get(key)
-					.push({ title: a.title, course: course ? course.code : "" });
-			} catch {}
+			const d = new Date(a.dueDate);
+			if (isNaN(d)) return;
+			const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+			if (!map.has(key)) map.set(key, []);
+			const course = myCourses.find((c) => c.id === a.courseId);
+			map.get(key).push({ title: a.title, course: course ? course.code : "" });
 		});
 		return map;
+	}
+
+	// Everything on one day: official first (assignments + official events), then personal
+	function itemsFor(dateKey, dueMap) {
+		const items = (dueMap.get(dateKey) || []).map((a) => ({
+			kind: "official",
+			title: a.title,
+			sub: a.course ? a.course + " \u00b7 Due" : "Due",
+		}));
+		const evs = window.CognitiaCalendar ? window.CognitiaCalendar.eventsFor(dateKey) : [];
+		evs.forEach((ev) =>
+			items.push({
+				kind: ev.type === "personal" ? "personal" : "official",
+				title: ev.title,
+				sub: ev.start ? `${ev.start}\u2013${ev.end}` : "",
+				color: ev.color,
+			}),
+		);
+		return items;
 	}
 
 	function renderCalendar() {
@@ -191,20 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		const calDays = document.getElementById("calDays");
 		if (!monthLabel || !calDays) return;
 
-		const MONTHS = [
-			"January",
-			"February",
-			"March",
-			"April",
-			"May",
-			"June",
-			"July",
-			"August",
-			"September",
-			"October",
-			"November",
-			"December",
-		];
+		const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 		monthLabel.textContent = `${MONTHS[calMonth]} ${calYear}`;
 
 		const today = new Date();
@@ -213,10 +125,10 @@ document.addEventListener("DOMContentLoaded", () => {
 			tD = today.getDate();
 		const firstDay = new Date(calYear, calMonth, 1).getDay();
 		const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-		const dueDatesMap = getDueDatesMap();
+		const dueMap = getDueDatesMap();
 
 		calDays.innerHTML = "";
-		hideTooltip();
+		CalTip.hide();
 
 		for (let i = 0; i < firstDay; i++) {
 			const e = document.createElement("div");
@@ -229,29 +141,22 @@ document.addEventListener("DOMContentLoaded", () => {
 			const dateKey = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 			const isToday = calYear === tY && calMonth === tM && d === tD;
 			const isPast = new Date(calYear, calMonth, d) < new Date(tY, tM, tD);
-			const items = dueDatesMap.get(dateKey);
-			const hasEvent = !!items && items.length > 0;
+			const items = itemsFor(dateKey, dueMap);
 
 			cell.className = "cal-day";
 			if (isToday) cell.classList.add("cal-day--today");
 			if (isPast && !isToday) cell.classList.add("cal-day--past");
-			if (hasEvent) cell.classList.add("cal-day--has-ann");
 
-			cell.innerHTML = `<span class="cal-day-num">${d}</span>${hasEvent ? '<span class="cal-day-dot"></span>' : ""}`;
+			const num = document.createElement("span");
+			num.className = "cal-day-num";
+			num.textContent = d;
+			cell.appendChild(num);
 
-			if (hasEvent) {
-				cell.addEventListener("click", (e) => {
-					e.stopPropagation();
-					const tip = createTooltip();
-					const wasVisible = tip.classList.contains("visible");
-					const wasThisCell = tip.dataset.dateKey === dateKey;
-					hideTooltip();
-					if (!wasVisible || !wasThisCell) {
-						showTooltip(cell, dateKey, items);
-					}
-				});
+			if (items.length) {
+				cell.classList.add("cal-day--has-ann");
+				cell.appendChild(CalTip.dotsEl(items));
+				CalTip.attach(cell, dateKey, items);
 			}
-
 			calDays.appendChild(cell);
 		}
 	}
@@ -444,6 +349,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	renderUpcomingDeadlines();
 	renderRecentActivity();
 
+	window.addEventListener("cognitia:calendar-events-changed", renderCalendar);
 	window.addEventListener("storage", () => {
 		renderCalendar();
 		renderUpcomingDeadlines();

@@ -2733,9 +2733,16 @@ document.querySelectorAll(".cal-view-btn").forEach((btn) => {
 		if (events.length) {
 			const list = document.createElement("div");
 			list.className = "cal-page-labels";
+			list._events = events;
+			list._date = new Date(year, month, day);
 			events.forEach((ev) => {
 				const chip = document.createElement("div");
 				chip.className = "cal-page-label cal-page-label--" + ev.type;
+				chip._ev = ev;
+				chip._date = list._date;
+				chip.tabIndex = 0;
+				chip.setAttribute("role", "button");
+				chip.setAttribute("aria-label", ev.title + ", " + ev.type + " event. View details");
 				if (ev.type === "personal") chip.dataset.evColor = colorOf(ev);
 				chip.textContent = ev.title;
 				chip.title =
@@ -2756,6 +2763,9 @@ document.querySelectorAll(".cal-view-btn").forEach((btn) => {
 			if (!over()) return;
 			const more = document.createElement("div");
 			more.className = "cal-page-more";
+			more._list = list;
+			more.tabIndex = 0;
+			more.setAttribute("role", "button");
 			list.appendChild(more);
 			let shown = chips.length;
 			do {
@@ -2865,6 +2875,22 @@ document.querySelectorAll(".cal-view-btn").forEach((btn) => {
 	});
 	// Add Event: temporary in-memory events (lost on reload; no storage or backend yet)
 	const userEvents = [];
+
+	// Shared with the dashboard mini-calendar: events for one "YYYY-MM-DD".
+	window.CognitiaCalendar = {
+		eventsFor(dateKey) {
+			const day = Number(dateKey.slice(8, 10));
+			const sample = SAMPLE_EVENTS.filter((ev) => ev.day === day);
+			const added = userEvents.filter((ev) => ev.date === dateKey);
+			return sample.concat(added).map((ev) => ({
+				type: ev.type,
+				title: ev.title,
+				color: colorOf(ev),
+				start: ev.start || "",
+				end: ev.end || "",
+			}));
+		},
+	};
 	const modal = document.getElementById("eventModal");
 	const form = document.getElementById("eventForm");
 	const addBtn = document.getElementById("calAddEventBtn");
@@ -2949,6 +2975,7 @@ document.querySelectorAll(".cal-view-btn").forEach((btn) => {
 		const v = validateEvent();
 		if (!v) return;
 		userEvents.push({ date: v.date, type: v.type, title: v.title, start: v.start, end: v.end, desc: v.desc, color: v.type === "personal" ? v.color : null });
+		window.dispatchEvent(new CustomEvent("cognitia:calendar-events-changed"));
 		const [y, m] = v.date.split("-").map(Number);
 		year = y;
 		month = m - 1;
@@ -2957,6 +2984,83 @@ document.querySelectorAll(".cal-view-btn").forEach((btn) => {
 		addBtn.focus();
 		const hidden = view !== "combined" && view !== v.type;
 		showToast(hidden ? "Event added (hidden by the current filter)" : "Event added");
+	});
+
+	// View details: click an event (or "+N more") to open a read-only popup
+	const viewModal = document.createElement("div");
+	viewModal.className = "modal";
+	viewModal.id = "eventViewModal";
+	viewModal.setAttribute("role", "dialog");
+	viewModal.setAttribute("aria-modal", "true");
+	viewModal.setAttribute("aria-labelledby", "eventViewTitle");
+	viewModal.innerHTML =
+		'<div class="modal-content modal-content--sm">' +
+		'<div class="modal-header"><h3 id="eventViewTitle">Event details</h3>' +
+		'<button class="close-btn" type="button" id="eventViewClose" aria-label="Close"><i class="fas fa-times"></i></button></div>' +
+		'<div class="modal-body" id="eventViewBody"></div>' +
+		'<div class="modal-footer"><button class="btn-cancel" type="button" id="eventViewDone">Close</button></div>' +
+		"</div>";
+	document.body.appendChild(viewModal);
+	const viewTitle = document.getElementById("eventViewTitle");
+	const viewBody = document.getElementById("eventViewBody");
+	const viewDone = document.getElementById("eventViewDone");
+	let viewReturnFocus = null;
+	const mk = (tag, cls, text) => {
+		const n = document.createElement(tag);
+		if (cls) n.className = cls;
+		if (text != null) n.textContent = text;
+		return n;
+	};
+	const longDate = (d) =>
+		d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+	function viewRow(label, value, muted) {
+		const row = mk("div", "ev-view-row");
+		row.append(mk("span", "ev-view-label", label), mk("span", "ev-view-value" + (muted ? " ev-view-muted" : ""), value));
+		return row;
+	}
+	function eventBlock(ev, date, showDate) {
+		const block = mk("div", "ev-view-item ev-view-item--" + ev.type);
+		if (ev.type === "personal") block.dataset.evColor = colorOf(ev);
+		const head = mk("div", "ev-view-head");
+		head.append(mk("h4", "ev-view-name", ev.title), mk("span", "ev-view-badge", ev.type === "official" ? "Official" : "Personal"));
+		block.appendChild(head);
+		if (showDate) block.appendChild(viewRow("Date", longDate(date)));
+		block.appendChild(viewRow("Time", ev.start ? fmtTime(ev.start) + " – " + fmtTime(ev.end) : "All day"));
+		block.appendChild(ev.desc ? viewRow("Details", ev.desc) : viewRow("Details", "No description added.", true));
+		return block;
+	}
+	function openEventView(events, date, trigger) {
+		viewReturnFocus = trigger || null;
+		viewTitle.textContent = events.length > 1 ? longDate(date) : "Event details";
+		viewBody.replaceChildren(...events.map((ev) => eventBlock(ev, date, events.length === 1)));
+		viewModal.classList.add("active");
+		viewDone.focus();
+	}
+	function closeEventView() {
+		viewModal.classList.remove("active");
+		if (viewReturnFocus && viewReturnFocus.isConnected) viewReturnFocus.focus();
+		viewReturnFocus = null;
+	}
+	function openFromGrid(target) {
+		const chip = target.closest(".cal-page-label");
+		if (chip && chip._ev) return openEventView([chip._ev], chip._date, chip);
+		const more = target.closest(".cal-page-more");
+		if (more && more._list) openEventView(more._list._events, more._list._date, more);
+	}
+	grid.addEventListener("click", (e) => openFromGrid(e.target));
+	grid.addEventListener("keydown", (e) => {
+		if ((e.key === "Enter" || e.key === " ") && e.target.matches(".cal-page-label, .cal-page-more")) {
+			e.preventDefault();
+			openFromGrid(e.target);
+		}
+	});
+	document.getElementById("eventViewClose").addEventListener("click", closeEventView);
+	viewDone.addEventListener("click", closeEventView);
+	viewModal.addEventListener("click", (e) => {
+		if (e.target === viewModal) closeEventView();
+	});
+	document.addEventListener("keydown", (e) => {
+		if (e.key === "Escape" && viewModal.classList.contains("active")) closeEventView();
 	});
 	window.addEventListener("resize", fitLabels);
 	render();

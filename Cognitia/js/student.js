@@ -1870,6 +1870,38 @@ document.querySelectorAll(".cal-view-btn").forEach((btn) => {
 	const DEFAULT_PERSONAL_COLOR = "blue";
 	const colorOf = (ev) =>
 		ev.type !== "personal" ? null : PERSONAL_COLORS.includes(ev.color) ? ev.color : DEFAULT_PERSONAL_COLOR;
+
+	// "Done" and "deleted" state, saved per student in localStorage.
+	// Sample events repeat every month, so each one is identified by type + title + its date.
+	const calUid = (() => {
+		try {
+			return String(CognitiaSession.get()?.id ?? "anon");
+		} catch {
+			return "anon";
+		}
+	})();
+	const DONE_KEY = "cognitia_cal_done:" + calUid;
+	const GONE_KEY = "cognitia_cal_deleted:" + calUid;
+	const loadSet = (k) => {
+		try {
+			const a = JSON.parse(localStorage.getItem(k) || "[]");
+			return new Set(Array.isArray(a) ? a : []);
+		} catch {
+			return new Set();
+		}
+	};
+	const saveSet = (k, set) => {
+		try {
+			localStorage.setItem(k, JSON.stringify([...set]));
+		} catch {
+			/* storage full or blocked: the change still applies until reload */
+		}
+	};
+	const doneSet = loadSet(DONE_KEY);
+	const goneSet = loadSet(GONE_KEY);
+	const evKey = (ev, dateStr) => (ev._id ? "u|" + ev._id : "s|" + dateStr + "|" + ev.type + "|" + ev.title);
+	const isDone = (ev, dateStr) => doneSet.has(evKey(ev, dateStr));
+	const isGone = (ev, dateStr) => goneSet.has(evKey(ev, dateStr));
 	const now = new Date();
 	let year = now.getFullYear();
 	let month = now.getMonth();
@@ -1889,19 +1921,28 @@ document.querySelectorAll(".cal-view-btn").forEach((btn) => {
 			el.classList.add("cal-page-cell--today");
 			el.setAttribute("aria-current", "date");
 		}
+		const dateStr = ymd(new Date(year, month, day));
 		const events = SAMPLE_EVENTS.filter(
 			(ev) => ev.day === day && (view === "combined" || ev.type === view),
 		).concat(
 			userEvents
 				.filter((ev) => ev.date === ymd(new Date(year, month, day)) && (view === "combined" || ev.type === view))
 				.sort((a, b) => a.start.localeCompare(b.start)),
-		);
+		).filter((ev) => !isGone(ev, dateStr));
 		if (events.length) {
 			const list = document.createElement("div");
 			list.className = "cal-page-labels";
+			list._events = events;
+			list._date = new Date(year, month, day);
 			events.forEach((ev) => {
 				const chip = document.createElement("div");
 				chip.className = "cal-page-label cal-page-label--" + ev.type;
+				chip._ev = ev;
+				chip._date = list._date;
+				if (isDone(ev, dateStr)) chip.classList.add("is-done");
+				chip.tabIndex = 0;
+				chip.setAttribute("role", "button");
+				chip.setAttribute("aria-label", ev.title + ", " + ev.type + " event. View details, mark done or delete");
 				if (ev.type === "personal") chip.dataset.evColor = colorOf(ev);
 				chip.textContent = ev.title;
 				chip.title =
@@ -1922,6 +1963,9 @@ document.querySelectorAll(".cal-view-btn").forEach((btn) => {
 			if (!over()) return;
 			const more = document.createElement("div");
 			more.className = "cal-page-more";
+			more._list = list;
+			more.tabIndex = 0;
+			more.setAttribute("role", "button");
 			list.appendChild(more);
 			let shown = chips.length;
 			do {
@@ -1965,7 +2009,7 @@ document.querySelectorAll(".cal-view-btn").forEach((btn) => {
 			return new Date(it.when.getFullYear(), it.when.getMonth(), it.when.getDate(), t[0], t[1], it.end ? 0 : 59);
 		};
 		const upcoming = items
-			.filter((it) => (view === "combined" || it.type === view) && endOf(it) >= now)
+			.filter((it) => (view === "combined" || it.type === view) && endOf(it) >= now && !isGone(it, ymd(it.when)))
 			.sort((a, b) => startOf(a) - startOf(b))
 			.slice(0, UPCOMING_MAX);
 		if (!upcoming.length) {
@@ -1989,9 +2033,139 @@ document.querySelectorAll(".cal-view-btn").forEach((btn) => {
 				const badge = el("span", "deadline-badge cal-up-badge--" + it.type, it.type === "official" ? "Official" : "Personal");
 				if (it.type === "personal") dot.dataset.evColor = badge.dataset.evColor = colorOf(it);
 				row.append(dot, info, badge);
+
+				// Click an event to reveal its actions
+				const dateStr = ymd(it.when);
+				const done = isDone(it, dateStr);
+				row.appendChild(buildActions(it, dateStr));
+				if (done) row.classList.add("is-done");
+				row.tabIndex = 0;
+				row.setAttribute("role", "button");
+				row.setAttribute("aria-expanded", "false");
+				const toggleOpen = () => {
+					const open = !row.classList.contains("is-open");
+					upcomingEl.querySelectorAll(".deadline-item.is-open").forEach((r) => {
+						r.classList.remove("is-open");
+						r.setAttribute("aria-expanded", "false");
+					});
+					row.classList.toggle("is-open", open);
+					row.setAttribute("aria-expanded", String(open));
+				};
+				row.addEventListener("click", (e) => {
+					if (!e.target.closest(".cal-up-actions")) toggleOpen();
+				});
+				row.addEventListener("keydown", (e) => {
+					if ((e.key === "Enter" || e.key === " ") && e.target === row) {
+						e.preventDefault();
+						toggleOpen();
+					}
+				});
 				return row;
 			}),
 		);
+	}
+	function afterEventChange(message) {
+		render();
+		window.dispatchEvent(new CustomEvent("cognitia:calendar-events-changed"));
+		if (message) showToast(message);
+	}
+	function toggleDone(ev, dateStr) {
+		const k = evKey(ev, dateStr);
+		const nowDone = !doneSet.has(k);
+		if (nowDone) doneSet.add(k);
+		else doneSet.delete(k);
+		saveSet(DONE_KEY, doneSet);
+		afterEventChange(nowDone ? "Marked as done" : "Marked as not done");
+	}
+	function removeEvent(ev, dateStr) {
+		if (ev.type !== "personal") return; // official events cannot be deleted by students
+		// Match by id for added events; sample events are matched by their composite key
+		if (ev._id) {
+			const i = userEvents.findIndex((x) => x._id === ev._id);
+			if (i > -1) userEvents.splice(i, 1);
+		}
+		goneSet.add(evKey(ev, dateStr));
+		saveSet(GONE_KEY, goneSet);
+		afterEventChange("Event deleted");
+	}
+	// Deletion notice: same message as before, shown as an in-page dialog
+	let confirmModal = null;
+	function confirmDelete(title, onConfirm) {
+		if (!confirmModal) {
+			confirmModal = document.createElement("div");
+			confirmModal.className = "modal";
+			confirmModal.setAttribute("role", "alertdialog");
+			confirmModal.setAttribute("aria-modal", "true");
+			confirmModal.innerHTML =
+				'<div class="modal-content modal-content--sm">' +
+				'<div class="modal-header"><h3>Delete event</h3></div>' +
+				'<div class="modal-body"><p class="cal-confirm-msg"></p></div>' +
+				'<div class="modal-footer"><button class="btn-cancel" type="button" data-act="cancel">Cancel</button>' +
+				'<button class="btn-primary" type="button" data-act="ok">Delete</button></div></div>';
+			document.body.appendChild(confirmModal);
+		}
+		const msg = confirmModal.querySelector(".cal-confirm-msg");
+		const ok = confirmModal.querySelector('[data-act="ok"]');
+		const cancel = confirmModal.querySelector('[data-act="cancel"]');
+		msg.textContent = 'Delete "' + title + '"? This cannot be undone.';
+		const close = () => {
+			confirmModal.classList.remove("active");
+			ok.onclick = cancel.onclick = confirmModal.onclick = null;
+			document.removeEventListener("keydown", onKey, true);
+		};
+		const onKey = (e) => {
+			if (e.key === "Escape") {
+				e.stopPropagation();
+				close();
+			}
+		};
+		ok.onclick = () => {
+			close();
+			onConfirm();
+		};
+		cancel.onclick = close;
+		confirmModal.onclick = (e) => {
+			if (e.target === confirmModal) close();
+		};
+		document.addEventListener("keydown", onKey, true);
+		confirmModal.classList.add("active");
+		cancel.focus();
+	}
+	// Shared Done / Delete buttons: used by the Upcoming list and by the details popup.
+	// Delete shows the deletion notice in an in-page dialog (native confirm() is blocked in some embedded contexts).
+	// onDone runs after the action so the caller can close its popup.
+	function buildActions(ev, dateStr, onDone) {
+		const mkEl = (tag, cls) => {
+			const n = document.createElement(tag);
+			if (cls) n.className = cls;
+			return n;
+		};
+		const actions = mkEl("div", "cal-up-actions");
+		const done = isDone(ev, dateStr);
+		const doneBtn = mkEl("button", "cal-up-btn cal-up-btn--done");
+		doneBtn.type = "button";
+		doneBtn.append(mkEl("i", "fas " + (done ? "fa-undo" : "fa-check")), document.createTextNode(done ? "Mark as not done" : "Mark as done"));
+		doneBtn.addEventListener("click", (e) => {
+			e.stopPropagation();
+			toggleDone(ev, dateStr);
+			if (onDone) onDone();
+		});
+		actions.appendChild(doneBtn);
+		if (ev.type === "personal") {
+			const delBtn = mkEl("button", "cal-up-btn cal-up-btn--delete");
+			delBtn.type = "button";
+			delBtn.append(mkEl("i", "fas fa-trash-alt"), document.createTextNode("Delete"));
+			delBtn.addEventListener("click", (e) => {
+				e.stopPropagation();
+				// One click opens the deletion notice; confirming there deletes everywhere
+				confirmDelete(ev.title, () => {
+					removeEvent(ev, dateStr);
+					if (onDone) onDone();
+				});
+			});
+			actions.appendChild(delBtn);
+		}
+		return actions;
 	}
 	function render() {
 		const today = new Date();
@@ -2031,6 +2205,22 @@ document.querySelectorAll(".cal-view-btn").forEach((btn) => {
 	});
 	// Add Event: temporary in-memory events (lost on reload; no storage or backend yet)
 	const userEvents = [];
+
+	// Shared with the dashboard mini-calendar: events for one "YYYY-MM-DD".
+	window.CognitiaCalendar = {
+		eventsFor(dateKey) {
+			const day = Number(dateKey.slice(8, 10));
+			const sample = SAMPLE_EVENTS.filter((ev) => ev.day === day);
+			const added = userEvents.filter((ev) => ev.date === dateKey);
+			return sample.concat(added).filter((ev) => !isGone(ev, dateKey)).map((ev) => ({
+				type: ev.type,
+				title: ev.title,
+				color: colorOf(ev),
+				start: ev.start || "",
+				end: ev.end || "",
+			}));
+		},
+	};
 	const modal = document.getElementById("eventModal");
 	const form = document.getElementById("eventForm");
 	const addBtn = document.getElementById("calAddEventBtn");
@@ -2114,7 +2304,8 @@ document.querySelectorAll(".cal-view-btn").forEach((btn) => {
 		e.preventDefault();
 		const v = validateEvent();
 		if (!v) return;
-		userEvents.push({ date: v.date, type: v.type, title: v.title, start: v.start, end: v.end, desc: v.desc, color: v.type === "personal" ? v.color : null });
+		userEvents.push({ _id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), date: v.date, type: v.type, title: v.title, start: v.start, end: v.end, desc: v.desc, color: v.type === "personal" ? v.color : null });
+		window.dispatchEvent(new CustomEvent("cognitia:calendar-events-changed"));
 		const [y, m] = v.date.split("-").map(Number);
 		year = y;
 		month = m - 1;
@@ -2123,6 +2314,88 @@ document.querySelectorAll(".cal-view-btn").forEach((btn) => {
 		addBtn.focus();
 		const hidden = view !== "combined" && view !== v.type;
 		showToast(hidden ? "Event added (hidden by the current filter)" : "Event added");
+	});
+
+	// View details: click an event (or "+N more") to open a read-only popup
+	const viewModal = document.createElement("div");
+	viewModal.className = "modal";
+	viewModal.id = "eventViewModal";
+	viewModal.setAttribute("role", "dialog");
+	viewModal.setAttribute("aria-modal", "true");
+	viewModal.setAttribute("aria-labelledby", "eventViewTitle");
+	viewModal.innerHTML =
+		'<div class="modal-content modal-content--sm">' +
+		'<div class="modal-header"><h3 id="eventViewTitle">Event details</h3>' +
+		'<button class="close-btn" type="button" id="eventViewClose" aria-label="Close"><i class="fas fa-times"></i></button></div>' +
+		'<div class="modal-body" id="eventViewBody"></div>' +
+		'<div class="modal-footer"><button class="btn-cancel" type="button" id="eventViewDone">Close</button></div>' +
+		"</div>";
+	document.body.appendChild(viewModal);
+	const viewTitle = document.getElementById("eventViewTitle");
+	const viewBody = document.getElementById("eventViewBody");
+	const viewDone = document.getElementById("eventViewDone");
+	let viewReturnFocus = null;
+	const mk = (tag, cls, text) => {
+		const n = document.createElement(tag);
+		if (cls) n.className = cls;
+		if (text != null) n.textContent = text;
+		return n;
+	};
+	const longDate = (d) =>
+		d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+	function viewRow(label, value, muted) {
+		const row = mk("div", "ev-view-row");
+		row.append(mk("span", "ev-view-label", label), mk("span", "ev-view-value" + (muted ? " ev-view-muted" : ""), value));
+		return row;
+	}
+	function eventBlock(ev, date, showDate) {
+		const block = mk("div", "ev-view-item ev-view-item--" + ev.type);
+		if (ev.type === "personal") block.dataset.evColor = colorOf(ev);
+		const head = mk("div", "ev-view-head");
+		head.append(mk("h4", "ev-view-name", ev.title), mk("span", "ev-view-badge", ev.type === "official" ? "Official" : "Personal"));
+		block.appendChild(head);
+		if (showDate) block.appendChild(viewRow("Date", longDate(date)));
+		block.appendChild(viewRow("Time", ev.start ? fmtTime(ev.start) + " – " + fmtTime(ev.end) : "All day"));
+		block.appendChild(ev.desc ? viewRow("Details", ev.desc) : viewRow("Details", "No description added.", true));
+		// Same Done / Delete actions as the Upcoming list (always visible inside the popup)
+		const actions = buildActions(ev, ymd(date), closeEventView);
+		actions.classList.add("cal-up-actions--popup");
+		block.appendChild(actions);
+		if (isDone(ev, ymd(date))) block.classList.add("is-done");
+		return block;
+	}
+	function openEventView(events, date, trigger) {
+		viewReturnFocus = trigger || null;
+		viewTitle.textContent = events.length > 1 ? longDate(date) : "Event details";
+		viewBody.replaceChildren(...events.map((ev) => eventBlock(ev, date, events.length === 1)));
+		viewModal.classList.add("active");
+		viewDone.focus();
+	}
+	function closeEventView() {
+		viewModal.classList.remove("active");
+		if (viewReturnFocus && viewReturnFocus.isConnected) viewReturnFocus.focus();
+		viewReturnFocus = null;
+	}
+	function openFromGrid(target) {
+		const chip = target.closest(".cal-page-label");
+		if (chip && chip._ev) return openEventView([chip._ev], chip._date, chip);
+		const more = target.closest(".cal-page-more");
+		if (more && more._list) openEventView(more._list._events, more._list._date, more);
+	}
+	grid.addEventListener("click", (e) => openFromGrid(e.target));
+	grid.addEventListener("keydown", (e) => {
+		if ((e.key === "Enter" || e.key === " ") && e.target.matches(".cal-page-label, .cal-page-more")) {
+			e.preventDefault();
+			openFromGrid(e.target);
+		}
+	});
+	document.getElementById("eventViewClose").addEventListener("click", closeEventView);
+	viewDone.addEventListener("click", closeEventView);
+	viewModal.addEventListener("click", (e) => {
+		if (e.target === viewModal) closeEventView();
+	});
+	document.addEventListener("keydown", (e) => {
+		if (e.key === "Escape" && viewModal.classList.contains("active")) closeEventView();
 	});
 	window.addEventListener("resize", fitLabels);
 	render();
