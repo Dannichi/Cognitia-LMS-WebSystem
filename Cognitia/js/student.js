@@ -1762,3 +1762,367 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	loadData();
 });
+
+/* ─── Sidebar log out button + clickable dashboard stat cards (moved from inline <script> in student.html) ─── */
+// Sidebar Log out reuses the existing Account-page sign-out handler
+document
+	.getElementById("sidebarLogoutBtn")
+	?.addEventListener("click", () =>
+		document.getElementById("profileLogoutBtn")?.click(),
+	);
+	// Dashboard stat cards open their page (reuses the sidebar navigation)
+	document.querySelectorAll(".stat-card[data-target]").forEach((card) => {
+		const go = () =>
+			document
+				.querySelector(
+					'.navbar a[data-target="' + card.dataset.target + '"]',
+				)
+				?.click();
+		card.addEventListener("click", go);
+		card.addEventListener("keydown", (e) => {
+			if (e.key === "Enter" || e.key === " ") {
+				e.preventDefault();
+				go();
+			}
+		});
+	});
+
+/* ─── Breadcrumb (rebuilt from the topbar title) (moved from inline <script> in student.html) ─── */
+// Breadcrumb: rebuilt from the (hidden) topbar title whenever it changes
+(function () {
+	const title = document.querySelector(".topbar-title");
+	const list = document.getElementById("breadcrumbList");
+	if (!title || !list) return;
+	const HOME = "Student";
+	function render() {
+		const parts = title.textContent.trim().split(/\s+[\u2013\u2014]\s+/);
+		const page = parts[parts.length - 1] || "Dashboard";
+		list.innerHTML = "";
+		const first = document.createElement("li");
+		const link = document.createElement("button");
+		link.type = "button";
+		link.className = "breadcrumb-link";
+		link.textContent = HOME;
+		link.addEventListener("click", () =>
+			document
+				.querySelector('.navbar a[data-target="dashboard"]')
+				?.click(),
+		);
+		first.appendChild(link);
+		const last = document.createElement("li");
+		const cur = document.createElement("span");
+		cur.setAttribute("aria-current", "page");
+		cur.textContent = page;
+		last.appendChild(cur);
+		list.append(first, last);
+	}
+	new MutationObserver(render).observe(title, {
+		childList: true,
+		characterData: true,
+		subtree: true,
+	});
+	render();
+	// Fallback: label the calendar page if the page script has no title for it
+	document.addEventListener("click", (e) => {
+		if (!e.target.closest('[data-target="calendar"]')) return;
+		setTimeout(() => {
+			if (!/calendar/i.test(title.textContent))
+				title.textContent = HOME + " \u2013 My Calendar";
+		}, 0);
+	});
+})();
+
+/* ─── My Calendar: view-button highlight (moved from inline <script> in student.html) ─── */
+// My Calendar: view buttons only switch their highlight (no filtering yet)
+document.querySelectorAll(".cal-view-btn").forEach((btn) => {
+	btn.addEventListener("click", () => {
+		document.querySelectorAll(".cal-view-btn").forEach((b) => {
+			b.classList.toggle("active", b === btn);
+			b.setAttribute("aria-pressed", String(b === btn));
+		});
+	});
+});
+
+/* ─── My Calendar: month grid, Upcoming Events and Add Event form (moved from inline <script> in student.html) ─── */
+// My Calendar: month grid with temporary sample events (no event creation yet)
+(function () {
+	const grid = document.getElementById("calPageGrid");
+	const label = document.getElementById("calPageMonthLabel");
+	const prev = document.getElementById("calPagePrev");
+	const next = document.getElementById("calPageNext");
+	if (!grid || !label || !prev || !next) return;
+	// Sample data only: repeats every month. Replace with real events later.
+	const SAMPLE_EVENTS = [
+		{ day: 5, type: "official", title: "Enrollment period" },
+		{ day: 9, type: "official", title: "Midterm exams" },
+		{ day: 15, type: "official", title: "Holiday: no classes" },
+		{ day: 22, type: "official", title: "Grades release" },
+		{ day: 28, type: "official", title: "School event" },
+		{ day: 4, type: "personal", title: "Personal reminder" },
+		{ day: 9, type: "personal", title: "Personal appointment" },
+		{ day: 14, type: "personal", title: "Personal task" },
+		{ day: 18, type: "personal", title: "Personal reminder" },
+		{ day: 25, type: "personal", title: "Personal task" },
+	];
+	// Personal events pick from this palette (no reds: burgundy is reserved for Official events).
+	const PERSONAL_COLORS = ["blue", "teal", "green", "amber", "purple", "slate"];
+	const DEFAULT_PERSONAL_COLOR = "blue";
+	const colorOf = (ev) =>
+		ev.type !== "personal" ? null : PERSONAL_COLORS.includes(ev.color) ? ev.color : DEFAULT_PERSONAL_COLOR;
+	const now = new Date();
+	let year = now.getFullYear();
+	let month = now.getMonth();
+	let view = "combined"; // combined | official | personal
+	function cell(day, isToday) {
+		const el = document.createElement("div");
+		el.className = "cal-page-cell";
+		if (!day) {
+			el.classList.add("cal-page-cell--empty");
+			return el;
+		}
+		const num = document.createElement("span");
+		num.className = "cal-page-num";
+		num.textContent = day;
+		el.appendChild(num);
+		if (isToday) {
+			el.classList.add("cal-page-cell--today");
+			el.setAttribute("aria-current", "date");
+		}
+		const events = SAMPLE_EVENTS.filter(
+			(ev) => ev.day === day && (view === "combined" || ev.type === view),
+		).concat(
+			userEvents
+				.filter((ev) => ev.date === ymd(new Date(year, month, day)) && (view === "combined" || ev.type === view))
+				.sort((a, b) => a.start.localeCompare(b.start)),
+		);
+		if (events.length) {
+			const list = document.createElement("div");
+			list.className = "cal-page-labels";
+			events.forEach((ev) => {
+				const chip = document.createElement("div");
+				chip.className = "cal-page-label cal-page-label--" + ev.type;
+				if (ev.type === "personal") chip.dataset.evColor = colorOf(ev);
+				chip.textContent = ev.title;
+				chip.title =
+					ev.title + " (" + ev.type + ")" + (ev.start ? "\n" + ev.start + "–" + ev.end : "") + (ev.desc ? "\n" + ev.desc : "");
+				list.appendChild(chip);
+			});
+			el.appendChild(list);
+		}
+		return el;
+	}
+	// Show only the labels that fit in each cell; the rest become "+N more".
+	function fitLabels() {
+		grid.querySelectorAll(".cal-page-labels").forEach((list) => {
+			const chips = Array.from(list.querySelectorAll(".cal-page-label:not(.cal-page-more)"));
+			list.querySelectorAll(".cal-page-more").forEach((n) => n.remove());
+			chips.forEach((c) => (c.hidden = false));
+			const over = () => list.scrollHeight > list.clientHeight + 1;
+			if (!over()) return;
+			const more = document.createElement("div");
+			more.className = "cal-page-more";
+			list.appendChild(more);
+			let shown = chips.length;
+			do {
+				shown--;
+				chips[shown].hidden = true;
+				more.textContent = "+" + (chips.length - shown) + " more";
+				more.title = chips.slice(shown).map((c) => c.title).join("\n");
+			} while (shown > 0 && over());
+		});
+	}
+	// Upcoming Events card: same data as the grid (sample + added events), filtered by view
+	const upcomingEl = document.getElementById("cal-upcoming-events");
+	const upcomingEmpty = upcomingEl ? upcomingEl.innerHTML : "";
+	const UPCOMING_MAX = 6;
+	function fmtTime(t) {
+		const [h, m] = t.split(":").map(Number);
+		return new Date(2000, 0, 1, h, m).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+	}
+	function renderUpcoming() {
+		if (!upcomingEl) return;
+		const now = new Date();
+		const items = [];
+		// Sample events repeat monthly: look at this month and the next two
+		for (let k = 0; k < 3; k++) {
+			const base = new Date(now.getFullYear(), now.getMonth() + k, 1);
+			SAMPLE_EVENTS.forEach((ev) => {
+				items.push({ ...ev, when: new Date(base.getFullYear(), base.getMonth(), ev.day) });
+			});
+		}
+		userEvents.forEach((ev) => {
+			const [y, m, d] = ev.date.split("-").map(Number);
+			items.push({ ...ev, when: new Date(y, m - 1, d) });
+		});
+		const startOf = (it) => {
+			const t = it.start ? it.start.split(":").map(Number) : [0, 0];
+			return new Date(it.when.getFullYear(), it.when.getMonth(), it.when.getDate(), t[0], t[1]);
+		};
+		const endOf = (it) => {
+			// All-day events last until the end of their date
+			const t = it.end ? it.end.split(":").map(Number) : [23, 59];
+			return new Date(it.when.getFullYear(), it.when.getMonth(), it.when.getDate(), t[0], t[1], it.end ? 0 : 59);
+		};
+		const upcoming = items
+			.filter((it) => (view === "combined" || it.type === view) && endOf(it) >= now)
+			.sort((a, b) => startOf(a) - startOf(b))
+			.slice(0, UPCOMING_MAX);
+		if (!upcoming.length) {
+			upcomingEl.innerHTML = upcomingEmpty;
+			return;
+		}
+		const el = (tag, cls, text) => {
+			const n = document.createElement(tag);
+			if (cls) n.className = cls;
+			if (text != null) n.textContent = text;
+			return n;
+		};
+		upcomingEl.replaceChildren(
+			...upcoming.map((it) => {
+				const date = it.when.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+				const time = it.start ? fmtTime(it.start) + " – " + fmtTime(it.end) : "All day";
+				const row = el("div", "deadline-item");
+				const info = el("div", "deadline-info");
+				info.append(el("div", "deadline-title", it.title), el("div", "deadline-sub", date + " · " + time));
+				const dot = el("div", "deadline-dot cal-up-dot--" + it.type);
+				const badge = el("span", "deadline-badge cal-up-badge--" + it.type, it.type === "official" ? "Official" : "Personal");
+				if (it.type === "personal") dot.dataset.evColor = badge.dataset.evColor = colorOf(it);
+				row.append(dot, info, badge);
+				return row;
+			}),
+		);
+	}
+	function render() {
+		const today = new Date();
+		const lead = new Date(year, month, 1).getDay(); // 0 = Sunday
+		const days = new Date(year, month + 1, 0).getDate(); // handles leap years
+		const total = Math.ceil((lead + days) / 7) * 7;
+		const inThisMonth =
+			today.getFullYear() === year && today.getMonth() === month;
+		label.textContent = new Date(year, month, 1).toLocaleDateString("en-US", {
+			month: "long",
+			year: "numeric",
+		});
+		grid.replaceChildren();
+		for (let i = 0; i < total; i++) {
+			const day = i - lead + 1;
+			const valid = day >= 1 && day <= days;
+			grid.appendChild(
+				cell(valid ? day : 0, valid && inThisMonth && day === today.getDate()),
+			);
+		}
+		fitLabels();
+		renderUpcoming();
+	}
+	function shift(delta) {
+		const d = new Date(year, month + delta, 1);
+		year = d.getFullYear();
+		month = d.getMonth();
+		render();
+	}
+	prev.addEventListener("click", () => shift(-1));
+	next.addEventListener("click", () => shift(1));
+	document.querySelectorAll(".cal-view-btn").forEach((btn) => {
+		btn.addEventListener("click", () => {
+			view = btn.dataset.view || "combined";
+			render();
+		});
+	});
+	// Add Event: temporary in-memory events (lost on reload; no storage or backend yet)
+	const userEvents = [];
+	const modal = document.getElementById("eventModal");
+	const form = document.getElementById("eventForm");
+	const addBtn = document.getElementById("calAddEventBtn");
+	const ymd = (d) =>
+		d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+	const field = (id) => document.getElementById("ev-" + id);
+	const setErr = (id, msg) => {
+	
+		document.getElementById("ev-" + id + "Err").textContent = msg || "";
+		const input = field(id);
+		if (msg) input.setAttribute("aria-invalid", "true");
+		else input.removeAttribute("aria-invalid");
+	};
+	const colorGroup = document.getElementById("ev-color");
+	const colorLocked = document.getElementById("ev-colorLocked");
+	// Colour picker is for Personal events only; Official events show a fixed-burgundy note instead.
+	function syncColorField() {
+		const t = field("type").value;
+		colorGroup.hidden = t !== "personal";
+		if (colorLocked) colorLocked.hidden = t !== "official";
+	}
+	field("type").addEventListener("change", syncColorField);
+	function openEventModal() {
+		form.reset();
+		["title", "date", "start", "end", "type", "color"].forEach((k) => setErr(k, ""));
+		field("date").value = ymd(new Date());
+		syncColorField();
+		modal.classList.add("active");
+		setTimeout(() => field("title").focus(), 50);
+	}
+	function closeEventModal() {
+		modal.classList.remove("active");
+		addBtn.focus();
+	}
+	function validateEvent() {
+		const v = {
+			title: field("title").value.trim(),
+			date: field("date").value,
+			start: field("start").value,
+			end: field("end").value,
+			type: field("type").value,
+			color: (form.querySelector('input[name="ev-color"]:checked') || {}).value || "",
+			desc: field("desc").value.trim(),
+		};
+		const e = {};
+		if (!v.title) e.title = "Please enter a title.";
+		if (!v.date) e.date = "Please choose a date.";
+		if (!v.start) e.start = "Please set a start time.";
+		if (!v.end) e.end = "Please set an end time.";
+		else if (v.start && v.end <= v.start) e.end = "End time must be after start time.";
+		if (v.type !== "personal" && v.type !== "official") e.type = "Please choose an event type.";
+		if (v.type === "personal" && !PERSONAL_COLORS.includes(v.color)) e.color = "Please choose a color.";
+		["title", "date", "start", "end", "type", "color"].forEach((k) => setErr(k, e[k]));
+		const first = Object.keys(e)[0];
+		if (first) (first === "color" ? form.querySelector('input[name="ev-color"]') : field(first)).focus();
+		return first ? null : v;
+	}
+	function showToast(msg) {
+		const t = document.getElementById("toast");
+		const m = document.getElementById("toastMsg");
+		if (!t || !m) return;
+		m.textContent = msg;
+		t.classList.add("show");
+		setTimeout(() => t.classList.remove("show"), 3200);
+	}
+	// Clear a field's error as soon as it is edited
+	["title", "date", "start", "end", "type", "color"].forEach((k) => {
+		field(k).addEventListener("input", () => setErr(k, ""));
+		field(k).addEventListener("change", () => setErr(k, ""));
+	});
+	addBtn.addEventListener("click", openEventModal);
+	document.getElementById("eventCloseBtn").addEventListener("click", closeEventModal);
+	document.getElementById("eventCancelBtn").addEventListener("click", closeEventModal);
+	modal.addEventListener("click", (e) => {
+		if (e.target === modal) closeEventModal();
+	});
+	document.addEventListener("keydown", (e) => {
+		if (e.key === "Escape" && modal.classList.contains("active")) closeEventModal();
+	});
+	form.addEventListener("submit", (e) => {
+		e.preventDefault();
+		const v = validateEvent();
+		if (!v) return;
+		userEvents.push({ date: v.date, type: v.type, title: v.title, start: v.start, end: v.end, desc: v.desc, color: v.type === "personal" ? v.color : null });
+		const [y, m] = v.date.split("-").map(Number);
+		year = y;
+		month = m - 1;
+		render();
+		modal.classList.remove("active");
+		addBtn.focus();
+		const hidden = view !== "combined" && view !== v.type;
+		showToast(hidden ? "Event added (hidden by the current filter)" : "Event added");
+	});
+	window.addEventListener("resize", fitLabels);
+	render();
+})();

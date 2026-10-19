@@ -4798,3 +4798,669 @@ body.sidebar-transitioning #courses-grid {
 		font-size: 13px;
 	}
 }
+
+/* Restored Admin breadcrumb navigation */
+/* Breadcrumbs , muted, clickable parents › burgundy-tinted current page */
+.breadcrumb {
+	flex: 1 1 auto;
+	min-width: 0; /* lets the trail shrink/truncate instead of pushing the actions */
+}
+.breadcrumb ol {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	min-width: 0;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	font-size: 15px;
+	font-weight: 500;
+	line-height: 1;
+	color: var(--text-3);
+}
+.breadcrumb li {
+	display: flex;
+	align-items: center;
+	flex-shrink: 0;
+	gap: 2px;
+	white-space: nowrap;
+}
+.breadcrumb li:last-child {
+	flex-shrink: 1;
+	min-width: 0; /* the current page is the one that truncates */
+}
+/* Chevron separator */
+.breadcrumb li + li::before {
+	content: "";
+	width: 13px;
+	height: 13px;
+	flex-shrink: 0;
+	background: var(--text-3);
+	opacity: 0.45;
+	-webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 5l7 7-7 7'/%3E%3C/svg%3E")
+		center / contain no-repeat;
+	mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 5l7 7-7 7'/%3E%3C/svg%3E")
+		center / contain no-repeat;
+}
+/* Shared chip box for every crumb */
+.breadcrumb li > * {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	padding: 8px 12px;
+	border-radius: 8px;
+}
+.breadcrumb-link {
+	background: none;
+	border: 0;
+	margin: 0;
+	font: inherit;
+	color: inherit;
+	cursor: pointer;
+	transition:
+		background var(--t-fast) var(--ease),
+		color var(--t-fast) var(--ease),
+		box-shadow var(--t-fast) var(--ease);
+}
+.breadcrumb-link:hover {
+	background: var(--brand-light);
+	color: var(--brand);
+}
+.breadcrumb-link:focus-visible {
+	outline: none;
+	background: var(--brand-light);
+	color: var(--brand);
+	box-shadow: 0 0 0 3px var(--brand-glow);
+}
+/* Small home icon on the first crumb */
+.breadcrumb li:first-child > .breadcrumb-link::before {
+	content: "";
+	width: 16px;
+	height: 16px;
+	flex-shrink: 0;
+	background: currentColor;
+	-webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z'/%3E%3C/svg%3E")
+		center / contain no-repeat;
+	mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z'/%3E%3C/svg%3E")
+		center / contain no-repeat;
+}
+/* Current page */
+.breadcrumb li > [aria-current="page"] {
+	display: block; /* block so text-overflow can truncate */
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	font-weight: 600;
+	color: var(--brand);
+	background: var(--brand-light);
+	box-shadow: inset 0 0 0 1px rgba(139, 26, 26, 0.12);
+}
+@media (max-width: 640px) {
+	/* tight widths: first crumb collapses to the home icon */
+	.breadcrumb li:first-child > .breadcrumb-link {
+		font-size: 0;
+		gap: 0;
+	}
+	.breadcrumb li > * {
+		padding: 7px 8px;
+	}
+}
+
+/* Breadcrumb replaces the old topbar title; the h1 stays in the page for screen readers and existing scripts */
+.visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+.topbar-actions {
+	flex-shrink: 0; /* breadcrumb truncates, controls never squash */
+}
+
+/* ─── MY CALENDAR PAGE (layout only) ───────────────── */
+.cal-views {
+	display: inline-flex;
+	gap: 2px;
+	padding: 3px;
+	margin-bottom: var(--sp-md);
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-md);
+}
+.cal-view-btn {
+	padding: 7px 18px;
+	border: 1px solid transparent;
+	border-radius: var(--r-sm);
+	background: none;
+	font: inherit;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--text-3);
+	cursor: pointer;
+	transition:
+		background var(--t-fast),
+		color var(--t-fast),
+		border-color var(--t-fast);
+}
+.cal-view-btn:hover {
+	background: var(--surface-2);
+	color: var(--text-1);
+}
+.cal-view-btn.active {
+	background: var(--brand-light);
+	color: var(--brand);
+	border-color: var(--brand-mid);
+}
+.cal-view-btn:focus-visible {
+	outline: none;
+	box-shadow: var(--ring);
+}
+.cal-page-layout {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 320px;
+	gap: var(--sp-lg);
+	align-items: start;
+}
+#calendar .calendar-card {
+	height: auto;
+	padding: var(--sp-lg);
+}
+#calendar .calendar-header {
+	align-items: center;
+	margin-bottom: var(--sp-md);
+}
+#calendar .calendar-header .card-title {
+	border: 0;
+	margin: 0;
+	padding: 0;
+}
+#calendar .calendar-nav {
+	gap: 8px;
+}
+#calendar .cal-nav-btn {
+	width: 30px;
+	height: 30px;
+	font-size: 11px;
+}
+#calendar .cal-month-label {
+	font-size: 15px;
+	min-width: 130px;
+}
+#calendar .cal-weekdays span {
+	font-size: 11px;
+	padding: 8px 0;
+}
+.cal-page-grid {
+	display: grid;
+	grid-template-columns: repeat(7, minmax(0, 1fr));
+	gap: 1px;
+	background: var(--border);
+	border: 1px solid var(--border);
+	border-radius: var(--r-md);
+	overflow: hidden;
+}
+.cal-page-cell {
+	min-height: 92px;
+	padding: 8px 10px;
+	background: var(--surface);
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--text-2);
+}
+.cal-page-cell--empty {
+	background: var(--surface-2);
+}
+@media (max-width: 1100px) {
+	.cal-page-layout {
+		grid-template-columns: 1fr;
+	}
+}
+@media (max-width: 600px) {
+	.cal-page-cell {
+		min-height: 56px;
+		padding: 5px 6px;
+		font-size: 12px;
+	}
+	#calendar .calendar-card {
+		padding: var(--sp-md);
+	}
+}
+
+/* My Calendar: day number + today highlight */
+.cal-page-num {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 24px;
+	height: 24px;
+	padding: 0 4px;
+	border-radius: 99px;
+}
+.cal-page-cell--today .cal-page-num {
+	background: var(--brand);
+	color: #fff;
+	box-shadow: 0 2px 8px rgba(139, 26, 26, 0.3);
+}
+
+/* My Calendar: event markers (filled = official, outlined = personal, same as the legend) */
+.cal-page-marks {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	margin-top: 6px;
+	padding-left: 4px;
+}
+.cal-page-mark {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	flex-shrink: 0;
+	box-sizing: border-box;
+}
+.cal-page-mark--official {
+	background: var(--brand);
+}
+.cal-page-mark--personal {
+	background: transparent;
+	border: 1.5px solid var(--brand);
+}
+
+/* ─── MY CALENDAR: EVENT LABELS ──────────── */
+.cal-page-cell {
+	display: flex;
+	flex-direction: column;
+	height: 116px;
+	padding: 6px;
+	min-height: 0;
+	min-width: 0;
+	overflow: hidden;
+}
+.cal-page-labels {
+	flex: 1;
+	min-height: 0;
+	min-width: 0;
+	margin-top: 4px;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	overflow: hidden;
+}
+.cal-page-label,
+.cal-page-more {
+	flex: 0 0 auto;
+	box-sizing: border-box;
+	min-width: 0;
+	max-width: 100%;
+	padding: 1px 6px;
+	border-radius: 4px;
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 16px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.cal-page-label[hidden] {
+	display: none;
+}
+.cal-page-label--official {
+	background: var(--brand-mid);
+	color: var(--text-1);
+	border-left: 3px solid var(--brand);
+}
+.cal-page-label--personal {
+	background: var(--evc-bg, var(--blue-bg));
+	color: var(--evc-fg, var(--blue-fg));
+	border-left: 3px solid var(--evc, var(--blue-fg));
+}
+.cal-page-more {
+	padding-left: 3px;
+	color: var(--text-3);
+	font-weight: 700;
+}
+.cal-legend-dot--official {
+	background: var(--brand);
+}
+.cal-legend-dot--personal {
+	background: var(--blue-fg);
+}
+@media (max-width: 600px) {
+	.cal-page-cell {
+		height: 88px;
+		padding: 4px 2px;
+	}
+	.cal-page-labels {
+		gap: 1px;
+		margin-top: 2px;
+	}
+	.cal-page-label,
+	.cal-page-more {
+		padding: 0 3px;
+		font-size: 9px;
+		line-height: 13px;
+		border-radius: 3px;
+	}
+	.cal-page-label--official,
+	.cal-page-label--personal {
+		border-left-width: 2px;
+	}
+}
+
+/* ─── MY CALENDAR: ADD EVENT FORM ────────── */
+.cal-event-times {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 12px;
+}
+.cal-event-times .form-group {
+	min-width: 0;
+}
+#eventForm .form-group input[aria-invalid="true"],
+#eventForm .form-group select[aria-invalid="true"] {
+	border-color: var(--red-fg);
+}
+#eventForm .form-group textarea {
+	resize: vertical;
+}
+#eventForm select:disabled {
+	opacity: 0.75;
+	cursor: not-allowed;
+}
+@media (max-width: 600px) {
+	#eventModal {
+		align-items: flex-end;
+		padding: 12px;
+	}
+	#eventForm .modal-body {
+		padding: 16px;
+	}
+}
+
+/* ─── MY CALENDAR: UPCOMING EVENTS ───────── */
+.cal-up-dot--official {
+	background: var(--brand);
+}
+.cal-up-dot--personal {
+	background: var(--evc, var(--blue-fg));
+}
+.deadline-badge.cal-up-badge--official {
+	background: var(--brand-mid);
+	color: var(--text-1);
+}
+.deadline-badge.cal-up-badge--personal {
+	background: var(--evc-bg, var(--blue-bg));
+	color: var(--evc-fg, var(--blue-fg));
+}
+#cal-upcoming-events .deadline-sub {
+	overflow-wrap: anywhere;
+}
+
+/* ─── MY CALENDAR: PERSONAL EVENT COLORS ─────
+   Palette for Personal events only (no reds; burgundy stays reserved for Official).
+   --evc = accent (border, dot, swatch), --evc-bg / --evc-fg = label & badge tint. */
+[data-ev-color="blue"] {
+	--evc: var(--blue-fg);
+	--evc-bg: var(--blue-bg);
+	--evc-fg: var(--blue-fg);
+}
+[data-ev-color="teal"] {
+	--evc: #0f766e;
+	--evc-bg: #d3f3ee;
+	--evc-fg: #0b524c;
+}
+[data-ev-color="green"] {
+	--evc: #15803d;
+	--evc-bg: var(--green-bg);
+	--evc-fg: var(--green-fg);
+}
+[data-ev-color="amber"] {
+	--evc: #ca8a04;
+	--evc-bg: var(--amber-bg);
+	--evc-fg: var(--amber-fg);
+}
+[data-ev-color="purple"] {
+	--evc: #6d28d9;
+	--evc-bg: var(--purple-bg);
+	--evc-fg: var(--purple-fg);
+}
+[data-ev-color="slate"] {
+	--evc: #475569;
+	--evc-bg: #e2e8f0;
+	--evc-fg: #334155;
+}
+html[data-theme="dark"] [data-ev-color="blue"],
+html[data-theme="dark"] [data-ev-color="green"],
+html[data-theme="dark"] [data-ev-color="amber"],
+html[data-theme="dark"] [data-ev-color="purple"] {
+	--evc: var(--evc-fg);
+}
+html[data-theme="dark"] [data-ev-color="teal"] {
+	--evc: #7fddd4;
+	--evc-bg: #0f2f2d;
+	--evc-fg: #7fddd4;
+}
+html[data-theme="dark"] [data-ev-color="slate"] {
+	--evc: #cbd5e1;
+	--evc-bg: #1e293b;
+	--evc-fg: #cbd5e1;
+}
+
+/* Add Event: color picker */
+#eventForm .ev-colors {
+	border: 0;
+	margin: 0;
+	padding: 0;
+	min-width: 0;
+}
+#eventForm .ev-colors[hidden],
+#eventForm .ev-color-locked[hidden] {
+	display: none;
+}
+#eventForm .ev-colors legend {
+	padding: 0;
+	margin-bottom: 8px;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--text-2);
+	letter-spacing: 0.01em;
+}
+.ev-swatches {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	padding: 4px 4px 6px;
+}
+.ev-swatch {
+	position: relative;
+	display: inline-flex;
+	width: 32px;
+	height: 32px;
+	cursor: pointer;
+}
+#eventForm .ev-swatch input {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	opacity: 0;
+	cursor: pointer;
+}
+.ev-swatch-dot {
+	position: relative;
+	width: 100%;
+	height: 100%;
+	border-radius: 50%;
+	background: var(--evc);
+	transition:
+		box-shadow var(--t-fast),
+		transform var(--t-fast);
+}
+.ev-swatch:hover .ev-swatch-dot {
+	transform: scale(1.08);
+}
+.ev-swatch input:checked + .ev-swatch-dot {
+	box-shadow:
+		0 0 0 2px var(--surface),
+		0 0 0 4px var(--evc);
+}
+.ev-swatch-dot::after {
+	content: "";
+	position: absolute;
+	left: 50%;
+	top: 46%;
+	width: 6px;
+	height: 11px;
+	border: solid var(--surface);
+	border-width: 0 2.5px 2.5px 0;
+	transform: translate(-50%, -50%) rotate(45deg);
+	opacity: 0;
+}
+.ev-swatch input:checked + .ev-swatch-dot::after {
+	opacity: 1;
+}
+.ev-swatch input:focus-visible + .ev-swatch-dot {
+	outline: 2px solid var(--brand);
+	outline-offset: 5px;
+}
+#eventForm .ev-colors[aria-invalid="true"] .ev-swatches {
+	outline: 1px solid var(--red-fg);
+	border-radius: var(--r-sm);
+}
+#eventForm .ev-color-locked {
+	flex-direction: row;
+	align-items: center;
+	gap: 10px;
+}
+.ev-lock-dot {
+	width: 14px;
+	height: 14px;
+	border-radius: 50%;
+	flex-shrink: 0;
+	background: var(--brand);
+}
+@media (max-width: 600px) {
+	.ev-swatches {
+		gap: 14px;
+	}
+	.ev-swatch {
+		width: 36px;
+		height: 36px;
+	}
+}
+
+/* ─── PAGE CHROME (moved from inline <style> in professor.html) ─── */
+/* Sidebar log out button (matches the admin layout) */
+.sidebar-bottom {
+	display: flex;
+	align-items: center;
+}
+.sidebar-bottom .sidebar-profile-row {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: nowrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	width: 100%;
+}
+.sidebar-bottom .user-info {
+	flex: 1 1 auto;
+	width: auto;
+	min-width: 0;
+}
+.sidebar-bottom .logout-btn {
+	flex-shrink: 0;
+	margin-left: auto;
+	width: 36px;
+	height: 36px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border: 0;
+	border-radius: 10px;
+	background: rgba(255, 255, 255, 0.12);
+	color: #fff;
+	cursor: pointer;
+	transition:
+		background 0.25s ease,
+		transform 0.25s ease;
+}
+.sidebar-bottom .logout-btn:hover,
+.sidebar-bottom .logout-btn:focus-visible {
+	background: rgba(255, 255, 255, 0.24);
+	transform: translateY(-1px);
+}
+/* Clickable dashboard stat cards: hover arrow + smooth transitions (same as admin) */
+.stat-card[data-target] {
+	position: relative;
+	cursor: pointer;
+	transition:
+		transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+		box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.stat-card[data-target] .stat-go {
+	position: absolute;
+	top: 14px;
+	right: 16px;
+	width: 30px;
+	height: 30px;
+	display: grid;
+	place-items: center;
+	border: 1px solid var(--brand-mid);
+	border-radius: 50%;
+	background: var(--brand-light);
+	color: var(--brand);
+	font-size: 11px;
+	line-height: 1;
+	opacity: 0.88;
+	transform: none;
+	transition:
+		opacity 0.4s ease,
+		transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+	pointer-events: none;
+}
+.stat-card[data-target]:hover,
+.stat-card[data-target]:focus-visible {
+	transform: translateY(-2px);
+	box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+.stat-card[data-target]:hover .stat-go,
+.stat-card[data-target]:focus-visible .stat-go {
+	opacity: 1;
+	transform: scale(1.04);
+}
+.stat-card[data-target]:active {
+	transform: translateY(0) scale(0.985);
+	transition-duration: 0.15s;
+}
+/* Soft fade-in when a page opens (card click or sidebar) */
+.page.active {
+	animation: pageFadeIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes pageFadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.stat-card[data-target],
+	.stat-card[data-target] .stat-go {
+		transition: none;
+	}
+	.page.active {
+		animation: none;
+	}
+}

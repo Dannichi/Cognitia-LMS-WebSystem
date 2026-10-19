@@ -12,107 +12,6 @@
 			rel="stylesheet"
 			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
 		/>
-		<style>
-			/* Sidebar log out button (matches the admin layout) */
-			.sidebar-bottom {
-				display: flex;
-				align-items: center;
-			}
-			.sidebar-bottom .sidebar-profile-row {
-				display: flex;
-				flex-direction: row;
-				flex-wrap: nowrap;
-				align-items: center;
-				justify-content: space-between;
-				gap: 8px;
-				width: 100%;
-			}
-			.sidebar-bottom .user-info {
-				flex: 1 1 auto;
-				width: auto;
-				min-width: 0;
-			}
-			.sidebar-bottom .logout-btn {
-				flex-shrink: 0;
-				margin-left: auto;
-				width: 36px;
-				height: 36px;
-				display: inline-flex;
-				align-items: center;
-				justify-content: center;
-				border: 0;
-				border-radius: 10px;
-				background: rgba(255, 255, 255, 0.12);
-				color: #fff;
-				cursor: pointer;
-				transition:
-					background 0.25s ease,
-					transform 0.25s ease;
-			}
-			.sidebar-bottom .logout-btn:hover,
-			.sidebar-bottom .logout-btn:focus-visible {
-				background: rgba(255, 255, 255, 0.24);
-				transform: translateY(-1px);
-			}
-			/* Clickable dashboard stat cards: hover arrow + smooth transitions (same as admin) */
-			.stat-card[data-target] {
-				position: relative;
-				cursor: pointer;
-				transition:
-					transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
-					box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1);
-			}
-			.stat-card[data-target] .stat-go {
-				position: absolute;
-				top: 14px;
-				right: 16px;
-				font-size: 12px;
-				line-height: 1;
-				opacity: 0;
-				transform: translate(-6px, 6px);
-				transition:
-					opacity 0.4s ease,
-					transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-				pointer-events: none;
-			}
-			.stat-card[data-target]:hover,
-			.stat-card[data-target]:focus-visible {
-				transform: translateY(-2px);
-				box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-			}
-			.stat-card[data-target]:hover .stat-go,
-			.stat-card[data-target]:focus-visible .stat-go {
-				opacity: 0.55;
-				transform: translate(0, 0);
-			}
-			.stat-card[data-target]:active {
-				transform: translateY(0) scale(0.985);
-				transition-duration: 0.15s;
-			}
-			/* Soft fade-in when a page opens (card click or sidebar) */
-			.page.active {
-				animation: pageFadeIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
-			}
-			@keyframes pageFadeIn {
-				from {
-					opacity: 0;
-					transform: translateY(10px);
-				}
-				to {
-					opacity: 1;
-					transform: none;
-				}
-			}
-			@media (prefers-reduced-motion: reduce) {
-				.stat-card[data-target],
-				.stat-card[data-target] .stat-go {
-					transition: none;
-				}
-				.page.active {
-					animation: none;
-				}
-			}
-		</style>
 	</head>
 	<body data-role="professor">
 		<header class="mobile-header" id="mobileHeader">
@@ -189,6 +88,12 @@
 							>
 						</li>
 						<li>
+							<a href="#" data-target="calendar"
+								><i class="fas fa-calendar-alt"></i
+								><span class="nav-text">My Calendar</span></a
+							>
+						</li>
+						<li>
 							<a href="#" data-target="profile"
 								><i class="fas fa-user-circle"></i
 								><span class="nav-text">Account</span></a
@@ -220,7 +125,13 @@
 
 			<!-- ─── TOP BAR ─── -->
 			<header class="topbar" id="topbar">
-				<h1 class="topbar-title">Professor – Dashboard</h1>
+				<nav class="breadcrumb" id="breadcrumb" aria-label="Breadcrumb">
+					<ol id="breadcrumbList">
+						<li><button class="breadcrumb-link" type="button">Professor</button></li>
+						<li><span aria-current="page">Dashboard</span></li>
+					</ol>
+				</nav>
+				<h1 class="topbar-title visually-hidden">Professor – Dashboard</h1>
 				<div class="topbar-actions">
 					<div class="topbar-dd" id="notifDropdown">
 						<button
@@ -702,6 +613,74 @@
 					</div>
 				</section>
 
+				<!-- MY CALENDAR (layout only) -->
+				<section id="calendar" class="page">
+					<div class="page-header">
+						<div>
+							<h2>My Calendar</h2>
+							<p class="page-sub">Your schedule, deadlines &amp; events</p>
+						</div>
+						<button class="btn-add" type="button" id="calAddEventBtn">
+							<i class="fas fa-plus"></i> Add Event
+						</button>
+					</div>
+					<div class="cal-views" role="group" aria-label="Calendar view">
+						<button class="cal-view-btn active" type="button" data-view="combined" aria-pressed="true">Combined</button>
+						<button class="cal-view-btn" type="button" data-view="official" aria-pressed="false">Official</button>
+						<button class="cal-view-btn" type="button" data-view="personal" aria-pressed="false">Personal</button>
+					</div>
+					<div class="cal-page-layout">
+						<div class="card calendar-card">
+							<div class="calendar-header">
+								<div class="calendar-title-row">
+									<h3 class="card-title"><i class="fas fa-calendar-alt"></i> Calendar</h3>
+									<p class="calendar-hint">Official &amp; personal events</p>
+								</div>
+								<div class="calendar-nav">
+									<button
+										class="cal-nav-btn"
+										id="calPagePrev"
+										type="button"
+										aria-label="Previous month"
+									>
+										<i class="fas fa-chevron-left"></i>
+									</button>
+									<span class="cal-month-label" id="calPageMonthLabel" aria-live="polite"></span>
+									<button
+										class="cal-nav-btn"
+										id="calPageNext"
+										type="button"
+										aria-label="Next month"
+									>
+										<i class="fas fa-chevron-right"></i>
+									</button>
+								</div>
+							</div>
+							<div class="calendar-grid-wrap">
+								<div class="cal-weekdays">
+									<span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+								</div>
+								<div class="cal-page-grid" id="calPageGrid"></div>
+							</div>
+							<div class="cal-legend">
+								<span class="cal-legend-dot cal-legend-dot--official"></span><span>Official</span>
+								<span class="cal-legend-dot cal-legend-dot--personal"></span><span>Personal</span>
+							</div>
+						</div>
+						<div class="card">
+							<h3 class="card-title">
+								<i class="fas fa-clock"></i> Upcoming Events
+							</h3>
+							<div class="upcoming-list" id="cal-upcoming-events">
+								<div class="empty-state">
+									<i class="fas fa-calendar-check"></i>
+									<p>No upcoming events.</p>
+								</div>
+							</div>
+						</div>
+					</div>
+				</section>
+
 				<!-- PROFILE -->
 				<section id="profile" class="page">
 					<div class="page-header">
@@ -862,6 +841,9 @@
 				</button>
 				<button class="mobile-more-item" data-target="quizzes" role="menuitem">
 					<i class="fas fa-question-circle"></i><span>Quizzes</span>
+				</button>
+				<button class="mobile-more-item" data-target="calendar" role="menuitem">
+					<i class="fas fa-calendar-alt"></i><span>My Calendar</span>
 				</button>
 			</div>
 		</div>
@@ -1311,6 +1293,77 @@
 		</div>
 
 		<!-- TOAST -->
+		<!-- ADD EVENT MODAL -->
+		<div class="modal" id="eventModal" role="dialog" aria-modal="true" aria-labelledby="eventModalTitle">
+			<div class="modal-content">
+				<form id="eventForm" novalidate>
+					<div class="modal-header">
+						<h3 id="eventModalTitle">Add Event</h3>
+						<button class="close-btn" type="button" id="eventCloseBtn" aria-label="Close">
+							<i class="fas fa-times"></i>
+						</button>
+					</div>
+					<div class="modal-body">
+						<div class="form-group">
+							<label for="ev-title">Title <span class="req">*</span></label>
+							<input type="text" id="ev-title" maxlength="60" placeholder="e.g. Study group" autocomplete="off" />
+							<span class="error-text" id="ev-titleErr"></span>
+						</div>
+						<div class="form-group">
+							<label for="ev-date">Date <span class="req">*</span></label>
+							<input type="date" id="ev-date" />
+							<span class="error-text" id="ev-dateErr"></span>
+						</div>
+						<div class="cal-event-times">
+							<div class="form-group">
+								<label for="ev-start">Start time <span class="req">*</span></label>
+								<input type="time" id="ev-start" />
+								<span class="error-text" id="ev-startErr"></span>
+							</div>
+							<div class="form-group">
+								<label for="ev-end">End time <span class="req">*</span></label>
+								<input type="time" id="ev-end" />
+								<span class="error-text" id="ev-endErr"></span>
+							</div>
+						</div>
+						<div class="form-group">
+							<label for="ev-type">Event type <span class="req">*</span></label>
+							<select id="ev-type">
+								<option value="">Select type</option>
+								<option value="official">Official</option>
+								<option value="personal">Personal</option>
+							</select>
+							<span class="error-text" id="ev-typeErr"></span>
+						</div>
+						<fieldset class="form-group ev-colors" id="ev-color" aria-describedby="ev-colorHint ev-colorErr" hidden>
+							<legend>Color</legend>
+							<div class="ev-swatches">
+								<label class="ev-swatch" data-ev-color="blue" title="Blue"><input type="radio" name="ev-color" value="blue" aria-label="Blue" checked /><span class="ev-swatch-dot"></span></label>
+								<label class="ev-swatch" data-ev-color="teal" title="Teal"><input type="radio" name="ev-color" value="teal" aria-label="Teal" /><span class="ev-swatch-dot"></span></label>
+								<label class="ev-swatch" data-ev-color="green" title="Green"><input type="radio" name="ev-color" value="green" aria-label="Green" /><span class="ev-swatch-dot"></span></label>
+								<label class="ev-swatch" data-ev-color="amber" title="Amber"><input type="radio" name="ev-color" value="amber" aria-label="Amber" /><span class="ev-swatch-dot"></span></label>
+								<label class="ev-swatch" data-ev-color="purple" title="Purple"><input type="radio" name="ev-color" value="purple" aria-label="Purple" /><span class="ev-swatch-dot"></span></label>
+								<label class="ev-swatch" data-ev-color="slate" title="Slate"><input type="radio" name="ev-color" value="slate" aria-label="Slate" /><span class="ev-swatch-dot"></span></label>
+							</div>
+							<span class="optional" id="ev-colorHint">Choose a color for this Personal event.</span>
+							<span class="error-text" id="ev-colorErr"></span>
+						</fieldset>
+						<div class="form-group ev-color-locked" id="ev-colorLocked" hidden>
+							<span class="ev-lock-dot" aria-hidden="true"></span>
+							<span class="optional">Official events always use the Cognitia burgundy.</span>
+						</div>
+						<div class="form-group">
+							<label for="ev-desc">Description <span class="optional">(optional)</span></label>
+							<textarea id="ev-desc" rows="3" maxlength="300" placeholder="Add details…"></textarea>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button class="btn-cancel" type="button" id="eventCancelBtn">Cancel</button>
+						<button class="btn-primary" type="submit"><i class="fas fa-check"></i> Save</button>
+					</div>
+				</form>
+			</div>
+		</div>
 		<div class="toast" id="toast" role="status" aria-live="polite">
 			<i class="fas fa-check-circle"></i><span id="toastMsg"></span>
 		</div>
@@ -1556,29 +1609,5 @@
 		<script src="js/professor.js"></script>
 		<script src="js/topbar.js"></script>
 		<script src="js/prof-calendar.js"></script>
-		<script>
-			// Sidebar Log out reuses the existing Account-page sign-out handler
-			document
-				.getElementById("sidebarLogoutBtn")
-				?.addEventListener("click", () =>
-					document.getElementById("profileLogoutBtn")?.click(),
-				);
-				// Dashboard stat cards open their page (reuses the sidebar navigation)
-				document.querySelectorAll(".stat-card[data-target]").forEach((card) => {
-					const go = () =>
-						document
-							.querySelector(
-								'.navbar a[data-target="' + card.dataset.target + '"]',
-							)
-							?.click();
-					card.addEventListener("click", go);
-					card.addEventListener("keydown", (e) => {
-						if (e.key === "Enter" || e.key === " ") {
-							e.preventDefault();
-							go();
-						}
-					});
-				});
-		</script>
 	</body>
 </html>
