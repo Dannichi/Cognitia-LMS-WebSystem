@@ -325,12 +325,12 @@ document.addEventListener("DOMContentLoaded", () => {
 	}
 
 	function populateAcademicConfiguration() {
-		const yearSelects = ["m-sectionYear", "m-courseYear", "section-year-filter"];
+		const yearSelects = ["m-sectionYear", "m-courseYear", "section-year-filter", "course-year-filter"];
 		yearSelects.forEach((id) => {
 			const select = document.getElementById(id);
 			if (!select) return;
 			const selected = select.value;
-			const includeAll = id === "section-year-filter";
+			const includeAll = id === "section-year-filter" || id === "course-year-filter";
 			select.replaceChildren();
 			if (includeAll) {
 				const all = document.createElement("option");
@@ -2061,6 +2061,8 @@ document.addEventListener("DOMContentLoaded", () => {
 		const statFilt = document
 			.getElementById("course-status-filter")
 			.value.toLowerCase();
+		const yearFilt = document.getElementById("course-year-filter")?.value || "";
+		const semesterFilt = document.getElementById("course-semester-filter")?.value || "";
 		const yearLabels = academicConfig.yearLevels.map((item) => item.label);
 
 		const filtered = state.courses.filter((c) => {
@@ -2069,7 +2071,9 @@ document.addEventListener("DOMContentLoaded", () => {
 				(c.name.toLowerCase().includes(search) ||
 					c.code.toLowerCase().includes(search)) &&
 				(!progFilt || pids.includes(progFilt)) &&
-				(!statFilt || c.status.toLowerCase() === statFilt)
+				(!statFilt || c.status.toLowerCase() === statFilt) &&
+				(!yearFilt || String(parseInt(c.year) || 1) === yearFilt) &&
+				(!semesterFilt || (c.semester || "1st Semester") === semesterFilt)
 			);
 		});
 
@@ -2213,6 +2217,12 @@ document.addEventListener("DOMContentLoaded", () => {
 		?.addEventListener("change", renderCourses);
 	document
 		.getElementById("course-status-filter")
+		?.addEventListener("change", renderCourses);
+	document
+		.getElementById("course-year-filter")
+		?.addEventListener("change", renderCourses);
+	document
+		.getElementById("course-semester-filter")
 		?.addEventListener("change", renderCourses);
 
 	/* ═══════════════════════════════════════════
