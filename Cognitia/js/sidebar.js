@@ -13,7 +13,6 @@
 
 	const role = document.body.dataset.role || "default";
 	const baseKey = `cognitia_sidebar_${role}`;
-	const icon = toggleBtn.querySelector("i");
 	const small = window.matchMedia("(max-width: 768px)");
 	// Tablet/mobile keep their own preference, so a desktop choice never
 	// opens the overlay on load.
@@ -21,7 +20,7 @@
 
 	function applyState(isCollapsed) {
 		sidebar.classList.toggle("collapsed", isCollapsed);
-		setIcon(isCollapsed);
+		toggleBtn.textContent = isCollapsed ? "Expand" : "Collapse";
 		toggleBtn.setAttribute(
 			"aria-label",
 			isCollapsed ? "Expand sidebar" : "Collapse sidebar",
@@ -59,10 +58,4 @@
 		applyState(true);
 		toggleBtn.focus();
 	});
-
-	function setIcon(isCollapsed) {
-		if (!icon) return;
-		icon.classList.remove("fa-chevron-left", "fa-chevron-right");
-		icon.classList.add(isCollapsed ? "fa-chevron-right" : "fa-chevron-left");
-	}
 })();

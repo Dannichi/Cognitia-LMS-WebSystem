@@ -1352,18 +1352,6 @@ html:not([data-theme="dark"]) .bulletin-preview-viewport {
 	border-color: var(--border);
 }
 
-.bulletin-admin-card {
-	cursor: pointer;
-	transition: border-color var(--t-fast), box-shadow var(--t-fast);
-}
-.bulletin-admin-card:hover {
-	border-color: var(--border-strong);
-	box-shadow: var(--sh-sm);
-}
-.bulletin-admin-card:focus-visible {
-	outline: 2px solid var(--brand);
-	outline-offset: 2px;
-}
 .bulletin-admin-card__footer {
 	align-items: stretch;
 	flex-direction: column;
@@ -1381,4 +1369,31 @@ html:not([data-theme="dark"]) .bulletin-preview-viewport {
 }
 .bulletin-admin-card .bulletin-card-actions button.delete {
 	flex: 0 0 auto;
+}
+
+/* Match bulletin actions and preview controls to the shared text-button style. */
+body[data-role="admin"] .bulletin-card-actions button,
+body[data-role="admin"] .bulletin-zoom-controls button,
+body[data-role="admin"] .search-empty-clear,
+body[data-role="admin"] .bulletin-detail-close {
+	min-height: var(--button-h);
+	padding: 7px 12px;
+	border-radius: var(--r-sm);
+	font-family: var(--font-body);
+	font-size: var(--type-control);
+	font-weight: 600;
+	line-height: 1.25;
+	transform: none;
+}
+body[data-role="admin"] .bulletin-card-actions button:hover,
+body[data-role="admin"] .bulletin-zoom-controls button:hover {
+	transform: none;
+}
+body[data-role="admin"] .bulletin-card-actions button:active,
+body[data-role="admin"] .bulletin-zoom-controls button:active {
+	transform: none;
+}
+body[data-role="admin"] .bulletin-detail-close {
+	width: auto;
+	height: auto;
 }

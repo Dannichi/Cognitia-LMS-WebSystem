@@ -21,10 +21,6 @@
 			/* Clickable dashboard stat cards: hover arrow + smooth transitions */
 			.stat-card[data-target] {
 				position: relative;
-				cursor: pointer;
-				transition:
-					transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
-					box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1);
 			}
 			.stat-card[data-target] .stat-go {
 				position: absolute;
@@ -44,22 +40,13 @@
 				transform: none;
 				transition:
 					opacity 0.4s ease,
-					transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+					transform 0.16s ease;
 				pointer-events: none;
-			}
-			.stat-card[data-target]:hover,
-			.stat-card[data-target]:focus-visible {
-				transform: translateY(-2px);
-				box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
 			}
 			.stat-card[data-target]:hover .stat-go,
 			.stat-card[data-target]:focus-visible .stat-go {
 				opacity: 1;
-				transform: scale(1.04);
-			}
-			.stat-card[data-target]:active {
-				transform: translateY(0) scale(0.985);
-				transition-duration: 0.15s;
+				transform: translate(1px, -1px);
 			}
 			/* Soft fade-in when a page opens (card click or sidebar) */
 			.page.active {
@@ -76,7 +63,6 @@
 				}
 			}
 			@media (prefers-reduced-motion: reduce) {
-				.stat-card[data-target],
 				.stat-card[data-target] .stat-go {
 					transition: none;
 				}
@@ -103,15 +89,6 @@
 			SIDEBAR
 			═══════════════════════════════════-->
 			<aside class="sidebar" id="sidebar">
-				<button
-					class="sidebar-toggle"
-					id="sidebarToggle"
-					type="button"
-					aria-label="Toggle sidebar"
-				>
-					<i class="fas fa-chevron-left"></i>
-				</button>
-
 				<div class="logo" id="logoDashboard">
 					<img
 						class="logo-full"
@@ -171,9 +148,7 @@
 								aria-label="Toggle user list"
 								aria-expanded="false"
 								aria-controls="usersSubnav"
-							>
-								<i class="fas fa-chevron-down"></i>
-							</button>
+							>Expand</button>
 							<ul class="nav-sub" id="usersSubnav">
 								<li>
 									<a href="#" data-target="approval-requests"
@@ -205,6 +180,12 @@
 						</li>
 					</ul>
 				</nav>
+				<button
+					class="sidebar-toggle"
+					id="sidebarToggle"
+					type="button"
+					aria-label="Toggle sidebar"
+				>Collapse</button>
 
 				<!-- Bottom: Profile (left) + Log out (right) -->
 				<div class="sidebar-bottom">
@@ -229,9 +210,7 @@
 							type="button"
 							aria-label="Log out"
 							title="Log out"
-						>
-							<i class="fas fa-sign-out-alt"></i>
-						</button>
+						>Log out</button>
 					</div>
 				</div>
 			</aside>
@@ -254,7 +233,7 @@
 							aria-expanded="false"
 							aria-controls="notifMenu"
 						>
-							<i class="fas fa-bell"></i>
+							<i class="fas fa-bell" aria-hidden="true"></i>
 							<span class="notif-badge" id="notifBadge" hidden></span>
 						</button>
 						<span class="visually-hidden" id="notifLive" role="status"></span>
@@ -292,7 +271,8 @@
 							aria-expanded="false"
 							aria-controls="profileMenu"
 						>
-							<span id="topbarAvatar">AD</span>
+							<i class="fas fa-user-circle" aria-hidden="true"></i>
+							<span id="topbarAvatar" class="visually-hidden">AD</span>
 						</button>
 						<div
 							class="topbar-menu topbar-menu-profile"
@@ -308,14 +288,14 @@
 								id="topbarAccountBtn"
 								type="button"
 							>
-								<i class="fas fa-user-circle"></i> Account
+								 Account
 							</button>
 							<button
 								class="topbar-menu-item danger"
 								id="topbarLogoutBtn"
 								type="button"
 							>
-								<i class="fas fa-sign-out-alt"></i> Sign out
+								 Sign out
 							</button>
 						</div>
 					</div>
@@ -343,7 +323,7 @@
 
 					<div class="stat-grid">
 						<div
-							class="stat-card"
+							class="stat-card admin-card-interactive"
 							data-stat="students"
 							role="link"
 							tabindex="0"
@@ -364,7 +344,7 @@
 							<p class="stat-hint">Enrolled users</p>
 						</div>
 						<div
-							class="stat-card"
+							class="stat-card admin-card-interactive"
 							data-stat="professors"
 							role="link"
 							tabindex="0"
@@ -385,7 +365,7 @@
 							<p class="stat-hint">Teaching staff</p>
 						</div>
 						<div
-							class="stat-card"
+							class="stat-card admin-card-interactive"
 							data-stat="programs"
 							role="link"
 							tabindex="0"
@@ -403,7 +383,7 @@
 							<p class="stat-hint">Active programs</p>
 						</div>
 						<div
-							class="stat-card"
+							class="stat-card admin-card-interactive"
 							data-stat="sections"
 							role="link"
 							tabindex="0"
@@ -421,7 +401,7 @@
 							<p class="stat-hint">Class sections</p>
 						</div>
 						<div
-							class="stat-card"
+							class="stat-card admin-card-interactive"
 							data-stat="courses"
 							role="link"
 							tabindex="0"
@@ -614,7 +594,7 @@
 							</p>
 						</div>
 						<button class="btn-add" id="openAddAnnouncementBtn" type="button">
-							<i class="fas fa-plus"></i> New Announcement
+							 New Announcement
 						</button>
 					</div>
 					<div class="bulletin-stats" aria-live="polite">
@@ -734,7 +714,7 @@
 								</p>
 							</div>
 							<button class="btn-add" id="openAddProgramBtn" type="button">
-								<i class="fas fa-plus"></i> Add Program
+								 Add Program
 							</button>
 						</div>
 						<div class="toolbar academic-toolbar academic-management-toolbar">
@@ -809,7 +789,7 @@
 								></select>
 							</div>
 							<button class="btn-add" id="openAddSectionBtn" type="button">
-								<i class="fas fa-plus"></i> Add Section
+								 Add Section
 							</button>
 						</div>
 						<div class="academic-section-grid" id="section-grid"></div>
@@ -918,7 +898,7 @@
 										id="assignSectionStudentsBtn"
 										type="button"
 									>
-										<i class="fas fa-user-plus" aria-hidden="true"></i> Add Student
+										 Add Student
 									</button>
 								</div>
 								<div class="academic-table-wrap section-student-table-wrap">
@@ -972,7 +952,7 @@
 										id="assignSectionCourseBtn"
 										type="button"
 									>
-										<i class="fas fa-plus"></i> Assign Course
+										 Assign Course
 									</button>
 								</div>
 								<div id="sdCoursesList"></div>
@@ -991,7 +971,7 @@
 										id="assignSectionProfessorBtn"
 										type="button"
 									>
-										<i class="fas fa-plus"></i> Assign Professor
+										 Assign Professor
 									</button>
 								</div>
 								<div id="sdProfessorsList"></div>
@@ -1026,7 +1006,7 @@
 							<option value="inactive">Inactive</option>
 						</select>
 						<button class="btn-add" id="openAddCourseBtn">
-							<i class="fas fa-plus"></i> Add Course
+							 Add Course
 						</button>
 					</div>
 					<div class="card-grid" id="course-grid">
@@ -1059,7 +1039,7 @@
 							<option value="inactive">Inactive</option>
 						</select>
 						<button id="openAddUserBtn" class="btn-add">
-							<i class="fas fa-plus"></i> Add Student
+							 Add Student
 						</button>
 					</div>
 
@@ -1128,9 +1108,7 @@
 										class="avatar-edit-btn"
 										id="avatarTrigger"
 										title="Change avatar"
-									>
-										<i class="fas fa-camera"></i>
-									</button>
+									>Edit</button>
 								</div>
 
 								<div class="profile-info-col">
@@ -1156,7 +1134,7 @@
 
 							<div class="profile-logout-wrap">
 								<button class="btn-profile-logout" id="profileLogoutBtn">
-									<i class="fas fa-sign-out-alt"></i> Sign Out
+									 Sign Out
 								</button>
 							</div>
 						</div>
@@ -1233,9 +1211,7 @@
 												class="toggle-pwd"
 												data-target="prof-view-password"
 												title="Show/hide password"
-											>
-												<i class="fas fa-eye"></i>
-											</button>
+											>Show</button>
 										</div>
 										<small style="color: var(--text-4); font-size: 11.5px">
 											View only. Use Change Password below to update.
@@ -1249,7 +1225,7 @@
 											id="profileSaveBtn"
 											disabled
 										>
-											<i class="fas fa-save"></i> Save Changes
+											 Save Changes
 										</button>
 									</div>
 								</form>
@@ -1275,9 +1251,7 @@
 												type="button"
 												class="toggle-pwd"
 												data-target="pwd-new"
-											>
-												<i class="fas fa-eye"></i>
-											</button>
+											>Show</button>
 										</div>
 										<span class="error-text" id="pwd-newErr"></span>
 									</div>
@@ -1295,9 +1269,7 @@
 												type="button"
 												class="toggle-pwd"
 												data-target="pwd-confirm"
-											>
-												<i class="fas fa-eye"></i>
-											</button>
+											>Show</button>
 										</div>
 										<span class="error-text" id="pwd-confirmErr"></span>
 									</div>
@@ -1309,7 +1281,7 @@
 											id="passwordSaveBtn"
 											disabled
 										>
-											<i class="fas fa-key"></i> Update Password
+											 Update Password
 										</button>
 									</div>
 								</form>
@@ -1339,9 +1311,7 @@
 						class="close-btn"
 						id="programModalCloseBtn"
 						aria-label="Close"
-					>
-						<i class="fas fa-times"></i>
-					</button>
+					>Close</button>
 				</div>
 				<div class="modal-body">
 					<div id="programCatalogFields">
@@ -1485,9 +1455,7 @@
 						class="close-btn modal-close"
 						type="button"
 						aria-label="Close"
-					>
-						<i class="fas fa-times"></i>
-					</button>
+					>Close</button>
 				</div>
 				<div class="modal-body">
 					<dl class="program-view-details">
@@ -1544,9 +1512,7 @@
 						class="close-btn"
 						id="programCoursesCloseBtn"
 						aria-label="Close"
-					>
-						<i class="fas fa-times"></i>
-					</button>
+					>Close</button>
 				</div>
 				<div class="modal-body">
 					<div class="academic-programs-heading academic-year-heading">
@@ -1600,9 +1566,7 @@
 						class="close-btn"
 						id="programCourseAddCloseBtn"
 						aria-label="Close"
-					>
-						<i class="fas fa-times"></i>
-					</button>
+					>Close</button>
 				</div>
 				<div class="modal-body">
 					<p class="academic-data-note">
@@ -1637,9 +1601,7 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h3 id="studentAssignmentTitle">Assign Students</h3>
-					<button class="close-btn modal-close" aria-label="Close">
-						<i class="fas fa-times"></i>
-					</button>
+					<button class="close-btn modal-close" aria-label="Close">Close</button>
 				</div>
 				<div class="modal-body">
 					<p class="academic-data-note" id="studentAssignmentSub"></p>
@@ -1664,9 +1626,7 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h3 id="sectionCourseAssignmentTitle">Assign Course</h3>
-					<button class="close-btn modal-close" aria-label="Close">
-						<i class="fas fa-times"></i>
-					</button>
+					<button class="close-btn modal-close" aria-label="Close">Close</button>
 				</div>
 				<div class="modal-body">
 					<p id="sectionCourseAssignmentHelp" class="academic-data-note"></p>
@@ -1695,9 +1655,7 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h3 id="sectionProfessorAssignmentTitle">Assign Professor</h3>
-					<button class="close-btn modal-close" aria-label="Close">
-						<i class="fas fa-times"></i>
-					</button>
+					<button class="close-btn modal-close" aria-label="Close">Close</button>
 				</div>
 				<div class="modal-body">
 					<p class="academic-data-note">
@@ -1736,9 +1694,7 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h3 id="sectionModalTitle">Add Section</h3>
-					<button class="close-btn modal-close" aria-label="Close">
-						<i class="fas fa-times"></i>
-					</button>
+					<button class="close-btn modal-close" aria-label="Close">Close</button>
 				</div>
 				<div class="modal-body">
 					<input type="hidden" id="m-sectionProgram" />
@@ -1790,9 +1746,7 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h3 id="courseModalTitle">Add Course</h3>
-					<button class="close-btn modal-close" aria-label="Close">
-						<i class="fas fa-times"></i>
-					</button>
+					<button class="close-btn modal-close" aria-label="Close">Close</button>
 				</div>
 				<div class="modal-body">
 					<div class="form-group">
@@ -1875,9 +1829,7 @@
 			<div class="modal-content modal-content--wide">
 				<div class="modal-header">
 					<h3 id="userModalTitle">Add User</h3>
-					<button class="close-btn modal-close" aria-label="Close">
-						<i class="fas fa-times"></i>
-					</button>
+					<button class="close-btn modal-close" aria-label="Close">Close</button>
 				</div>
 				<div class="modal-body">
 					<!-- Name row: First + Middle on same line -->
@@ -1999,9 +1951,7 @@
 								class="toggle-pwd"
 								data-target="m-userPassword"
 								title="Show/hide password"
-							>
-								<i class="fas fa-eye"></i>
-							</button>
+							>Show</button>
 						</div>
 						<small class="error-text" id="m-userPasswordErr"></small>
 					</div>
@@ -2038,9 +1988,7 @@
 							Compose, preview, and publish an official campus update.
 						</p>
 					</div>
-					<button class="close-btn modal-close" aria-label="Close">
-						<i class="fas fa-times"></i>
-					</button>
+					<button class="close-btn modal-close" aria-label="Close">Close</button>
 				</div>
 				<div class="modal-body bulletin-editor-body">
 					<div class="bulletin-editor-panel">
@@ -2055,9 +2003,7 @@
 								class="ann-date-clear"
 								id="annDateClear"
 								title="Remove date"
-							>
-								<i class="fas fa-times"></i>
-							</button>
+							>Remove date</button>
 						</div>
 						<div class="form-group">
 							<label for="m-annTitle">Announcement title *</label
@@ -2180,9 +2126,7 @@
 									type="button"
 									id="annPreviewZoomOut"
 									aria-label="Zoom out"
-								>
-									−
-								</button>
+								>Zoom out</button>
 								<output id="annPreviewZoomValue" aria-live="polite"
 									>100%</output
 								>
@@ -2190,9 +2134,7 @@
 									type="button"
 									id="annPreviewZoomIn"
 									aria-label="Zoom in"
-								>
-									+
-								</button>
+								>Zoom in</button>
 								<button type="button" id="annPreviewZoomReset">Reset</button>
 							</div>
 						</div>
@@ -2244,9 +2186,7 @@
 			<div class="modal-content modal-content--sm">
 				<div class="modal-header">
 					<h3>Confirm Delete</h3>
-					<button class="close-btn modal-close" aria-label="Close">
-						<i class="fas fa-times"></i>
-					</button>
+					<button class="close-btn modal-close" aria-label="Close">Close</button>
 				</div>
 				<div class="modal-body">
 					<p id="confirmMessage">
@@ -2272,9 +2212,7 @@
 			<div class="modal-content modal-content--wide">
 				<div class="modal-header">
 					<h3 id="assignModalTitle">Manage Assignment</h3>
-					<button class="close-btn modal-close" aria-label="Close">
-						<i class="fas fa-times"></i>
-					</button>
+					<button class="close-btn modal-close" aria-label="Close">Close</button>
 				</div>
 				<div class="modal-body" id="assignModalBody">
 					<!-- Populated dynamically -->
@@ -2303,11 +2241,11 @@
 			aria-label="Mobile navigation"
 		>
 			<button class="mobile-nav-item active" data-target="dashboard">
-				<i class="fas fa-home"></i>
+
 				<span>Home</span>
 			</button>
 			<button class="mobile-nav-item" data-target="bulletin">
-				<i class="fas fa-bullhorn"></i>
+
 				<span>Bulletin</span>
 			</button>
 			<button
@@ -2315,15 +2253,15 @@
 				data-target="manage-users"
 				data-user-filter="student"
 			>
-				<i class="fas fa-users"></i>
+
 				<span>Users</span>
 			</button>
 			<button class="mobile-nav-item" data-target="courses">
-				<i class="fas fa-book-open"></i>
+
 				<span>Courses</span>
 			</button>
 			<button class="mobile-nav-item" data-target="profile">
-				<i class="fas fa-user-circle"></i>
+
 				<span>Account</span>
 			</button>
 			<!-- Hamburger "More" -->
@@ -2332,7 +2270,7 @@
 				id="mobileMoreBtn"
 				aria-label="More options"
 			>
-				<i class="fas fa-bars"></i>
+
 				<span>More</span>
 			</button>
 		</nav>
@@ -2351,9 +2289,7 @@
 					class="mobile-more-close"
 					id="mobileMoreClose"
 					aria-label="Close menu"
-				>
-					<i class="fas fa-times"></i>
-				</button>
+				>Close</button>
 			</div>
 			<div class="mobile-more-list">
 				<button
@@ -2362,14 +2298,14 @@
 					data-user-filter="professor"
 					role="menuitem"
 				>
-					<i class="fas fa-chalkboard-teacher"></i>
+
 					<span>Professors</span>
 				</button>
 				<button class="mobile-more-item" data-target="activity" role="menuitem">
-					<i class="fas fa-history"></i><span>Recent Activity</span>
+					<span>Recent Activity</span>
 				</button>
 				<button class="mobile-more-item" data-target="programs" role="menuitem">
-					<i class="fas fa-sitemap"></i>
+
 					<span>Academic Structure</span>
 				</button>
 			</div>

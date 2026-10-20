@@ -62,6 +62,13 @@ html[data-theme="dark"] {
 html[data-theme="dark"] body[data-role="admin"] #dashboard .stat-card::after {
 	display: none;
 }
+html[data-theme="dark"] body[data-role="admin"] #dashboard .stat-card {
+	border-color: transparent;
+}
+html[data-theme="dark"] body[data-role="admin"] #dashboard .stat-card.admin-card-interactive:hover,
+html[data-theme="dark"] body[data-role="admin"] #dashboard .stat-card.admin-card-interactive:focus-visible {
+	border-color: var(--brand);
+}
 
 /* Correct the remaining legacy light surfaces without changing the theme state. */
 html[data-theme="dark"] .input-wrap:focus-within,

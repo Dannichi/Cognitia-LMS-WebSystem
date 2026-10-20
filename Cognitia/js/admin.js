@@ -992,9 +992,9 @@ document.addEventListener("DOMContentLoaded", () => {
 		const group = document.getElementById("usersNavGroup");
 		if (!group) return;
 		const open = group.classList.toggle("open");
-		document
-			.getElementById("usersNavCaret")
-			?.setAttribute("aria-expanded", String(open));
+		const caret = document.getElementById("usersNavCaret");
+		caret?.setAttribute("aria-expanded", String(open));
+		if (caret) caret.textContent = open ? "Collapse" : "Expand";
 	}
 
 	// ── Collapsed rail: Users flyout (reuses the existing .nav-sub links, so the
@@ -1453,6 +1453,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	});
 
 	function makeProgramCardInteractive(card, programId, programName) {
+		card.classList.add("admin-card-interactive");
 		card.tabIndex = 0;
 		card.setAttribute("role", "group");
 		card.setAttribute("aria-label", `Open sections for ${programName}. Press Enter to open sections.`);
@@ -1697,7 +1698,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		const studentTotal = matching.reduce((sum, section) => sum + state.users.filter((user) => user.role === "student" && String(user.sectionId) === String(section.id)).length, 0);
 		setText("programSectionCount", String(matching.length)); setText("programStudentCount", String(studentTotal));
 		matching.forEach((section) => {
-			const card = makeEl("article", "academic-section-card");
+			const card = makeEl("article", "academic-section-card admin-card-interactive");
 			const sectionName = sectionDisplayName(section, program);
 			card.tabIndex = 0;
 			card.setAttribute("role", "group");
@@ -2093,7 +2094,7 @@ document.addEventListener("DOMContentLoaded", () => {
 				'<span style="color:var(--text-4);font-size:12px;">—</span>';
 			const yearLabel = yearLabels[(parseInt(c.year) || 1) - 1] || `Legacy year ${c.year}`;
 			const card = document.createElement("div");
-			card.className = "course-card";
+			card.className = "course-card admin-card-surface";
 			card.innerHTML = `
 				<div class="course-code">${c.code}</div>
 				<div class="course-name">${c.name}</div>
@@ -2110,8 +2111,8 @@ document.addEventListener("DOMContentLoaded", () => {
 				<div class="course-actions">
 					<span class="status ${c.status.toLowerCase()}">${c.status}</span>
 					<div style="display:flex; gap:5px;">
-						<button class="icon-btn edit" title="Edit"><i class="fas fa-edit"></i></button>
-						<button class="btn-cancel delete academic-delete-btn" title="Delete course"><i class="fas fa-trash" aria-hidden="true"></i> Delete</button>
+						<button class="btn-cancel edit" title="Edit">Edit</button>
+						<button class="btn-cancel delete academic-delete-btn" title="Delete course">Delete</button>
 					</div>
 				</div>
 			`;
@@ -2938,7 +2939,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		userRoleView = role === "professor" ? "professor" : "student";
 		const addBtn = document.getElementById("openAddUserBtn");
 		if (addBtn)
-			addBtn.innerHTML = `<i class="fas fa-plus"></i> Add ${userRoleView === "professor" ? "Professor" : "Student"
+			addBtn.textContent = `Add ${userRoleView === "professor" ? "Professor" : "Student"
 				}`;
 		// Program filter applies to students only — hide (and clear) it for professors
 		const progFilter = document.getElementById("user-program-filter");
@@ -2952,7 +2953,9 @@ document.addEventListener("DOMContentLoaded", () => {
 			?.classList.toggle("hide-sid", userRoleView === "professor");
 		if (userRoleView) {
 			document.getElementById("usersNavGroup")?.classList.add("open");
-			document.getElementById("usersNavCaret")?.setAttribute("aria-expanded", "true");
+			const usersCaret = document.getElementById("usersNavCaret");
+			usersCaret?.setAttribute("aria-expanded", "true");
+			if (usersCaret) usersCaret.textContent = "Collapse";
 		}
 		renderUsers();
 	}
@@ -3402,7 +3405,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 		filtered.forEach((a) => {
 			const status = announcementStatus(a), categoryKey = safeAnnouncementCategory(a);
-			const card = makeEl("article", "bulletin-admin-card");
+			const card = makeEl("article", "bulletin-admin-card admin-card-interactive");
 			const title = String(a.title || "Announcement");
 			card.tabIndex = 0;
 			card.setAttribute("role", "group");
@@ -4325,11 +4328,8 @@ document.addEventListener("DOMContentLoaded", () => {
 		if (!input) return;
 		const isHidden = input.type === "password";
 		input.type = isHidden ? "text" : "password";
-		const icon = btn.querySelector("i");
-		if (icon) {
-			icon.classList.toggle("fa-eye", isHidden);
-			icon.classList.toggle("fa-eye-slash", !isHidden);
-		}
+		btn.textContent = isHidden ? "Hide" : "Show";
+		btn.setAttribute("aria-label", isHidden ? "Hide password" : "Show password");
 	});
 
 	// ── Sign-out: Account page button + sidebar Log out share one handler ──
