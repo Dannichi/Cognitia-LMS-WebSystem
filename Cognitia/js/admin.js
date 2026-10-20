@@ -1563,6 +1563,10 @@ document.addEventListener("DOMContentLoaded", () => {
 		openProgramSections(programId);
 	});
 	document.getElementById("programCourseYearSelect")?.addEventListener("change", (event) => { activeProgramCourseYear = event.currentTarget.value; renderProgramCourses(); });
+	document.getElementById("programCourseClearFilterBtn")?.addEventListener("click", () => {
+		activeProgramCourseYear = "all";
+		renderProgramCourses();
+	});
 	document.getElementById("sectionYearSelect")?.addEventListener("change", (event) => { activeSectionYear = event.currentTarget.value; renderSections(); });
 	function getProgramCourseYears(course, programId) {
 		const map = course?.programYears;
@@ -1580,12 +1584,12 @@ document.addEventListener("DOMContentLoaded", () => {
 		if (!body || !program) return;
 		const yearSelect = document.getElementById("programCourseYearSelect");
 		if (yearSelect) {
-			yearSelect.replaceChildren(...academicConfig.yearLevels.map((item) => new Option(item.label, item.value)));
+			yearSelect.replaceChildren(new Option("All Year Levels", "all"), ...academicConfig.yearLevels.map((item) => new Option(item.label, item.value)));
 			yearSelect.value = activeProgramCourseYear;
 		}
-		const yearLabel = academicYearLabel(activeProgramCourseYear);
-		setText("programCourseYearTitle", `${yearLabel} Courses`);
-		const assigned = state.courses.filter((course) => getCourseProgramIds(course).some((id) => String(id) === String(program.id)) && getProgramCourseYears(course, program.id).includes(activeProgramCourseYear));
+		const yearLabel = activeProgramCourseYear === "all" ? "All Year Levels" : academicYearLabel(activeProgramCourseYear);
+		setText("programCourseYearTitle", activeProgramCourseYear === "all" ? "Program Courses" : `${yearLabel} Courses`);
+		const assigned = state.courses.filter((course) => getCourseProgramIds(course).some((id) => String(id) === String(program.id)) && (activeProgramCourseYear === "all" || getProgramCourseYears(course, program.id).includes(activeProgramCourseYear)));
 		setText("programCourseSummary", `${assigned.length} ${assigned.length === 1 ? "course" : "courses"} assigned`);
 		body.replaceChildren();
 		assigned.forEach((course) => {
@@ -1593,7 +1597,12 @@ document.addEventListener("DOMContentLoaded", () => {
 			row.append(makeEl("td", "", course.code || "—"), makeEl("td", "", course.name || "Unnamed course"), makeEl("td", "", course.units ?? "—"));
 			body.appendChild(row);
 		});
-		if (empty) { empty.hidden = assigned.length > 0; empty.textContent = assigned.length ? "" : `No courses assigned\nThere are currently no courses assigned to this program for ${yearLabel}.`; }
+		if (empty) {
+			empty.hidden = assigned.length > 0;
+			setText("programCourseEmptyMessage", activeProgramCourseYear === "all" ? "No courses are assigned to this program yet." : `No courses assigned\nThere are currently no courses assigned to this program for ${yearLabel}.`);
+			const clearFilter = document.getElementById("programCourseClearFilterBtn");
+			if (clearFilter) clearFilter.hidden = assigned.length > 0 || activeProgramCourseYear === "all";
+		}
 		const tableWrap = document.getElementById("programCourseTableWrap"); if (tableWrap) tableWrap.hidden = assigned.length === 0;
 		if (notice) notice.hidden = true;
 	}
@@ -1613,6 +1622,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	function openProgramCourseAdd() {
 		const program = state.programs.find((item) => String(item.id) === String(activeProgramId));
 		if (!program) return;
+		if (activeProgramCourseYear === "all") { showToast("Select a year level before adding a course.", true); return; }
 		const select = document.getElementById("programCourseSelect");
 		const available = state.courses.filter((course) => !getProgramCourseYears(course, program.id).includes(activeProgramCourseYear));
 		select.replaceChildren();

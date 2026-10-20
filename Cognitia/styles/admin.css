@@ -848,6 +848,12 @@
 	line-height: 1.65;
 	text-align: center;
 }
+#programCourseEmptyMessage {
+	margin: 0 0 12px;
+}
+#programCourseClearFilterBtn[hidden] {
+	display: none !important;
+}
 #programCourseTableWrap[hidden] {
 	display: none;
 }
