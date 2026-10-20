@@ -702,7 +702,9 @@
 	border-radius: var(--r-md);
 	background: var(--surface);
 	cursor: pointer;
-	transition: border-color 0.16s ease, box-shadow 0.16s ease;
+	transition:
+		border-color 0.16s ease,
+		box-shadow 0.16s ease;
 }
 .academic-section-card h4 {
 	margin: 0;
@@ -776,10 +778,18 @@
 	min-width: 720px;
 	table-layout: fixed;
 }
-.section-student-col-id { width: 18%; }
-.section-student-col-name { width: 30%; }
-.section-student-col-status { width: 24%; }
-.section-student-col-actions { width: 28%; }
+.section-student-col-id {
+	width: 18%;
+}
+.section-student-col-name {
+	width: 30%;
+}
+.section-student-col-status {
+	width: 24%;
+}
+.section-student-col-actions {
+	width: 28%;
+}
 .section-student-table th,
 .section-student-table td {
 	padding: 11px 12px;
@@ -2834,16 +2844,23 @@ textarea {
 .section-card:hover,
 .academic-program-grid .academic-program-card.admin-card-interactive:hover,
 body[data-role="admin"] #dashboard .stat-card.admin-card-interactive:hover,
-body[data-role="admin"] #dashboard .stat-card.admin-card-interactive:first-child:hover {
+body[data-role="admin"]
+	#dashboard
+	.stat-card.admin-card-interactive:first-child:hover {
 	transform: translateY(-1px);
 	border-color: var(--brand);
 	box-shadow: var(--sh-sm);
 }
 .admin-card-interactive:focus-visible,
 .section-card:focus-visible,
-.academic-program-grid .academic-program-card.admin-card-interactive:focus-visible,
-body[data-role="admin"] #dashboard .stat-card.admin-card-interactive:focus-visible,
-body[data-role="admin"] #dashboard .stat-card.admin-card-interactive:first-child:focus-visible {
+.academic-program-grid
+	.academic-program-card.admin-card-interactive:focus-visible,
+body[data-role="admin"]
+	#dashboard
+	.stat-card.admin-card-interactive:focus-visible,
+body[data-role="admin"]
+	#dashboard
+	.stat-card.admin-card-interactive:first-child:focus-visible {
 	outline: 2px solid var(--brand);
 	outline-offset: 2px;
 	border-color: var(--brand);
@@ -7275,7 +7292,8 @@ body[data-role="admin"] button {
 	letter-spacing: 0;
 	min-height: var(--button-h);
 	border-radius: var(--r-sm);
-	transition-property: color, background-color, border-color, box-shadow, opacity;
+	transition-property:
+		color, background-color, border-color, box-shadow, opacity;
 }
 body[data-role="admin"] button:active {
 	transform: none;
@@ -7289,7 +7307,14 @@ body[data-role="admin"] button:disabled {
 	cursor: not-allowed;
 }
 body[data-role="admin"]
-	:is(.btn-add, .btn-primary, .btn-danger, .btn-cancel, .btn-profile-logout, .tbl-btn) {
+	:is(
+		.btn-add,
+		.btn-primary,
+		.btn-danger,
+		.btn-cancel,
+		.btn-profile-logout,
+		.tbl-btn
+	) {
 	min-height: var(--button-h);
 	padding: 7px 13px;
 	box-shadow: none;
@@ -7301,7 +7326,14 @@ body[data-role="admin"] :is(.btn-add, .btn-primary, .btn-danger):hover {
 body[data-role="admin"] :is(.btn-cancel, .tbl-btn):hover {
 	transform: none;
 }
-body[data-role="admin"] :is(.icon-btn, .close-btn, .bulletin-detail-close, .mobile-more-close, .ann-date-clear) {
+body[data-role="admin"]
+	:is(
+		.icon-btn,
+		.close-btn,
+		.bulletin-detail-close,
+		.mobile-more-close,
+		.ann-date-clear
+	) {
 	width: auto;
 	min-width: var(--button-h);
 	height: auto;
@@ -7368,12 +7400,21 @@ body[data-role="admin"] .toolbar select,
 body[data-role="admin"] .toolbar-select,
 body[data-role="admin"] .bulletin-filter,
 body[data-role="admin"] .search-box,
-body[data-role="admin"] :is(.form-group input, .form-group select, .form-group textarea) {
+body[data-role="admin"]
+	:is(.form-group input, .form-group select, .form-group textarea) {
 	border-radius: var(--r-sm);
 	font-family: var(--font-body);
 	font-size: var(--type-control);
 }
-body[data-role="admin"] :is(.toolbar select, .toolbar-select, .bulletin-filter, .form-group input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), .form-group select) {
+body[data-role="admin"]
+	:is(
+		.toolbar select,
+		.toolbar-select,
+		.bulletin-filter,
+		.form-group
+			input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+		.form-group select
+	) {
 	height: var(--control-h);
 	min-height: var(--control-h);
 }
@@ -7387,11 +7428,20 @@ body[data-role="admin"] .search-box input {
 	min-height: 0;
 	font-size: var(--type-control);
 }
-body[data-role="admin"] :is(.toolbar select, .toolbar-select, .bulletin-filter):hover {
+body[data-role="admin"]
+	:is(.toolbar select, .toolbar-select, .bulletin-filter):hover {
 	transform: none;
 }
 body[data-role="admin"] .search-box:focus-within,
-body[data-role="admin"] :is(.toolbar select, .toolbar-select, .bulletin-filter, .form-group input, .form-group select, .form-group textarea):focus-visible {
+body[data-role="admin"]
+	:is(
+		.toolbar select,
+		.toolbar-select,
+		.bulletin-filter,
+		.form-group input,
+		.form-group select,
+		.form-group textarea
+	):focus-visible {
 	outline: none;
 	border-color: var(--brand);
 	box-shadow: var(--ring);
@@ -7419,7 +7469,11 @@ body[data-role="admin"] :is(.users-table, .academic-table, .approval-table) td {
 	color: var(--text-2);
 	font-size: var(--type-body);
 }
-body[data-role="admin"] :is(.users-table, .academic-table, .approval-table) tbody tr:hover td {
+body[data-role="admin"]
+	:is(.users-table, .academic-table, .approval-table)
+	tbody
+	tr:hover
+	td {
 	background: var(--surface-2);
 }
 body[data-role="admin"] :is(.status, .approval-badge, .bulletin-status) {
@@ -7562,7 +7616,10 @@ body[data-role="admin"] .mobile-nav-item span {
 	background: transparent;
 	color: var(--text-2);
 	cursor: pointer;
-	transition: border-color var(--t-fast), background-color var(--t-fast), color var(--t-fast);
+	transition:
+		border-color var(--t-fast),
+		background-color var(--t-fast),
+		color var(--t-fast);
 }
 .course-add-tile:hover,
 .course-add-tile:focus-visible {
