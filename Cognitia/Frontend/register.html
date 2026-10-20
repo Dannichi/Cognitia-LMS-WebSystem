@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<title>Create Account — Cognitia</title>
+		<link rel="icon" type="image/png" href="assets/icons/Logo-Icon-Red.png" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			rel="stylesheet"
+			href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,300&family=DM+Sans:wght@300;400;500;600&display=swap"
+		/>
+		<link rel="stylesheet" href="styles/login.css" />
+		<link rel="stylesheet" href="styles/register.css" />
+	</head>
+
+	<body>
+		<!-- ─── LEFT: Branding panel (welcome copy; layout shared with Login) ─── -->
+		<div class="brand-panel">
+			<img
+				class="brand-logo-bg"
+				src="assets/icons/Logo-Icon-White.png"
+				alt=""
+			/>
+			<div class="brand-noise"></div>
+
+			<div class="brand-content">
+				<h2 class="brand-heading">Welcome to Cognitia.</h2>
+				<p class="brand-tagline">Your next chapter starts here.</p>
+				<p class="brand-desc">
+					Join the students and professors already learning, teaching, and
+					growing together.
+				</p>
+				<ul class="brand-features">
+					<li><span class="feat-dot"></span>Learn at your own pace</li>
+					<li><span class="feat-dot"></span>Collaborate with your class</li>
+					<li><span class="feat-dot"></span>Watch your progress grow</li>
+				</ul>
+			</div>
+
+			<p class="brand-footer">© 2026 Cognitia Learning System</p>
+		</div>
+
+		<!-- ─── RIGHT: Registration form ─── -->
+		<div class="form-panel">
+			<div class="form-bg-text" aria-hidden="true">COGNITIA</div>
+
+			<div class="form-card register-card">
+				<div class="card-top">
+					<div class="card-eyebrow">New Account</div>
+					<h1 class="card-title">Create your account</h1>
+					<p class="card-subtitle">Fill in your details to get started.</p>
+					<p class="required-note">
+						Fields marked with <span class="req-mark">*</span> are required.
+					</p>
+				</div>
+
+				<form
+					class="loginform register-form"
+					id="register-form"
+					autocomplete="off"
+					novalidate
+				>
+					<section class="form-section" aria-labelledby="sec-personal">
+						<h2 class="section-title" id="sec-personal">
+							Personal Information
+						</h2>
+						<fieldset class="field-group role-group">
+							<legend>Role</legend>
+							<div class="role-options">
+								<label class="role-option">
+									<input
+										type="radio"
+										name="role"
+										id="role-student"
+										value="student"
+										aria-describedby="role-note role-error"
+									/>
+									<span>Student</span>
+								</label>
+								<label class="role-option">
+									<input
+										type="radio"
+										name="role"
+										id="role-professor"
+										value="professor"
+										aria-describedby="role-note role-error"
+									/>
+									<span>Professor</span>
+								</label>
+							</div>
+							<p class="field-note" id="role-note" aria-live="polite"></p>
+							<p class="error-msg" id="role-error" aria-live="polite"></p>
+						</fieldset>
+
+						<div class="field-row row-3">
+							<div class="field-group fg-first">
+								<label for="first-name">First Name *</label>
+								<input
+									type="text"
+									id="first-name"
+									name="firstname"
+									autocomplete="given-name"
+									aria-required="true"
+									aria-describedby="first-name-error"
+								/>
+								<p
+									class="error-msg"
+									id="first-name-error"
+									aria-live="polite"
+								></p>
+							</div>
+							<div class="field-group fg-middle">
+								<label for="middle-name">Middle Name *</label>
+								<input
+									type="text"
+									id="middle-name"
+									name="middlename"
+									autocomplete="additional-name"
+									aria-required="true"
+									aria-describedby="middle-name-error"
+								/>
+								<p
+									class="error-msg"
+									id="middle-name-error"
+									aria-live="polite"
+								></p>
+								<div class="terms-consent no-middle">
+									<label class="terms-check" for="no-middle-name">
+										<input type="checkbox" id="no-middle-name" />
+										<span>I don't have a middle name</span>
+									</label>
+								</div>
+							</div>
+							<div class="field-group fg-last">
+								<label for="last-name">Last Name *</label>
+								<input
+									type="text"
+									id="last-name"
+									name="lastname"
+									autocomplete="family-name"
+									aria-required="true"
+									aria-describedby="last-name-error"
+								/>
+								<p
+									class="error-msg"
+									id="last-name-error"
+									aria-live="polite"
+								></p>
+							</div>
+						</div>
+					</section>
+
+					<section class="form-section" aria-labelledby="sec-contact">
+						<h2 class="section-title" id="sec-contact">Contact Information</h2>
+						<div class="field-row">
+							<div class="field-group">
+								<label for="email">School Email Address *</label>
+								<input
+									type="email"
+									id="email"
+									name="email"
+									placeholder="name@cognitia.edu"
+									autocomplete="email"
+									aria-required="true"
+									aria-describedby="email-error"
+								/>
+								<p class="error-msg" id="email-error" aria-live="polite"></p>
+							</div>
+							<div class="field-group">
+								<label for="phone">Contact Number *</label>
+								<div class="phone-wrapper">
+									<span class="phone-prefix" aria-hidden="true">+63</span>
+									<input
+										type="tel"
+										id="phone"
+										name="phone"
+										inputmode="numeric"
+										placeholder="9171234567"
+										autocomplete="tel-national"
+										aria-required="true"
+										aria-describedby="phone-hint phone-error"
+									/>
+								</div>
+								<p class="field-note" id="phone-hint">
+									10 digits starting with 9. The +63 is added for you.
+								</p>
+								<p class="error-msg" id="phone-error" aria-live="polite"></p>
+							</div>
+						</div>
+					</section>
+
+					<section class="form-section" aria-labelledby="sec-security">
+						<h2 class="section-title" id="sec-security">Account Security</h2>
+						<div class="field-row">
+							<div class="field-group">
+								<label for="password">Password *</label>
+								<div class="input-wrapper">
+									<input
+										type="password"
+										id="password"
+										name="password"
+										autocomplete="new-password"
+										aria-required="true"
+										aria-describedby="password-hint password-error"
+									/>
+									<button
+										type="button"
+										class="toggle-pw"
+										aria-label="Show password"
+										aria-controls="password"
+										aria-pressed="false"
+									>
+										<svg
+											class="icon-eye-off"
+											xmlns="http://www.w3.org/2000/svg"
+											width="16"
+											height="16"
+											fill="none"
+											viewBox="0 0 24 24"
+											stroke="currentColor"
+											stroke-width="2"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											aria-hidden="true"
+											focusable="false"
+										>
+											<path
+												d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
+											/>
+											<line x1="1" y1="1" x2="23" y2="23" />
+										</svg>
+										<svg
+											class="icon-eye"
+											style="display: none"
+											xmlns="http://www.w3.org/2000/svg"
+											width="16"
+											height="16"
+											fill="none"
+											viewBox="0 0 24 24"
+											stroke="currentColor"
+											stroke-width="2"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											aria-hidden="true"
+											focusable="false"
+										>
+											<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+											<circle cx="12" cy="12" r="3" />
+										</svg>
+									</button>
+								</div>
+								<p class="field-note" id="password-hint">
+									At least 8 characters.
+								</p>
+								<p class="error-msg" id="password-error" aria-live="polite"></p>
+							</div>
+							<div class="field-group">
+								<label for="confirm-password">Confirm Password *</label>
+								<div class="input-wrapper">
+									<input
+										type="password"
+										id="confirm-password"
+										name="confirmPassword"
+										autocomplete="new-password"
+										aria-required="true"
+										aria-describedby="confirm-password-error"
+									/>
+									<button
+										type="button"
+										class="toggle-pw"
+										aria-label="Show confirm password"
+										aria-controls="confirm-password"
+										aria-pressed="false"
+									>
+										<svg
+											class="icon-eye-off"
+											xmlns="http://www.w3.org/2000/svg"
+											width="16"
+											height="16"
+											fill="none"
+											viewBox="0 0 24 24"
+											stroke="currentColor"
+											stroke-width="2"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											aria-hidden="true"
+											focusable="false"
+										>
+											<path
+												d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
+											/>
+											<line x1="1" y1="1" x2="23" y2="23" />
+										</svg>
+										<svg
+											class="icon-eye"
+											style="display: none"
+											xmlns="http://www.w3.org/2000/svg"
+											width="16"
+											height="16"
+											fill="none"
+											viewBox="0 0 24 24"
+											stroke="currentColor"
+											stroke-width="2"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											aria-hidden="true"
+											focusable="false"
+										>
+											<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+											<circle cx="12" cy="12" r="3" />
+										</svg>
+									</button>
+								</div>
+								<p
+									class="error-msg"
+									id="confirm-password-error"
+									aria-live="polite"
+								></p>
+							</div>
+						</div>
+					</section>
+
+					<p class="error-msg" id="form-error" role="alert"></p>
+
+					<!-- 9. Create account -->
+					<button type="submit" class="btn-login" id="register-btn">
+						<span>Create Account</span>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							width="16"
+							height="16"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+							stroke-width="2.5"
+						>
+							<path d="M5 12h14M12 5l7 7-7 7" />
+						</svg>
+					</button>
+				</form>
+
+				<!-- Shown instead of the form after a successful registration -->
+				<div class="register-success" id="register-success" hidden>
+					<h2 id="success-title" tabindex="-1">Account created</h2>
+					<p id="success-message"></p>
+					<a href="login.html" class="btn-login register-cta">
+						<span>Go to Login</span>
+					</a>
+				</div>
+
+				<!-- 10. Link to login -->
+				<div class="card-footer">
+					<a href="index.html" class="back-link">
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							width="14"
+							height="14"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+							stroke-width="2.5"
+						>
+							<path d="M19 12H5M12 19l-7-7 7-7" />
+						</svg>
+						Back to Home
+					</a>
+					<p class="card-switch">
+						Already have an account? <a href="login.html">Log in</a>
+					</p>
+				</div>
+			</div>
+		</div>
+
+		<script src="API/api.js"></script>
+		<script src="js/register.js?v=20261020-professor-registration"></script>
+	</body>
+</html>

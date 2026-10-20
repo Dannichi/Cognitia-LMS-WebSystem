@@ -1,0 +1,257 @@
+/* Public account registration through the Cognitia API. */
+"use strict";
+
+(function () {
+
+    // ── Validation rules ──────────────────────────
+    const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // same rule as admin.js
+    const NAME_PATTERN = /^[\p{L}\p{M}\s'’-]+$/u; // letters, spaces, ' and -
+    const PH_MOBILE_PATTERN = /^9\d{9}$/; // 10 digits starting with 9
+    const MIN_PASSWORD_LENGTH = 8;
+
+    const form = document.getElementById("register-form");
+    if (!form) return;
+
+    const $ = (id) => document.getElementById(id);
+    const firstInput = $("first-name");
+    const middleInput = $("middle-name");
+    const noMiddleBox = $("no-middle-name");
+    const lastInput = $("last-name");
+    const emailInput = $("email");
+    const phoneInput = $("phone");
+    const passwordInput = $("password");
+    const confirmInput = $("confirm-password");
+    const roleRadios = [...form.querySelectorAll('input[name="role"]')];
+
+    // ── Small helpers ─────────────────────────────
+    // Shows (or clears, when message is "") the error under one field.
+    function setError(inputs, errorId, message) {
+        $(errorId).textContent = message;
+        [].concat(inputs).forEach((input) => {
+            if (message) input.setAttribute("aria-invalid", "true");
+            else input.removeAttribute("aria-invalid");
+        });
+    }
+
+    function getRole() {
+        return roleRadios.find((r) => r.checked)?.value || "";
+    }
+
+    // Collapse extra spaces: "  Dela   Cruz " -> "Dela Cruz"
+    function cleanName(value) {
+        return value.trim().replace(/\s+/g, " ");
+    }
+
+    // Turns what the user typed/pasted into the 10-digit mobile part:
+    //   "09171234567" -> "9171234567"      "+63 917 123 4567" -> "9171234567"
+    function normalizePhone(raw) {
+        let digits = raw.replace(/\D/g, "");
+        if (digits.startsWith("63") && digits.length > 10) digits = digits.slice(2);
+        else if (digits.startsWith("0")) digits = digits.slice(1);
+        return digits.slice(0, 10);
+    }
+
+    // ── One validator per field: show/clear the error, return true if OK ──
+    function validateRole() {
+        const message = getRole() ? "" : "Select your role.";
+        setError(roleRadios, "role-error", message);
+        return !message;
+    }
+
+    function validateName(input, errorId, label) {
+        const value = cleanName(input.value);
+        let message = "";
+        if (!value) message = `${label} is required.`;
+        else if (!/\p{L}/u.test(value)) message = `${label} must contain letters.`;
+        else if (!NAME_PATTERN.test(value))
+            message = `${label} can only contain letters, spaces, hyphens, and apostrophes.`;
+        setError(input, errorId, message);
+        return !message;
+    }
+
+    const validateFirst = () => validateName(firstInput, "first-name-error", "First name");
+    const validateLast = () => validateName(lastInput, "last-name-error", "Last name");
+
+    function validateMiddle() {
+        if (noMiddleBox.checked) {
+            setError(middleInput, "middle-name-error", "");
+            return true;
+        }
+        return validateName(middleInput, "middle-name-error", "Middle name");
+    }
+
+    function validateEmail() {
+        const value = emailInput.value.trim();
+        let message = "";
+        if (!value) message = "School email is required.";
+        else if (!EMAIL_PATTERN.test(value)) message = "Enter a valid email address.";
+        setError(emailInput, "email-error", message);
+        return !message;
+    }
+
+    function validatePhone() {
+        const digits = phoneInput.value;
+        let message = "";
+        if (!digits) message = "Contact number is required.";
+        else if (!PH_MOBILE_PATTERN.test(digits))
+            message = "Enter a valid PH mobile number: 10 digits starting with 9.";
+        setError(phoneInput, "phone-error", message);
+        return !message;
+    }
+
+    // Passwords are never trimmed or changed.
+    function validatePassword() {
+        const value = passwordInput.value;
+        let message = "";
+        if (!value) message = "Password is required.";
+        else if (!value.trim()) message = "Password cannot be only spaces.";
+        else if (value.length < MIN_PASSWORD_LENGTH)
+            message = `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
+        setError(passwordInput, "password-error", message);
+        return !message;
+    }
+
+    function validateConfirm() {
+        let message = "";
+        if (!confirmInput.value) message = "Please confirm your password.";
+        else if (confirmInput.value !== passwordInput.value)
+            message = "Passwords do not match.";
+        setError(confirmInput, "confirm-password-error", message);
+        return !message;
+    }
+
+    // Form order = focus order, so the first failing field gets focus on submit.
+    const fields = [
+        { input: roleRadios[0], validate: validateRole },
+        { input: firstInput, validate: validateFirst },
+        { input: lastInput, validate: validateLast },
+        { input: middleInput, validate: validateMiddle },
+        { input: emailInput, validate: validateEmail },
+        { input: phoneInput, validate: validatePhone },
+        { input: passwordInput, validate: validatePassword },
+        { input: confirmInput, validate: validateConfirm },
+    ];
+
+    // ── Live behavior ─────────────────────────────
+    // Check a text field when the user leaves it, and clear its error as soon
+    // as it is corrected (re-check on typing only if it already shows an error).
+    fields.slice(1).forEach(({ input, validate }) => {
+        input.addEventListener("blur", validate);
+        input.addEventListener("input", () => {
+            $("form-error").textContent = "";
+            if (input.hasAttribute("aria-invalid")) validate();
+        });
+    });
+
+    // Role starts unselected: undo any choice a browser restored on reload/back.
+    function resetRole() {
+        roleRadios.forEach((r) => {
+            r.checked = false;
+            r.removeAttribute("aria-invalid");
+        });
+        $("role-note").textContent = "";
+        $("role-error").textContent = "";
+    }
+    resetRole();
+    window.addEventListener("pageshow", resetRole);
+
+    // Role: validate on change and explain what choosing Professor means.
+    roleRadios.forEach((radio) => {
+        radio.addEventListener("change", () => {
+            validateRole();
+            $("role-note").textContent =
+                getRole() === "professor"
+                    ? "Professor accounts require administrator approval before access is enabled."
+                    : "";
+        });
+    });
+
+    // Middle name checkbox: disable + clear the field when checked.
+    noMiddleBox.addEventListener("change", () => {
+        if (noMiddleBox.checked) {
+            middleInput.value = "";
+            middleInput.disabled = true;
+            setError(middleInput, "middle-name-error", "");
+        } else {
+            middleInput.disabled = false;
+            middleInput.focus();
+        }
+    });
+
+    // Phone: keep only the 10-digit mobile part (handles pasted 09… / +63… numbers).
+    phoneInput.addEventListener("input", () => {
+        phoneInput.value = normalizePhone(phoneInput.value);
+    });
+
+    // Changing the password re-checks "confirm" if it was already filled in.
+    passwordInput.addEventListener("input", () => {
+        if (confirmInput.value) validateConfirm();
+    });
+
+    // Show/hide buttons next to each password field.
+    form.querySelectorAll(".toggle-pw").forEach((btn) => {
+        const input = $(btn.getAttribute("aria-controls"));
+        const name = input.id === "password" ? "password" : "confirm password";
+        btn.addEventListener("click", () => {
+            const show = input.type === "password";
+            input.type = show ? "text" : "password";
+            btn.setAttribute("aria-label", `${show ? "Hide" : "Show"} ${name}`);
+            btn.setAttribute("aria-pressed", String(show));
+            btn.classList.toggle("active", show);
+            btn.querySelector(".icon-eye").style.display = show ? "block" : "none";
+            btn.querySelector(".icon-eye-off").style.display = show ? "none" : "block";
+        });
+    });
+
+    function showSuccess(role) {
+        form.hidden = true;
+        document.querySelector(".card-top").hidden = true; // hide "Create your account" heading
+        const message = $("success-message");
+        message.textContent = "";
+        const accountType = role === "professor" ? "professor" : "student";
+        message.textContent = `Your ${accountType} account is awaiting administrator approval. You can log in with your email after an administrator approves it.`;
+        $("register-success").hidden = false;
+        $("success-title").focus();
+    }
+
+    // ── Submit ────────────────────────────────────
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        $("form-error").textContent = "";
+
+        // Run every validator (no early exit) so all errors show together.
+        const results = fields.map((f) => f.validate());
+        const firstBad = fields.find((_, i) => !results[i]);
+        if (firstBad) {
+            $("form-error").textContent = "Please fix the highlighted fields.";
+            firstBad.input.focus();
+            return;
+        }
+
+        const data = {
+            role: getRole(),
+            firstname: cleanName(firstInput.value),
+            middlename: noMiddleBox.checked ? null : cleanName(middleInput.value),
+            lastname: cleanName(lastInput.value),
+            email: emailInput.value.trim(),
+            phone: "+63" + phoneInput.value,
+            password: passwordInput.value,
+        };
+
+        try {
+            await CognitiaApi.auth.register({
+                role: data.role,
+                firstname: data.firstname,
+                middlename: data.middlename,
+                lastname: data.lastname,
+                email: data.email,
+                phone: data.phone,
+                password: data.password,
+            });
+            showSuccess(data.role);
+        } catch (error) {
+            console.warn("Cognitia registration error:", error);
+            $("form-error").textContent = error?.message || "Sorry, we couldn't create your account. Please try again.";
+        }
+    });
+})();
