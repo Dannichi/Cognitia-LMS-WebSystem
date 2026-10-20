@@ -2073,59 +2073,111 @@ document.addEventListener("DOMContentLoaded", () => {
 			);
 		});
 
-		grid.innerHTML = "";
+		grid.replaceChildren();
 		if (filtered.length === 0) {
-			grid.innerHTML = '<p class="empty-state full-span">No courses found.</p>';
-			return;
+			grid.appendChild(makeEl("p", "empty-state full-span", "No courses found."));
 		}
 
 		filtered.forEach((c) => {
 			const pids = c.programIds || (c.programId ? [c.programId] : []);
-			const progTags =
-				pids
-					.map((pid) => {
-						const p = state.programs.find((p) => p.id === pid);
-						return p
-							? `<span class="assign-section" style="font-size:11px;">${p.code}</span>`
-							: "";
-					})
-					.filter(Boolean)
-					.join(" ") ||
-				'<span style="color:var(--text-4);font-size:12px;">—</span>';
+			const programs = pids
+				.map((pid) => state.programs.find((program) => String(program.id) === String(pid)))
+				.filter(Boolean);
 			const yearLabel = yearLabels[(parseInt(c.year) || 1) - 1] || `Legacy year ${c.year}`;
-			const card = document.createElement("div");
-			card.className = "course-card admin-card-surface";
-			card.innerHTML = `
-				<div class="course-code">${c.code}</div>
-				<div class="course-name">${c.name}</div>
-				<div class="course-meta">
-					<div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;">
-						<i class="fas fa-sitemap" style="color:var(--text-3);font-size:12px;"></i> ${progTags}
-					</div>
-					<span><i class="fas fa-star-half-alt"></i> ${c.units} units</span>
-				</div>
-				<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
-					<span class="course-year-badge"><i class="fas fa-layer-group" style="margin-right:4px;font-size:10px;"></i>${yearLabel}</span>
-					<span class="course-year-badge" style="background:var(--blue-soft,#e8f4fd);color:var(--blue-fg,#1a6fb5);"><i class="fas fa-calendar-alt" style="margin-right:4px;font-size:10px;"></i>${c.semester || "1st Semester"}</span>
-				</div>
-				<div class="course-actions">
-					<span class="status ${c.status.toLowerCase()}">${c.status}</span>
-					<div style="display:flex; gap:5px;">
-						<button class="btn-cancel edit" title="Edit">Edit</button>
-						<button class="btn-cancel delete academic-delete-btn" title="Delete course">Delete</button>
-					</div>
-				</div>
-			`;
-			card
-				.querySelector(".edit")
-				.addEventListener("click", () => editCourse(c.id));
-			card
-				.querySelector(".delete")
-				.addEventListener("click", () =>
-					confirmDelete("course", c.id, `course "${c.code}"`),
-				);
+			const status = c.status || "Inactive";
+			const card = makeEl("article", "course-card admin-card-interactive");
+			card.tabIndex = 0;
+			card.setAttribute("role", "group");
+			card.setAttribute("aria-label", `Open course: ${c.code || c.name}. Press Enter or Space to view.`);
+			card.setAttribute("aria-keyshortcuts", "Enter Space");
+
+			const header = makeEl("div", "course-card-header");
+			header.append(
+				makeEl("span", "course-code", c.code || "—"),
+				makeEl("span", `status ${status.toLowerCase()}`, status),
+			);
+			const body = makeEl("div", "course-card-body");
+			body.appendChild(makeEl("h3", "course-name", c.name || "Unnamed course"));
+			const meta = makeEl("div", "course-meta");
+			const programList = makeEl("div", "course-program-list");
+			if (programs.length) programs.forEach((program) => programList.appendChild(makeEl("span", "course-program-tag", program.code || program.name || "Program")));
+			else programList.appendChild(makeEl("span", "course-program-empty", "No program assigned"));
+			meta.append(programList, makeEl("span", "course-units", `${c.units ?? "—"} ${Number(c.units) === 1 ? "unit" : "units"}`));
+			const badges = makeEl("div", "course-card-badges");
+			badges.append(
+				makeEl("span", "course-year-badge", yearLabel),
+				makeEl("span", "course-semester-badge", c.semester || "1st Semester"),
+			);
+			body.append(meta, badges, makeEl("span", "course-view-cue", "View course →"));
+
+			const footer = makeEl("div", "course-actions");
+			const actions = makeEl("div", "course-card-actions");
+			const editButton = makeEl("button", "btn-cancel edit", "Edit");
+			editButton.type = "button";
+			editButton.title = `Edit ${c.code || "course"}`;
+			const deleteButton = makeEl("button", "btn-cancel delete academic-delete-btn", "Delete");
+			deleteButton.type = "button";
+			deleteButton.title = `Delete ${c.code || "course"}`;
+			editButton.addEventListener("click", (event) => { event.stopPropagation(); editCourse(c.id); });
+			deleteButton.addEventListener("click", (event) => {
+				event.stopPropagation();
+				confirmDelete("course", c.id, `course "${c.code}"`);
+			});
+			actions.append(editButton, deleteButton);
+			footer.appendChild(actions);
+			card.append(header, body, footer);
+			card.addEventListener("click", (event) => {
+				if (!event.target.closest("button")) viewCourse(c.id);
+			});
+			card.addEventListener("keydown", (event) => {
+				if (event.target !== card || (event.key !== "Enter" && event.key !== " ")) return;
+				event.preventDefault();
+				viewCourse(c.id);
+			});
 			grid.appendChild(card);
 		});
+
+		const addTile = makeEl("button", "course-add-tile");
+		addTile.type = "button";
+		addTile.setAttribute("aria-label", "Add Course");
+		const plus = makeEl("span", "course-add-tile__plus", "+");
+		const label = makeEl("span", "course-add-tile__label", "Add Course");
+		const helper = makeEl("span", "course-add-tile__helper", "Create another course");
+		addTile.append(plus, label, helper);
+		addTile.addEventListener("click", () => document.getElementById("openAddCourseBtn")?.click());
+		grid.appendChild(addTile);
+	}
+
+	function viewCourse(id) {
+		const course = state.courses.find((item) => String(item.id) === String(id));
+		if (!course) return;
+		const title = document.getElementById("courseOverviewTitle");
+		const body = document.getElementById("courseOverviewBody");
+		if (!title || !body) return;
+		title.textContent = `${course.code || "Course"} Overview`;
+		body.replaceChildren();
+		const programs = (course.programIds || (course.programId ? [course.programId] : []))
+			.map((programId) => state.programs.find((program) => String(program.id) === String(programId)))
+			.filter(Boolean)
+			.map((program) => program.code || program.name)
+			.join(", ") || "No program assigned";
+		const yearLabel = academicConfig.yearLevels[(parseInt(course.year) || 1) - 1]?.label || `Legacy year ${course.year ?? "—"}`;
+		const details = makeEl("dl", "course-overview-list");
+		[
+			["Course name", course.name || "Unnamed course"],
+			["Course code", course.code || "—"],
+			["Program(s)", programs],
+			["Year level", yearLabel],
+			["Semester", course.semester || "1st Semester"],
+			["Units", course.units ?? "—"],
+			["Status", course.status || "Inactive"],
+		].forEach(([label, value]) => {
+			const row = makeEl("div", "course-overview-row");
+			row.append(makeEl("dt", "", label), makeEl("dd", "", String(value)));
+			details.appendChild(row);
+		});
+		body.appendChild(details);
+		openModal("courseOverviewModal");
 	}
 
 	function editCourse(id) {
