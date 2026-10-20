@@ -3288,18 +3288,18 @@ document.addEventListener("DOMContentLoaded", () => {
 				else await window.CognitiaBulletinMedia.remove(announcementId);
 				mediaStoreChanged = true;
 			}
-		if (existing) state.announcements = state.announcements.map((a) => String(a.id) === String(existing.id) ? announcement : a);
-		else state.announcements.unshift(announcement);
-		logActivity({ entityType: "announcement", action: existing ? "updated" : asDraft ? "drafted" : "created", entityId: announcement.id, entityLabel: announcement.title, description: `${existing ? "Updated" : asDraft ? "Saved draft" : announcement.status === "scheduled" ? "Scheduled" : "Published"} announcement "${announcement.title}"`, details: { type: announcement.type, category: announcement.category, audience: announcement.audience, status: announcement.status, scheduledDate: announcement.scheduledDate } });
-		if (!persistState()) {
-			state.announcements = previousAnnouncements;
-			renderAnnouncements();
-			throw new Error("The announcement could not be saved. Check available browser storage and try again.");
-		}
-		showToast(asDraft ? "Announcement saved as a draft." : announcement.status === "scheduled" ? `Announcement scheduled for ${scheduledDate}.` : existing ? "Announcement updated." : "Announcement published.");
-		closeAllModals();
-		state.editTarget = null;
-		clearAnnouncementMedia();
+			if (existing) state.announcements = state.announcements.map((a) => String(a.id) === String(existing.id) ? announcement : a);
+			else state.announcements.unshift(announcement);
+			logActivity({ entityType: "announcement", action: existing ? "updated" : asDraft ? "drafted" : "created", entityId: announcement.id, entityLabel: announcement.title, description: `${existing ? "Updated" : asDraft ? "Saved draft" : announcement.status === "scheduled" ? "Scheduled" : "Published"} announcement "${announcement.title}"`, details: { type: announcement.type, category: announcement.category, audience: announcement.audience, status: announcement.status, scheduledDate: announcement.scheduledDate } });
+			if (!persistState()) {
+				state.announcements = previousAnnouncements;
+				renderAnnouncements();
+				throw new Error("The announcement could not be saved. Check available browser storage and try again.");
+			}
+			showToast(asDraft ? "Announcement saved as a draft." : announcement.status === "scheduled" ? `Announcement scheduled for ${scheduledDate}.` : existing ? "Announcement updated." : "Announcement published.");
+			closeAllModals();
+			state.editTarget = null;
+			clearAnnouncementMedia();
 		} catch (error) {
 			state.announcements = previousAnnouncements;
 			renderAnnouncements();
@@ -3519,7 +3519,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			pendingDelete = null; closeAllModals(); showToast("Delete could not be saved. Check browser storage and try again.", true); return;
 		}
 		logActivity({ entityType: type, action: "deleted", entityId: id, entityLabel: deleted.label, description: `Deleted ${deleted.text}`, details: deleted.details });
-		if (type === "announcement") window.CognitiaBulletinMedia?.remove(id).catch(() => {});
+		if (type === "announcement") window.CognitiaBulletinMedia?.remove(id).catch(() => { });
 		syncProgramDropdowns(); renderPrograms(); renderSections(); renderCourses(); renderUsers(); renderAnnouncements(); updateStats();
 		if (type === "program" && matches(activeProgramId)) { activeProgramId = null; _currentSectionId = null; showAcademicList(); }
 		else if (type === "section" && matches(_currentSectionId)) { _currentSectionId = null; showProgramSections(); }
