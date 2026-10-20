@@ -1411,3 +1411,7 @@ html[data-theme="dark"] :is(
 ) {
 	border-color: transparent;
 }
+html[data-theme="dark"] .bulletin-admin-card.admin-card-interactive:hover,
+html[data-theme="dark"] .bulletin-admin-card.admin-card-interactive:focus-visible {
+	border-color: var(--brand);
+}
