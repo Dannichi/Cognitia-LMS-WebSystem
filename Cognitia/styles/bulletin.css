@@ -1351,3 +1351,34 @@ html:not([data-theme="dark"]) .bulletin-editor-modal .bulletin-preview-toolbar {
 html:not([data-theme="dark"]) .bulletin-preview-viewport {
 	border-color: var(--border);
 }
+
+.bulletin-admin-card {
+	cursor: pointer;
+	transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
+.bulletin-admin-card:hover {
+	border-color: var(--border-strong);
+	box-shadow: var(--sh-sm);
+}
+.bulletin-admin-card:focus-visible {
+	outline: 2px solid var(--brand);
+	outline-offset: 2px;
+}
+.bulletin-admin-card__footer {
+	align-items: stretch;
+	flex-direction: column;
+}
+.bulletin-admin-card .bulletin-card-actions {
+	width: 100%;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: nowrap;
+}
+.bulletin-card-nav-cue {
+	color: var(--action-view-text);
+	font-size: var(--type-control);
+	font-weight: 600;
+}
+.bulletin-admin-card .bulletin-card-actions button.delete {
+	flex: 0 0 auto;
+}

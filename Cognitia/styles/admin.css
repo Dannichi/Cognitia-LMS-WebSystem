@@ -698,14 +698,25 @@
 	gap: 10px;
 }
 .academic-section-card {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr) auto auto;
-	align-items: center;
-	gap: 18px;
-	padding: 15px 16px;
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: 8px;
+	padding: 14px 16px;
 	border: 1px solid var(--border);
 	border-radius: var(--r-md);
 	background: var(--surface);
+	cursor: pointer;
+	transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+.academic-section-card:hover {
+	border-color: var(--border-strong);
+	box-shadow: var(--sh-sm);
+}
+.academic-section-card:focus-visible {
+	outline: 2px solid var(--brand);
+	outline-offset: 2px;
+	border-color: var(--brand);
 }
 .academic-section-card h4 {
 	margin: 0;
@@ -720,22 +731,21 @@
 .academic-section-counts {
 	color: var(--text-3);
 	font-size: 13px;
-	white-space: nowrap;
+	white-space: normal;
 }
 .academic-section-actions {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	justify-content: space-between;
+	gap: 10px;
+	margin-top: 2px;
+	padding-top: 10px;
+	border-top: 1px solid var(--divider);
 }
-.academic-section-details-link {
-	border: 0;
-	background: transparent;
-	color: var(--text-2);
-	font-weight: 650;
-	white-space: nowrap;
-}
-.academic-section-details-link i {
-	margin-left: 5px;
+.academic-section-nav-cue {
+	color: var(--action-view-text);
+	font-size: 13px;
+	font-weight: 600;
 }
 .academic-breadcrumb {
 	margin-bottom: 4px;
@@ -878,18 +888,14 @@
 		width: auto;
 	}
 	.academic-section-card {
-		grid-template-columns: minmax(0, 1fr) auto;
-		gap: 8px 12px;
+		gap: 8px;
 	}
 	.academic-section-counts {
-		grid-column: 1;
 		white-space: normal;
 	}
 	.academic-section-actions {
-		grid-column: 2;
-		grid-row: 1 / span 2;
-		flex-direction: column;
-		align-items: stretch;
+		flex-direction: row;
+		align-items: center;
 	}
 	.academic-years-tabs {
 		grid-template-columns: repeat(4, minmax(74px, 1fr));
@@ -6749,6 +6755,11 @@ body[data-role="admin"] #dashboard .dashboard-activity-card .activity-list {
 	padding-top: 16px;
 	border-top: 1px solid var(--border);
 }
+.academic-program-grid .academic-card-nav-cue {
+	color: var(--action-view-text);
+	font-size: 13px;
+	font-weight: 600;
+}
 .academic-program-grid .academic-card-action-group {
 	display: flex;
 	flex-wrap: wrap;
@@ -6975,7 +6986,7 @@ body[data-role="admin"] #dashboard .dashboard-activity-card .activity-list {
 	border-color: var(--brand);
 }
 .academic-program-grid .academic-card-actions {
-	justify-content: flex-end;
+	justify-content: space-between;
 	margin-top: auto;
 	padding-top: 12px;
 }

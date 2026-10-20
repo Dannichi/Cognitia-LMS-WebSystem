@@ -385,7 +385,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	}
 
 	function sectionDisplayName(section, program) {
-		return `${program?.code || "?"} - ${section.year}${String(section.letter || "").toUpperCase()}`;
+		return `${program?.code || "?"}-${section.year}${String(section.letter || "").toUpperCase()}`;
 	}
 
 	function getSectionCourseIds(section) {
@@ -1491,9 +1491,11 @@ document.addEventListener("DOMContentLoaded", () => {
 			card.append(top, makeEl("p", "academic-program-meta", `${saved.code || catalog.code} · ${saved.department || catalog.unitName}`));
 			makeProgramCardInteractive(card, saved.id, saved.name || catalog.displayName);
 			const actions = makeEl("div", "academic-card-actions");
+			actions.appendChild(makeEl("span", "academic-card-nav-cue", "View sections →"));
+			const actionGroup = makeEl("div", "academic-card-action-group");
 			const edit = makeEl("button", "btn-cancel", "Edit"); edit.type = "button"; edit.addEventListener("click", (event) => { event.stopPropagation(); editProgram(saved.id); });
 			const remove = makeEl("button", "btn-cancel delete academic-delete-btn", "Delete"); remove.type = "button"; remove.addEventListener("click", (event) => { event.stopPropagation(); confirmDelete("program", saved.id, `program ${saved.code}`); });
-			actions.append(edit, remove); card.appendChild(actions); grid.appendChild(card);
+			actionGroup.append(edit, remove); actions.appendChild(actionGroup); card.appendChild(actions); grid.appendChild(card);
 		});
 		const configuredIds = new Set(academicConfig.exampleUnits.flatMap((unit) => unit.programs.map((program) => program.id)));
 		const legacy = state.programs.filter((program) => {
@@ -1508,9 +1510,11 @@ document.addEventListener("DOMContentLoaded", () => {
 			card.append(top, makeEl("p", "academic-program-meta", `${program.code || "No code"} · ${program.department || "Academic program"}`));
 			makeProgramCardInteractive(card, program.id, program.name || "Unnamed program");
 			const actions = makeEl("div", "academic-card-actions");
+			actions.appendChild(makeEl("span", "academic-card-nav-cue", "View sections →"));
+			const actionGroup = makeEl("div", "academic-card-action-group");
 			const edit = makeEl("button", "btn-cancel", "Edit"); edit.type = "button"; edit.addEventListener("click", (event) => { event.stopPropagation(); editProgram(program.id); });
 			const remove = makeEl("button", "btn-cancel delete academic-delete-btn", "Delete"); remove.type = "button"; remove.addEventListener("click", (event) => { event.stopPropagation(); confirmDelete("program", program.id, `program ${program.code || program.name}`); });
-			actions.append(edit, remove); card.appendChild(actions); grid.appendChild(card);
+			actionGroup.append(edit, remove); actions.appendChild(actionGroup); card.appendChild(actions); grid.appendChild(card);
 		});
 		if (legacyGrid) { legacyGrid.replaceChildren(); legacyGrid.hidden = true; }
 		if (!grid.children.length) {
@@ -1692,15 +1696,25 @@ document.addEventListener("DOMContentLoaded", () => {
 		setText("programSectionCount", String(matching.length)); setText("programStudentCount", String(studentTotal));
 		matching.forEach((section) => {
 			const card = makeEl("article", "academic-section-card");
+			const sectionName = sectionDisplayName(section, program);
+			card.tabIndex = 0;
+			card.setAttribute("role", "group");
+			card.setAttribute("aria-label", `Open details for ${sectionName}. Press Enter or Space to view.`);
+			card.setAttribute("aria-keyshortcuts", "Enter Space");
+			card.addEventListener("click", (event) => { if (!event.target.closest("button")) openSectionDetails(section.id); });
+			card.addEventListener("keydown", (event) => {
+				if (event.target !== card || (event.key !== "Enter" && event.key !== " ")) return;
+				event.preventDefault(); openSectionDetails(section.id);
+			});
 			const content = makeEl("div", "academic-section-card-content");
-			content.append(makeEl("h4", "", sectionDisplayName(section, program)), makeEl("p", "", `${academicYearLabel(section.year)} · Section ${String(section.letter || "").toUpperCase()}`));
+			content.append(makeEl("h4", "", sectionName), makeEl("p", "", `${academicYearLabel(section.year)} · Section ${String(section.letter || "").toUpperCase()}`));
 			const students = state.users.filter((user) => user.role === "student" && String(user.sectionId) === String(section.id)).length;
 			const courseCount = Array.isArray(section.courseIds) ? section.courseIds.length : 0;
 			const professorCount = getSectionProfessorAssignments(section).length;
 			const counts = makeEl("p", "academic-section-counts", `${students} students · ${courseCount} courses · ${professorCount} professors`);
-			const details = makeEl("button", "btn-cancel academic-section-details-link", "Details"); details.type = "button"; details.innerHTML = 'Details <i class="fas fa-chevron-right" aria-hidden="true"></i>'; details.addEventListener("click", () => openSectionDetails(section.id));
-			const remove = makeEl("button", "btn-cancel delete academic-delete-btn", "Delete"); remove.type = "button"; remove.addEventListener("click", () => confirmDelete("section", section.id, `section ${sectionDisplayName(section, program)}`));
-			const actions = makeEl("div", "academic-section-actions"); actions.append(details, remove);
+			const cue = makeEl("span", "academic-section-nav-cue", `View ${sectionName} →`);
+			const remove = makeEl("button", "btn-cancel delete academic-delete-btn", "Delete"); remove.type = "button"; remove.addEventListener("click", (event) => { event.stopPropagation(); confirmDelete("section", section.id, `section ${sectionName}`); });
+			const actions = makeEl("div", "academic-section-actions"); actions.append(cue, remove);
 			card.append(content, counts, actions); grid.appendChild(card);
 		});
 	}
@@ -3387,8 +3401,18 @@ document.addEventListener("DOMContentLoaded", () => {
 		filtered.forEach((a) => {
 			const status = announcementStatus(a), categoryKey = safeAnnouncementCategory(a);
 			const card = makeEl("article", "bulletin-admin-card");
+			const title = String(a.title || "Announcement");
+			card.tabIndex = 0;
+			card.setAttribute("role", "group");
+			card.setAttribute("aria-label", `Open announcement: ${title}. Press Enter or Space to view.`);
+			card.setAttribute("aria-keyshortcuts", "Enter Space");
+			card.addEventListener("click", (event) => { if (!event.target.closest("button")) openAnnouncementViewer(a); });
+			card.addEventListener("keydown", (event) => {
+				if (event.target !== card || (event.key !== "Enter" && event.key !== " ")) return;
+				event.preventDefault(); openAnnouncementViewer(a);
+			});
 			const top = makeEl("div", "bulletin-admin-card__top");
-			top.appendChild(makeEl("h4", "bulletin-admin-card__title", String(a.title || "Announcement")));
+			top.appendChild(makeEl("h4", "bulletin-admin-card__title", title));
 			const statusBadge = makeEl("span", `bulletin-status bulletin-status--${status}`, status);
 			top.appendChild(statusBadge);
 			const meta = makeEl("div", "bulletin-admin-card__meta");
@@ -3400,9 +3424,9 @@ document.addEventListener("DOMContentLoaded", () => {
 			const footer = makeEl("div", "bulletin-admin-card__footer");
 			footer.appendChild(makeEl("span", "", `${status === "scheduled" ? "Publishes" : status === "draft" ? "Saved" : "Published"} · ${formatAnnouncementDate(announcementDate(a))}`));
 			const actions = makeEl("div", "bulletin-card-actions");
-			const view = makeEl("button", "view", "View Announcement"); view.type = "button"; view.addEventListener("click", () => openAnnouncementViewer(a));
-			const remove = makeEl("button", "delete", "Delete"); remove.type = "button"; remove.addEventListener("click", () => confirmDelete("announcement", a.id, `announcement "${a.title || ""}"`));
-			actions.append(view, remove); footer.appendChild(actions); card.append(top, meta, body, footer); grid.appendChild(card);
+			actions.appendChild(makeEl("span", "bulletin-card-nav-cue", "View announcement →"));
+			const remove = makeEl("button", "delete", "Delete"); remove.type = "button"; remove.addEventListener("click", (event) => { event.stopPropagation(); confirmDelete("announcement", a.id, `announcement "${title}"`); });
+			actions.appendChild(remove); footer.appendChild(actions); card.append(top, meta, body, footer); grid.appendChild(card);
 		});
 	}
 
