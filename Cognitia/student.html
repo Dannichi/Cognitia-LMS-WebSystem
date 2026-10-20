@@ -100,25 +100,24 @@
 								><span class="nav-text">My Grades</span></a
 							>
 						</li>
-						<li class="nav-label"><span>Account</span></li>
-						<li>
-							<a href="#" data-target="profile"
-								><i class="fas fa-user-circle"></i
-								><span class="nav-text">Account</span></a
-							>
-						</li>
 					</ul>
 				</nav>
 				<div class="sidebar-bottom">
 					<div class="sidebar-section-label">Profile</div>
 					<div class="sidebar-profile-row">
-						<div class="user-info">
-							<div class="avatar" id="sidebarAvatar">ST</div>
-							<div class="user-details">
+						<a
+							href="#"
+							class="sidebar-profile"
+							data-target="profile"
+							aria-label="Profile"
+							title="Profile"
+						>
+							<span class="avatar" id="sidebarAvatar">ST</span>
+							<span class="user-details">
 								<span class="user-name" id="sidebarName">Student</span>
 								<span class="user-role">Student Account</span>
-							</div>
-						</div>
+							</span>
+						</a>
 						<button
 							class="logout-btn"
 							id="sidebarLogoutBtn"
@@ -1042,6 +1041,14 @@
 							</div>
 							<span class="optional" id="ev-colorHint">Choose a color for this Personal event.</span>
 							<span class="error-text" id="ev-colorErr"></span>
+						</fieldset>
+						<fieldset class="form-group ev-colors ev-status" id="ev-statusGroup">
+							<legend>Status</legend>
+							<div class="cal-status-seg">
+								<label class="cal-status-opt"><input type="radio" name="ev-status" value="not-started" aria-label="Not started" checked /><span class="cal-status-pill" data-status="not-started"><i class="cal-status-dot"></i>Not started</span></label>
+								<label class="cal-status-opt"><input type="radio" name="ev-status" value="in-progress" aria-label="In progress" /><span class="cal-status-pill" data-status="in-progress"><i class="cal-status-dot"></i>In progress</span></label>
+								<label class="cal-status-opt"><input type="radio" name="ev-status" value="done" aria-label="Done" /><span class="cal-status-pill" data-status="done"><i class="cal-status-dot"></i>Done</span></label>
+							</div>
 						</fieldset>
 						<div class="form-group">
 							<label for="ev-desc">Description <span class="optional">(optional)</span></label>

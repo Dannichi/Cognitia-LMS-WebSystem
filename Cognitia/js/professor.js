@@ -480,7 +480,8 @@ document.addEventListener("DOMContentLoaded", () => {
 		.getElementById("logoDashboard")
 		?.addEventListener("click", () => navigateTo("dashboard"));
 
-	const navLinks = document.querySelectorAll(".navbar a");
+	// .sidebar-profile sits outside .navbar but reuses the same nav handler + active state
+	const navLinks = document.querySelectorAll(".navbar a, .sidebar-profile");
 	const mobileItems = document.querySelectorAll(
 		".mobile-nav-item:not(.mobile-nav-more)",
 	);
@@ -664,7 +665,6 @@ document.addEventListener("DOMContentLoaded", () => {
 				title: q.title,
 				subtitle: `${getCourseName(q.courseId)} · Quiz Due ${new Date(q.dueDate).toLocaleDateString("en-PH", { month: "short", day: "numeric" })}`,
 			}));
-<<<<<<< HEAD
 		const today = new Date(now); today.setHours(0, 0, 0, 0);
 		const bulletinItems = (Array.isArray(db.announcements) ? db.announcements : [])
 			.filter((ann) => {
@@ -677,18 +677,6 @@ document.addEventListener("DOMContentLoaded", () => {
 				const eventDate = new Date(`${ann.eventDate}T00:00:00`);
 				return { type: "bulletin", date: eventDate, title: ann.title || "Announcement", subtitle: `Bulletin · ${eventDate.toLocaleDateString("en-PH", { month: "short", day: "numeric" })}`, badge: ["warning", "urgent"].includes(ann.type) ? ann.type : "info" };
 			});
-=======
-		const bulletinItems = (db.announcements || [])
-			.filter(isForProfessors)
-			.filter((ann) => ann.date && new Date(ann.date) >= now)
-			.map((ann) => ({
-				type: "bulletin",
-				date: new Date(ann.date),
-				title: ann.title || "Announcement",
-				subtitle: `Bulletin · ${new Date(ann.date).toLocaleDateString("en-PH", { month: "short", day: "numeric" })}`,
-				badge: String(ann.type || "info").toLowerCase(),
-			}));
->>>>>>> c376ff212c79fa821f2ce73aabb5e57e30032035
 		const items = [...assignmentItems, ...quizItems, ...bulletinItems]
 			.sort((a, b) => a.date - b.date)
 			.slice(0, 5);
@@ -2732,6 +2720,18 @@ document.querySelectorAll(".cal-view-btn").forEach((btn) => {
 		num.className = "cal-page-num";
 		num.textContent = day;
 		el.appendChild(num);
+		// Hover "+": quick-add an event on this day (like Notion's calendar)
+		const addDay = document.createElement("button");
+		addDay.type = "button";
+		addDay.className = "cal-page-add";
+		addDay.dataset.date = ymd(new Date(year, month, day));
+		addDay.title = "Add an event";
+		addDay.setAttribute(
+			"aria-label",
+			"Add an event on " + new Date(year, month, day).toLocaleDateString("en-US", { month: "long", day: "numeric" }),
+		);
+		addDay.innerHTML = '<i class="fas fa-plus" aria-hidden="true"></i>';
+		el.appendChild(addDay);
 		if (isToday) {
 			el.classList.add("cal-page-cell--today");
 			el.setAttribute("aria-current", "date");
@@ -2887,7 +2887,35 @@ document.querySelectorAll(".cal-view-btn").forEach((btn) => {
 		});
 	});
 	// Add Event: temporary in-memory events (lost on reload; no storage or backend yet)
-	const userEvents = [];
+	// Added events are saved per user so they survive a reload (same place the Done / Delete flags live).
+	const EVENTS_KEY = "cognitia_cal_events:" + (() => {
+		try {
+			return String(CognitiaSession.get()?.id ?? "anon");
+		} catch {
+			return "anon";
+		}
+	})();
+	const PERSONAL_OR_OFFICIAL = ["personal", "official"];
+	function loadUserEvents() {
+		try {
+			const a = JSON.parse(localStorage.getItem(EVENTS_KEY) || "[]");
+			return (Array.isArray(a) ? a : []).filter(
+				(e) =>
+					e && typeof e.title === "string" && /^\d{4}-\d{2}-\d{2}$/.test(e.date || "") &&
+					PERSONAL_OR_OFFICIAL.includes(e.type) && typeof e.start === "string" && typeof e.end === "string",
+			);
+		} catch {
+			return [];
+		}
+	}
+	function saveUserEvents() {
+		try {
+			localStorage.setItem(EVENTS_KEY, JSON.stringify(userEvents));
+		} catch {
+			/* storage full or blocked: events stay until reload */
+		}
+	}
+	const userEvents = loadUserEvents();
 
 	// Shared with the dashboard mini-calendar: events for one "YYYY-MM-DD".
 	window.CognitiaCalendar = {
@@ -2924,12 +2952,26 @@ document.querySelectorAll(".cal-view-btn").forEach((btn) => {
 		const t = field("type").value;
 		colorGroup.hidden = t !== "personal";
 		if (colorLocked) colorLocked.hidden = t !== "official";
+		syncDateRule();
 	}
-	field("type").addEventListener("change", syncColorField);
-	function openEventModal() {
+	// Official events go out to everyone, so they can't be set in the past:
+	// the date picker stops offering earlier days (the time is checked on save).
+	// Personal events have no such limit, so professors can log past events in their own schedule.
+	function syncDateRule() {
+		const official = field("type").value === "official";
+		if (official) field("date").min = ymd(new Date());
+		else field("date").removeAttribute("min");
+	}
+	const PAST_DATE_MSG = "Official events can't be set on a past date.";
+	const PAST_TIME_MSG = "That time has already passed. Choose the current time or later.";
+	field("type").addEventListener("change", () => {
+		syncColorField();
+		if (field("type").value === "official" && field("date").value && field("date").value < ymd(new Date())) setErr("date", PAST_DATE_MSG);
+	});
+	function openEventModal(dateStr) {
 		form.reset();
 		["title", "date", "start", "end", "type", "color"].forEach((k) => setErr(k, ""));
-		field("date").value = ymd(new Date());
+		field("date").value = typeof dateStr === "string" && dateStr ? dateStr : ymd(new Date());
 		syncColorField();
 		modal.classList.add("active");
 		setTimeout(() => field("title").focus(), 50);
@@ -2956,6 +2998,13 @@ document.querySelectorAll(".cal-view-btn").forEach((btn) => {
 		else if (v.start && v.end <= v.start) e.end = "End time must be after start time.";
 		if (v.type !== "personal" && v.type !== "official") e.type = "Please choose an event type.";
 		if (v.type === "personal" && !PERSONAL_COLORS.includes(v.color)) e.color = "Please choose a color.";
+		// Official events: only from right now onwards (no past dates, no times that already passed today)
+		if (v.type === "official" && v.date && !e.date) {
+			const nowMin = new Date();
+			nowMin.setSeconds(0, 0);
+			if (v.date < ymd(nowMin)) e.date = PAST_DATE_MSG;
+			else if (v.start && !e.start && new Date(v.date + "T" + v.start) < nowMin) e.start = PAST_TIME_MSG;
+		}
 		["title", "date", "start", "end", "type", "color"].forEach((k) => setErr(k, e[k]));
 		const first = Object.keys(e)[0];
 		if (first) (first === "color" ? form.querySelector('input[name="ev-color"]') : field(first)).focus();
@@ -2974,7 +3023,7 @@ document.querySelectorAll(".cal-view-btn").forEach((btn) => {
 		field(k).addEventListener("input", () => setErr(k, ""));
 		field(k).addEventListener("change", () => setErr(k, ""));
 	});
-	addBtn.addEventListener("click", openEventModal);
+	addBtn.addEventListener("click", () => openEventModal());
 	document.getElementById("eventCloseBtn").addEventListener("click", closeEventModal);
 	document.getElementById("eventCancelBtn").addEventListener("click", closeEventModal);
 	modal.addEventListener("click", (e) => {
@@ -2988,6 +3037,7 @@ document.querySelectorAll(".cal-view-btn").forEach((btn) => {
 		const v = validateEvent();
 		if (!v) return;
 		userEvents.push({ date: v.date, type: v.type, title: v.title, start: v.start, end: v.end, desc: v.desc, color: v.type === "personal" ? v.color : null });
+		saveUserEvents();
 		window.dispatchEvent(new CustomEvent("cognitia:calendar-events-changed"));
 		const [y, m] = v.date.split("-").map(Number);
 		year = y;
@@ -3055,6 +3105,8 @@ document.querySelectorAll(".cal-view-btn").forEach((btn) => {
 		viewReturnFocus = null;
 	}
 	function openFromGrid(target) {
+		const addDay = target.closest(".cal-page-add");
+		if (addDay) return openEventModal(addDay.dataset.date);
 		const chip = target.closest(".cal-page-label");
 		if (chip && chip._ev) return openEventView([chip._ev], chip._date, chip);
 		const more = target.closest(".cal-page-more");
