@@ -99,25 +99,24 @@
 								><span class="nav-text">Grades</span></a
 							>
 						</li>
-						<li class="nav-label"><span>Account</span></li>
-						<li>
-							<a href="#" data-target="profile"
-								><i class="fas fa-user-circle"></i
-								><span class="nav-text">Account</span></a
-							>
-						</li>
 					</ul>
 				</nav>
 				<div class="sidebar-bottom">
 					<div class="sidebar-section-label">Profile</div>
 					<div class="sidebar-profile-row">
-						<div class="user-info">
-							<div class="avatar" id="sidebarAvatar">PF</div>
-							<div class="user-details">
+						<a
+							href="#"
+							class="sidebar-profile"
+							data-target="profile"
+							aria-label="Profile"
+							title="Profile"
+						>
+							<span class="avatar" id="sidebarAvatar">PF</span>
+							<span class="user-details">
 								<span class="user-name" id="sidebarName">Professor</span>
 								<span class="user-role">Faculty Member</span>
-							</div>
-						</div>
+							</span>
+						</a>
 						<button
 							class="logout-btn"
 							id="sidebarLogoutBtn"
@@ -1604,6 +1603,7 @@
 		<script src="js/professor.js"></script>
 		<script src="js/bulletin-reader.js"></script>
 		<script src="js/topbar.js"></script>
+		<script src="js/cal-tooltip.js"></script>
 		<script src="js/prof-calendar.js"></script>
 			<script>
 			// Dashboard calendar card: "View full calendar" opens the My Calendar tab

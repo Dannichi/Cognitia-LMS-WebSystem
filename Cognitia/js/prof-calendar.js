@@ -78,6 +78,8 @@ document.addEventListener("DOMContentLoaded", () => {
 	const calPickerEventsList = document.getElementById("calPickerEventsList");
 
 	let _pickerDateVal = "";
+	const esc = (v) =>
+		String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
 	const MONTHS = [
 		"January",
@@ -132,7 +134,7 @@ document.addEventListener("DOMContentLoaded", () => {
 				const div = document.createElement("div");
 				div.style.cssText =
 					"display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2);padding:2px 0;";
-				div.innerHTML = `<i class="fas ${typeIcon}" style="font-size:10px;color:${typeColor};flex-shrink:0;"></i><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${ev.title}</span>`;
+				div.innerHTML = `<i class="fas ${typeIcon}" style="font-size:10px;color:${typeColor};flex-shrink:0;"></i><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(ev.title)}</span>`;
 				calPickerEventsList.appendChild(div);
 			});
 			calPickerEvents.style.display = "block";
@@ -359,7 +361,7 @@ document.addEventListener("DOMContentLoaded", () => {
 					<span class="upcoming-day">${d.getDate()}</span>
 				</div>
 				<div class="upcoming-info">
-					<span class="upcoming-title"><i class="fas ${icon}" style="font-size:10px;opacity:.6;margin-right:4px;"></i>${item.title}</span>
+					<span class="upcoming-title"><i class="fas ${icon}" style="font-size:10px;opacity:.6;margin-right:4px;"></i>${esc(item.title)}</span>
 					<span style="font-size:11px;color:var(--text-4);">Due ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
 				</div>`;
 			container.appendChild(el);

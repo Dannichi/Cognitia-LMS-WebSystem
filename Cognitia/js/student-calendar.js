@@ -9,6 +9,8 @@
 
 document.addEventListener("DOMContentLoaded", () => {
 	/* ─── CALENDAR STATE ─────────────────── */
+	const esc = (v) =>
+		String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 	let calYear = new Date().getFullYear();
 	let calMonth = new Date().getMonth();
 
@@ -216,7 +218,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			.slice(0, 6);
 
 		if (!upcoming.length) {
-			container.innerHTML = `<p class="empty-state" style="padding:16px 0; text-align:center;">No upcoming deadlines. You're all caught up! 🎉</p>`;
+			container.innerHTML = `<p class="empty-state" style="padding:16px 0; text-align:center;">No upcoming deadlines. You're all caught up! </p>`;
 			return;
 		}
 
@@ -246,8 +248,8 @@ document.addEventListener("DOMContentLoaded", () => {
 			item.innerHTML = `
 				<div class="deadline-dot ${dotClass}"></div>
 				<div class="deadline-info">
-					<div class="deadline-title"><i class="fas ${icon}" style="font-size:10px;opacity:.55;margin-right:4px;"></i>${a.title}</div>
-					<div class="deadline-sub">${course ? course.code : ""} · Due ${due.toLocaleDateString("en-PH", { month: "short", day: "numeric" })}</div>
+					<div class="deadline-title"><i class="fas ${icon}" style="font-size:10px;opacity:.55;margin-right:4px;"></i>${esc(a.title)}</div>
+					<div class="deadline-sub">${course ? esc(course.code) : ""} · Due ${due.toLocaleDateString("en-PH", { month: "short", day: "numeric" })}</div>
 				</div>
 				${badgeText ? `<span class="deadline-badge ${badgeClass}">${badgeText}</span>` : ""}`;
 			container.appendChild(item);
@@ -307,7 +309,7 @@ document.addEventListener("DOMContentLoaded", () => {
 				: "";
 			div.innerHTML = `
 				<div class="activity-dot"></div>
-				<span class="activity-text">${item.text}</span>
+				<span class="activity-text">${esc(item.text)}</span>
 				<span class="activity-time">${timeStr}</span>`;
 			list.appendChild(div);
 		});
