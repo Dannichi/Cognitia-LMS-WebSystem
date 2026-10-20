@@ -5257,6 +5257,94 @@ html[data-theme="dark"] .cal-day--today .cal-day-dots .cal-day-dot--official {
 	}
 }
 
+/* Shared admin design scale for the student workspace. */
+:root {
+	--font-body: Intel, "Segoe UI", system-ui, -apple-system, sans-serif;
+	--type-page-title: 30px;
+	--type-section-title: 22px;
+	--type-panel-title: 17px;
+	--type-body: 14px;
+	--type-label: 13px;
+	--type-control: 14px;
+	--type-meta: 12px;
+	--line-heading: 1.25;
+	--line-body: 1.55;
+	--control-h: 38px;
+	--button-h: 36px;
+}
+body[data-role="student"] :is(h1, h2, h3, h4, h5, h6) {
+	font-family: var(--font-body);
+	line-height: var(--line-heading);
+	letter-spacing: -0.01em;
+}
+body[data-role="student"] h1,
+body[data-role="student"] .page-header h2 {
+	font-size: var(--type-page-title);
+	font-weight: 700;
+}
+body[data-role="student"] h2 {
+	font-size: var(--type-section-title);
+	font-weight: 650;
+}
+body[data-role="student"] h3,
+body[data-role="student"] .card-title {
+	font-size: var(--type-panel-title);
+	font-weight: 650;
+}
+body[data-role="student"] :is(h4, h5, h6) {
+	font-size: var(--type-label);
+	font-weight: 650;
+}
+body[data-role="student"] p {
+	font-size: var(--type-body);
+	line-height: var(--line-body);
+}
+body[data-role="student"] :is(label, .form-label) {
+	font-size: var(--type-label);
+	font-weight: 600;
+}
+body[data-role="student"] :is(small, .text-muted, .results-count, .stat-hint) {
+	font-size: var(--type-meta);
+}
+body[data-role="student"] :is(input, select, textarea) {
+	font-family: var(--font-body);
+	font-size: var(--type-control);
+}
+body[data-role="student"] button {
+	font-family: var(--font-body);
+}
+body[data-role="student"] :is(.btn-add, .btn-primary, .btn-secondary, .btn-cancel, .btn-danger, .btn-profile-logout, .tbl-btn, .qa-btn, .cal-view-btn) {
+	min-height: var(--button-h);
+	font-size: var(--type-control);
+	font-weight: 600;
+	line-height: 1.25;
+}
+body[data-role="student"] :is(.toolbar select, .toolbar-select, .search-box, .form-group input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), .form-group select) {
+	min-height: var(--control-h);
+	border-radius: var(--r-sm);
+}
+body[data-role="student"] .search-box {
+	font-size: var(--type-control);
+}
+body[data-role="student"] .search-box input {
+	font-size: var(--type-control);
+}
+body[data-role="student"] :is(input, select, textarea, button):focus-visible {
+	outline-color: var(--brand);
+}
+body[data-role="student"] :is(table th, table td) {
+	font-size: var(--type-body);
+}
+body[data-role="student"] table th {
+	font-size: var(--type-meta);
+	font-weight: 650;
+}
+@media (max-width: 768px) {
+	body[data-role="student"] .page-header h2 {
+		font-size: 26px;
+	}
+}
+
 /* ─── MY CALENDAR: PERSONAL EVENT STATUS (Not started / In progress / Done) ───── */
 .cal-status-pill[data-status="not-started"] {
 	--st-bg: var(--border);

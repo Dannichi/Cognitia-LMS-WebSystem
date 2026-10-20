@@ -1397,3 +1397,17 @@ body[data-role="admin"] .bulletin-detail-close {
 	width: auto;
 	height: auto;
 }
+
+/* Dark mode keeps Bulletin cards clean while preserving their existing spacing. */
+html[data-theme="dark"] :is(
+	.bulletin-stat,
+	.bulletin-manage,
+	.bulletin-admin-card,
+	.bulletin-categories,
+	.bulletin-feed-column,
+	.bulletin-highlights,
+	.bulletin-article-card,
+	.bulletin-live-preview
+) {
+	border-color: transparent;
+}
