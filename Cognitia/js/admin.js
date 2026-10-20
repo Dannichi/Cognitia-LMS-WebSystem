@@ -826,12 +826,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	document.getElementById("academic-campus-filter")?.addEventListener("change", syncAcademicHierarchy);
 	document.getElementById("academic-unit-select")?.addEventListener("change", syncAcademicHierarchy);
-	document.getElementById("clearAcademicFilters")?.addEventListener("click", () => {
-		document.getElementById("academic-campus-filter").value = "";
-		document.getElementById("academic-unit-select").value = "";
-		document.getElementById("program-search").value = "";
-		syncAcademicHierarchy();
-	});
 	document.getElementById("academic-program-select")?.addEventListener("change", function () {
 		selectAcademicProgram(this.value);
 	});
@@ -1476,8 +1470,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		const search = (document.getElementById("program-search")?.value || "").toLowerCase().trim();
 		const unitFilter = document.getElementById("academic-unit-select")?.value || "";
 		const campusFilter = document.getElementById("academic-campus-filter")?.value || "";
-		const clearFilters = document.getElementById("clearAcademicFilters");
-		if (clearFilters) clearFilters.hidden = !(search || unitFilter || campusFilter);
 		const options = academicConfig.exampleUnits.flatMap((unit) => unit.programs.map((program) => ({ ...program, unitId: unit.id, unitName: unit.name, campusId: unit.campusId })))
 			.filter((program) => (!unitFilter || String(program.unitId) === unitFilter) && (!campusFilter || String(program.campusId || "") === campusFilter) && `${program.name} ${program.displayName} ${program.code} ${program.unitName}`.toLowerCase().includes(search));
 		grid.replaceChildren();
@@ -1520,7 +1512,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		if (!grid.children.length) {
 			const message = state.programs.length === 0
 				? "No academic programs have been added yet. Use Add Program to create one."
-				: "No programs match your search or filters. Clear filters to see all saved programs.";
+				: "No programs match your current search or filters. Try adjusting them to see saved programs.";
 			grid.appendChild(makeEl("p", "empty-state full-span", message));
 		}
 	}
@@ -3995,26 +3987,95 @@ document.addEventListener("DOMContentLoaded", () => {
 	═══════════════════════════════════════════ */
 	let _currentSectionId = null;
 	let _currentSectionStudents = [];
+	let _sectionStudentSort = "name-asc";
+	let _sectionStudentPage = 1;
+	const SECTION_STUDENTS_PER_PAGE = 10;
 
 	function renderSectionStudents() {
 		const tbody = document.getElementById("sdStudentsTbody");
 		const empty = document.getElementById("sdStudentsEmpty");
 		if (!tbody) return;
 		const query = (document.getElementById("sdStudentSearch")?.value || "").toLowerCase().trim();
-		const students = _currentSectionStudents.filter((student) => `${userName(student)} ${student.studentId || ""} ${student.email || ""} ${student.status || ""}`.toLowerCase().includes(query));
+		const sort = document.getElementById("sdStudentSort")?.value || _sectionStudentSort;
+		_sectionStudentSort = ["name-desc", "id-asc", "id-desc", "status-asc", "status-desc", "recent"].includes(sort) ? sort : "name-asc";
+		const getStudentStatus = (student) => String(student.enrollmentStatus ?? student.status ?? "").trim();
+		const compareStudentIds = (left, right) => {
+			const leftId = String(left.studentId ?? left.id ?? "").trim();
+			const rightId = String(right.studentId ?? right.id ?? "").trim();
+			if (/^\d+$/.test(leftId) && /^\d+$/.test(rightId)) {
+				const leftNumber = BigInt(leftId);
+				const rightNumber = BigInt(rightId);
+				return leftNumber < rightNumber ? -1 : leftNumber > rightNumber ? 1 : 0;
+			}
+			return leftId.localeCompare(rightId, undefined, { numeric: true, sensitivity: "base" });
+		};
+		const filteredStudents = _currentSectionStudents
+			.map((student, index) => ({ student, index }))
+			.filter(({ student }) => `${userName(student)} ${student.studentId || ""} ${student.email || ""} ${getStudentStatus(student)}`.toLowerCase().includes(query));
+		filteredStudents.sort((left, right) => {
+			let comparison = 0;
+			if (_sectionStudentSort.startsWith("name-")) {
+				comparison = userName(left.student).localeCompare(userName(right.student), undefined, { sensitivity: "base" });
+				if (_sectionStudentSort === "name-desc") comparison *= -1;
+			} else if (_sectionStudentSort.startsWith("id-")) {
+				comparison = compareStudentIds(left.student, right.student);
+				if (_sectionStudentSort === "id-desc") comparison *= -1;
+			} else if (_sectionStudentSort.startsWith("status-")) {
+				const leftStatus = getStudentStatus(left.student);
+				const rightStatus = getStudentStatus(right.student);
+				if (!leftStatus || !rightStatus) {
+					if (Boolean(leftStatus) !== Boolean(rightStatus)) return leftStatus ? -1 : 1;
+				} else {
+					comparison = leftStatus.localeCompare(rightStatus, undefined, { sensitivity: "base" });
+					if (_sectionStudentSort === "status-desc") comparison *= -1;
+				}
+			} else {
+				const leftAdded = Date.parse(left.student.registeredAt || "");
+				const rightAdded = Date.parse(right.student.registeredAt || "");
+				const leftHasDate = Number.isFinite(leftAdded);
+				const rightHasDate = Number.isFinite(rightAdded);
+				if (leftHasDate !== rightHasDate) return leftHasDate ? -1 : 1;
+				if (leftHasDate) comparison = rightAdded - leftAdded;
+			}
+			return comparison || left.index - right.index;
+		});
+		const students = filteredStudents.map(({ student }) => student);
+		const pageCount = Math.max(1, Math.ceil(students.length / SECTION_STUDENTS_PER_PAGE));
+		_sectionStudentPage = Math.min(Math.max(1, _sectionStudentPage), pageCount);
+		const pageStart = (_sectionStudentPage - 1) * SECTION_STUDENTS_PER_PAGE;
+		const pageStudents = students.slice(pageStart, pageStart + SECTION_STUDENTS_PER_PAGE);
 		tbody.replaceChildren();
-		students.forEach((student) => {
+		pageStudents.forEach((student) => {
 			const row = document.createElement("tr");
-			row.append(makeEl("td", "", student.studentId || student.id || "—"), makeEl("td", "", userName(student)), makeEl("td", "", student.enrollmentStatus || student.status || "Enrolled"));
-			const actions = makeEl("td", "academic-row-actions");
+			row.append(makeEl("td", "section-student-id", student.studentId || student.id || "—"), makeEl("td", "section-student-name", userName(student)));
+			const statusCell = makeEl("td", "section-student-status-cell");
+			const statusLabel = getStudentStatus(student);
+			const statusBadge = makeEl("span", `section-student-status${statusLabel ? ` is-${statusLabel.toLowerCase().replace(/[^a-z0-9]+/g, "-")}` : " is-missing"}`, statusLabel || "—");
+			statusCell.appendChild(statusBadge);
+			row.appendChild(statusCell);
+			const actionsCell = makeEl("td", "section-student-actions-cell");
+			const actions = makeEl("div", "academic-row-actions");
 			const edit = makeEl("button", "btn-cancel", "Edit assignment"); edit.type = "button"; edit.addEventListener("click", () => editUser(student.id));
 			const unassign = makeEl("button", "icon-btn delete", "Unassign"); unassign.type = "button"; unassign.addEventListener("click", () => unassignStudentFromSection(student.id));
-			actions.append(edit, unassign); row.appendChild(actions);
+			actions.append(edit, unassign); actionsCell.appendChild(actions); row.appendChild(actionsCell);
 			tbody.appendChild(row);
 		});
 		if (empty) { empty.hidden = students.length > 0; empty.textContent = _currentSectionStudents.length ? "No students match your search." : "No students are assigned to this section."; }
+		const pagination = document.getElementById("sdStudentPagination");
+		if (pagination) {
+			pagination.hidden = students.length === 0;
+			setText("sdStudentPaginationSummary", `Showing ${pageStart + 1}–${Math.min(pageStart + SECTION_STUDENTS_PER_PAGE, students.length)} of ${students.length} students`);
+			setText("sdStudentPageIndicator", `Page ${_sectionStudentPage} of ${pageCount}`);
+			const previous = document.getElementById("sdStudentPrevPage");
+			const next = document.getElementById("sdStudentNextPage");
+			if (previous) previous.disabled = _sectionStudentPage <= 1;
+			if (next) next.disabled = _sectionStudentPage >= pageCount;
+		}
 	}
-	document.getElementById("sdStudentSearch")?.addEventListener("input", renderSectionStudents);
+	document.getElementById("sdStudentSearch")?.addEventListener("input", () => { _sectionStudentPage = 1; renderSectionStudents(); });
+	document.getElementById("sdStudentSort")?.addEventListener("change", (event) => { _sectionStudentSort = event.currentTarget.value; _sectionStudentPage = 1; renderSectionStudents(); });
+	document.getElementById("sdStudentPrevPage")?.addEventListener("click", () => { _sectionStudentPage--; renderSectionStudents(); });
+	document.getElementById("sdStudentNextPage")?.addEventListener("click", () => { _sectionStudentPage++; renderSectionStudents(); });
 	document.getElementById("assignSectionStudentsBtn")?.addEventListener("click", openStudentAssignmentModal);
 	document.getElementById("saveSectionStudentAssignmentsBtn")?.addEventListener("click", saveSectionStudentAssignments);
 	function openStudentAssignmentModal() {
@@ -4075,6 +4136,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		setText("sdCourseCount", courseIds.length);
 		setText("sdProfessorCount", professors.length);
 		const search = document.getElementById("sdStudentSearch"); if (search) search.value = "";
+		_sectionStudentPage = 1;
 		renderSectionStudents();
 
 		const coursesList = document.getElementById("sdCoursesList");

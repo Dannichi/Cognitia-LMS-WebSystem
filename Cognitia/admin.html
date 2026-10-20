@@ -762,14 +762,6 @@
 									tabindex="-1"
 								></select>
 							</div>
-							<button
-								type="button"
-								class="btn-cancel"
-								id="clearAcademicFilters"
-								hidden
-							>
-								Clear filters
-							</button>
 						</div>
 						<div class="academic-programs-heading">
 							<h3 id="academicProgramsTitle">Academic Programs</h3>
@@ -897,36 +889,70 @@
 							>
 								<div class="academic-programs-heading">
 									<h3>Enrolled Students</h3>
-									<button
-										class="btn-add"
-										id="assignSectionStudentsBtn"
-										type="button"
-									>
-										<i class="fas fa-user-plus"></i> Assign Students
-									</button>
 								</div>
-								<div class="toolbar academic-toolbar">
+								<div class="toolbar academic-toolbar section-student-toolbar">
 									<div class="search-box">
 										<i class="fas fa-search"></i
 										><input
 											type="search"
 											id="sdStudentSearch"
-											placeholder="Search students…"
+											placeholder="Search by student name or ID…"
+											aria-label="Search students by name or student ID"
 										/>
 									</div>
+									<select
+										id="sdStudentSort"
+										class="section-student-sort"
+										aria-label="Sort students"
+									>
+										<option value="name-asc">Name: A–Z</option>
+										<option value="name-desc">Name: Z–A</option>
+										<option value="id-asc">Student ID: Lowest–Highest</option>
+										<option value="id-desc">Student ID: Highest–Lowest</option>
+										<option value="status-asc">Enrollment Status: A–Z</option>
+										<option value="status-desc">Enrollment Status: Z–A</option>
+										<option value="recent">Recently Added</option>
+									</select>
+									<button
+										class="btn-add"
+										id="assignSectionStudentsBtn"
+										type="button"
+									>
+										<i class="fas fa-user-plus" aria-hidden="true"></i> Add Student
+									</button>
 								</div>
-								<div class="table-wrap">
-									<table class="academic-table">
+								<div class="academic-table-wrap section-student-table-wrap">
+									<table class="academic-table section-student-table">
+										<colgroup>
+											<col class="section-student-col-id" />
+											<col class="section-student-col-name" />
+											<col class="section-student-col-status" />
+											<col class="section-student-col-actions" />
+										</colgroup>
 										<thead>
 											<tr>
-												<th>Student ID</th>
-												<th>Full Name</th>
-												<th>Enrollment Status</th>
-												<th>Actions</th>
+												<th scope="col">Student ID</th>
+												<th scope="col">Full Name</th>
+												<th scope="col">Enrollment Status</th>
+												<th scope="col">Actions</th>
 											</tr>
 										</thead>
 										<tbody id="sdStudentsTbody"></tbody>
 									</table>
+								</div>
+								<div
+									class="section-student-pagination"
+									id="sdStudentPagination"
+									role="group"
+									aria-label="Student list pagination"
+									hidden
+								>
+									<span id="sdStudentPaginationSummary" aria-live="polite"></span>
+									<div class="section-student-pagination-controls">
+										<button class="btn-cancel" id="sdStudentPrevPage" type="button">Previous</button>
+										<span id="sdStudentPageIndicator" aria-live="polite"></span>
+										<button class="btn-cancel" id="sdStudentNextPage" type="button">Next</button>
+									</div>
 								</div>
 								<p id="sdStudentsEmpty" class="empty-state" hidden>
 									No students are assigned to this section.

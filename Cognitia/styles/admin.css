@@ -747,6 +747,133 @@
 	font-size: 13px;
 	font-weight: 600;
 }
+#sdStudentsPanel .academic-toolbar {
+	align-items: center;
+}
+#sdStudentsPanel .academic-toolbar .search-box {
+	flex: 1 1 240px;
+	min-width: min(100%, 220px);
+}
+.section-student-toolbar {
+	gap: 10px;
+}
+.section-student-sort {
+	flex: 0 1 230px;
+	width: 230px;
+	min-width: 205px;
+	min-height: 42px;
+	padding: 8px 30px 8px 10px;
+	border: 1px solid var(--border);
+	border-radius: var(--r-sm);
+	background: var(--surface);
+	color: var(--text-2);
+	font: inherit;
+	cursor: pointer;
+}
+.section-student-sort:focus-visible,
+#sdStudentSearch:focus-visible,
+#assignSectionStudentsBtn:focus-visible {
+	outline: 2px solid var(--primary);
+	outline-offset: 2px;
+}
+.section-student-toolbar #assignSectionStudentsBtn {
+	flex: 0 0 auto;
+	min-height: 42px;
+	margin-left: auto;
+}
+.section-student-table-wrap {
+	width: 100%;
+	overflow-x: auto;
+}
+.section-student-table {
+	width: 100%;
+	min-width: 720px;
+	table-layout: fixed;
+}
+.section-student-col-id { width: 18%; }
+.section-student-col-name { width: 30%; }
+.section-student-col-status { width: 24%; }
+.section-student-col-actions { width: 28%; }
+.section-student-table th,
+.section-student-table td {
+	padding: 11px 12px;
+	line-height: 1.4;
+}
+.section-student-table th:last-child,
+.section-student-table td:last-child {
+	text-align: right;
+}
+.section-student-id,
+.section-student-name {
+	white-space: normal;
+	word-break: break-word;
+}
+.section-student-status-cell {
+	white-space: normal;
+}
+.section-student-status {
+	display: inline-flex;
+	max-width: 100%;
+	align-items: center;
+	padding: 4px 9px;
+	border-radius: 999px;
+	background: var(--gray-bg);
+	color: var(--gray-fg);
+	font-size: 12px;
+	font-weight: 650;
+	line-height: 1.3;
+	white-space: normal;
+	word-break: break-word;
+}
+.section-student-status.is-active,
+.section-student-status.is-approved,
+.section-student-status.is-enrolled {
+	background: var(--green-bg);
+	color: var(--green-fg);
+}
+.section-student-status.is-pending {
+	background: var(--amber-bg);
+	color: var(--amber-fg);
+}
+.section-student-status.is-inactive {
+	background: var(--gray-bg);
+	color: var(--gray-fg);
+}
+.section-student-status.is-rejected,
+.section-student-status.is-withdrawn {
+	background: var(--red-bg);
+	color: var(--red-fg);
+}
+.section-student-actions-cell .academic-row-actions {
+	justify-content: flex-end;
+	flex-wrap: wrap;
+}
+.section-student-pagination {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-top: 12px;
+	padding: 12px 0;
+	border-top: 1px solid var(--divider);
+	color: var(--text-3);
+	font-size: 13px;
+}
+.section-student-pagination[hidden] {
+	display: none !important;
+}
+.section-student-pagination-controls {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.section-student-pagination-controls button {
+	min-height: 36px;
+}
+.section-student-pagination-controls button:disabled {
+	opacity: 0.55;
+	cursor: not-allowed;
+}
 .academic-breadcrumb {
 	margin-bottom: 4px;
 	color: var(--text-3);
@@ -7142,5 +7269,27 @@ body[data-role="admin"] .breadcrumb ol {
 	}
 	body[data-role="admin"] .greeting-banner .greeting-title {
 		font-size: 22px;
+	}
+}
+@media (max-width: 600px) {
+	#sdStudentsPanel .academic-toolbar {
+		align-items: stretch;
+	}
+	#sdStudentsPanel .academic-toolbar .search-box,
+	#sdStudentsPanel .section-student-sort {
+		flex: 1 1 100%;
+		width: 100%;
+		min-width: 0;
+	}
+	.section-student-toolbar #assignSectionStudentsBtn {
+		width: 100%;
+		margin-left: 0;
+	}
+	.section-student-pagination {
+		align-items: flex-start;
+		flex-direction: column;
+	}
+	.section-student-pagination-controls {
+		align-self: flex-end;
 	}
 }
