@@ -472,51 +472,43 @@
 							</div>
 						</section>
 
-						<!-- Calendar interactions and event indicators are driven by calendar.js. -->
-						<div class="card calendar-card">
-							<div class="calendar-header">
-								<div class="calendar-title-row">
-									<h3
-										class="card-title"
-										style="border: none; margin: 0; padding: 0"
-									>
-										<i class="fas fa-calendar-alt"></i> Calendar
+						<section
+							class="card dashboard-pending-card"
+							aria-labelledby="dashboardPendingTitle"
+						>
+							<div class="dashboard-pending-heading">
+								<div class="dashboard-pending-heading-copy">
+									<h3 class="card-title" id="dashboardPendingTitle">
+										Pending User Approvals
 									</h3>
-									<p class="calendar-hint">
-										Scheduled events and important dates
+									<p class="dashboard-pending-subtitle">
+										Users awaiting review
 									</p>
 								</div>
-								<div class="calendar-nav">
-									<button
-										class="cal-nav-btn"
-										id="calPrev"
-										aria-label="Previous month"
-									>
-										<i class="fas fa-chevron-left"></i>
-									</button>
-									<span class="cal-month-label" id="calMonthLabel"></span>
-									<button
-										class="cal-nav-btn"
-										id="calNext"
-										aria-label="Next month"
-									>
-										<i class="fas fa-chevron-right"></i>
-									</button>
-								</div>
+								<span
+									class="dashboard-pending-count"
+									id="dashboardPendingCount"
+									aria-label="0 pending users"
+									>0</span
+								>
 							</div>
-							<div class="calendar-grid-wrap">
-								<div class="cal-weekdays">
-									<span>Su</span><span>Mo</span><span>Tu</span> <span>We</span
-									><span>Th</span><span>Fr</span><span>Sa</span>
-								</div>
-								<div class="cal-days" id="calDays"></div>
+							<div
+								class="dashboard-pending-list"
+								id="dashboardPendingList"
+								aria-live="polite"
+							>
+								<p class="dashboard-pending-empty">
+									Loading pending approvals…
+								</p>
 							</div>
-							<div class="cal-legend">
-								<span class="cal-legend-dot today-dot"></span><span>Today</span>
-								<span class="cal-legend-dot ann-dot"></span
-								><span>Scheduled</span>
-							</div>
-						</div>
+							<a
+								class="dashboard-pending-link dashboard-nav-link"
+								href="#approval-requests"
+								data-target="approval-requests"
+								>View All Pending Users
+								<i class="fas fa-arrow-right" aria-hidden="true"></i
+							></a>
+						</section>
 					</div>
 
 					<section
@@ -755,11 +747,29 @@
 								/>
 							</div>
 							<div class="academic-selectors">
-								<select id="academic-campus-filter" aria-label="Campus"></select>
-								<select id="academic-unit-select" aria-label="College or department"></select>
-								<select id="academic-program-select" class="academic-context-select" aria-hidden="true" tabindex="-1"></select>
+								<select
+									id="academic-campus-filter"
+									aria-label="Campus"
+								></select>
+								<select
+									id="academic-unit-select"
+									aria-label="College or department"
+								></select>
+								<select
+									id="academic-program-select"
+									class="academic-context-select"
+									aria-hidden="true"
+									tabindex="-1"
+								></select>
 							</div>
-							<button type="button" class="btn-cancel" id="clearAcademicFilters" hidden>Clear filters</button>
+							<button
+								type="button"
+								class="btn-cancel"
+								id="clearAcademicFilters"
+								hidden
+							>
+								Clear filters
+							</button>
 						</div>
 						<div class="academic-programs-heading">
 							<h3 id="academicProgramsTitle">Academic Programs</h3>
@@ -798,17 +808,18 @@
 							</article>
 						</div>
 						<div class="academic-programs-heading">
-							<h3>Sections</h3>
+							<div class="academic-year-heading">
+								<h3 id="sectionYearTitle">Sections</h3>
+								<select
+									id="sectionYearSelect"
+									class="academic-year-select"
+									aria-label="Filter sections by academic year"
+								></select>
+							</div>
 							<button class="btn-add" id="openAddSectionBtn" type="button">
 								<i class="fas fa-plus"></i> Add Section
 							</button>
 						</div>
-						<div
-							class="academic-years-tabs"
-							id="sectionYearTabs"
-							role="tablist"
-							aria-label="Filter sections by year"
-						></div>
 						<div class="academic-section-grid" id="section-grid"></div>
 						<p class="empty-state" id="sectionEmpty">
 							No sections are saved for this program.
@@ -1431,22 +1442,61 @@
 		</div>
 
 		<!-- READ-ONLY PROGRAM OVERVIEW -->
-		<div class="modal" id="viewProgramModal" role="dialog" aria-modal="true" aria-labelledby="viewProgramTitle">
+		<div
+			class="modal"
+			id="viewProgramModal"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="viewProgramTitle"
+		>
 			<div class="modal-content">
 				<div class="modal-header">
-					<div><h3 id="viewProgramTitle">Program Overview</h3><p class="modal-subtitle" id="viewProgramName"></p></div>
-					<button class="close-btn modal-close" type="button" aria-label="Close"><i class="fas fa-times"></i></button>
+					<div>
+						<h3 id="viewProgramTitle">Program Overview</h3>
+						<p class="modal-subtitle" id="viewProgramName"></p>
+					</div>
+					<button
+						class="close-btn modal-close"
+						type="button"
+						aria-label="Close"
+					>
+						<i class="fas fa-times"></i>
+					</button>
 				</div>
 				<div class="modal-body">
 					<dl class="program-view-details">
-						<div><dt>Abbreviation</dt><dd id="viewProgramCode"></dd></div>
-						<div><dt>College / Department</dt><dd id="viewProgramDepartment"></dd></div>
-						<div><dt>Campus</dt><dd id="viewProgramCampus"></dd></div>
-						<div><dt>Status</dt><dd id="viewProgramStatus"></dd></div>
+						<div>
+							<dt>Abbreviation</dt>
+							<dd id="viewProgramCode"></dd>
+						</div>
+						<div>
+							<dt>College / Department</dt>
+							<dd id="viewProgramDepartment"></dd>
+						</div>
+						<div>
+							<dt>Campus</dt>
+							<dd id="viewProgramCampus"></dd>
+						</div>
+						<div>
+							<dt>Status</dt>
+							<dd id="viewProgramStatus"></dd>
+						</div>
 					</dl>
-					<p class="program-view-description" id="viewProgramDescription" hidden></p>
+					<p
+						class="program-view-description"
+						id="viewProgramDescription"
+						hidden
+					></p>
 				</div>
-				<div class="modal-footer"><button class="btn-cancel modal-close" type="button">Close</button></div>
+				<div class="modal-footer program-overview-actions">
+					<button class="btn-cancel" id="viewProgramCoursesBtn" type="button">
+						Course Overview
+					</button>
+					<button class="btn-cancel" id="viewProgramSectionsBtn" type="button">
+						Sections
+					</button>
+					<button class="btn-cancel modal-close" type="button">Close</button>
+				</div>
 			</div>
 		</div>
 
@@ -1473,14 +1523,13 @@
 					</button>
 				</div>
 				<div class="modal-body">
-					<div
-						class="academic-years-tabs"
-						id="programCourseYearTabs"
-						role="tablist"
-						aria-label="Filter courses by year"
-					></div>
-					<div class="academic-programs-heading">
-						<h4 id="programCourseYearTitle">Year 1 Courses</h4>
+					<div class="academic-programs-heading academic-year-heading">
+						<h4 id="programCourseYearTitle">1st Year Courses</h4>
+						<select
+							id="programCourseYearSelect"
+							class="academic-year-select"
+							aria-label="Filter courses by academic year"
+						></select>
 					</div>
 					<p id="programCourseSummary" class="academic-course-summary"></p>
 					<div
@@ -2066,9 +2115,17 @@
 								id="m-annMedia"
 								accept="image/*,video/*"
 							/><small
-								>Preview only. Media is not saved to localStorage or
-								shared.</small
+								>Media is saved in this browser, separately from announcement
+								text.</small
 							>
+							<button
+								type="button"
+								id="m-annMediaRemove"
+								class="btn-cancel bulletin-remove-media"
+								hidden
+							>
+								Remove attachment
+							</button>
 							<div
 								id="m-annMediaPreview"
 								class="bulletin-media-preview"
@@ -2077,31 +2134,64 @@
 						</div>
 					</div>
 					<aside class="bulletin-live-preview-wrap">
-						<div class="bulletin-editor-kicker">
-							<span>Live preview</span><i class="far fa-eye"></i>
-						</div>
-						<article class="bulletin-live-preview">
-							<div class="bulletin-preview-brand">
-								<i class="fas fa-bullhorn"></i> COGNITIA CAMPUS BULLETIN
-							</div>
-							<span id="annPreviewCategory" class="bulletin-category-pill"
-								>Academic</span
+						<div
+							class="bulletin-preview-toolbar"
+							role="group"
+							aria-label="Preview controls"
+						>
+							<span class="bulletin-editor-kicker"
+								><span>Live preview</span></span
 							>
-							<h3 id="annPreviewTitle">Your announcement title</h3>
-							<div class="bulletin-preview-meta" id="annPreviewMeta">
-								Preview · All Users
+							<div
+								class="bulletin-zoom-controls"
+								role="group"
+								aria-label="Preview zoom"
+							>
+								<button
+									type="button"
+									id="annPreviewZoomOut"
+									aria-label="Zoom out"
+								>
+									−
+								</button>
+								<output id="annPreviewZoomValue" aria-live="polite"
+									>100%</output
+								>
+								<button
+									type="button"
+									id="annPreviewZoomIn"
+									aria-label="Zoom in"
+								>
+									+
+								</button>
+								<button type="button" id="annPreviewZoomReset">Reset</button>
 							</div>
-							<div class="bulletin-preview-body" id="annPreviewBody">
-								Your full announcement content will appear here. Use the preview
-								to check readability before publishing.
+						</div>
+						<div
+							class="bulletin-preview-viewport"
+							id="annPreviewViewport"
+							tabindex="0"
+							aria-label="Announcement preview. Zoom in, then drag to pan."
+						>
+							<div class="bulletin-preview-content" id="annPreviewContent">
+								<article class="bulletin-live-preview">
+									<div class="bulletin-preview-brand">
+										<i class="fas fa-bullhorn"></i> COGNITIA CAMPUS BULLETIN
+									</div>
+									<span id="annPreviewCategory" class="bulletin-category-pill"
+										>Academic</span
+									>
+									<h3 id="annPreviewTitle">Your announcement title</h3>
+									<div class="bulletin-preview-meta" id="annPreviewMeta">
+										Preview · All Users
+									</div>
+									<div class="bulletin-preview-body" id="annPreviewBody">
+										Your full announcement content will appear here. Use the
+										preview to check readability before publishing.
+									</div>
+									<div id="annPreviewMedia"></div>
+								</article>
 							</div>
-							<div id="annPreviewMedia"></div>
-						</article>
-						<div class="bulletin-before-publish">
-							<strong>Before publishing</strong
-							><span>✓ Check the title and content.</span
-							><span>✓ Confirm the intended audience.</span
-							><span>✓ Verify the publication date.</span>
 						</div>
 					</aside>
 				</div>
@@ -2258,6 +2348,8 @@
 
 		<script src="js/academic-config.js"></script>
 		<script src="js/sidebar.js"></script>
+		<script src="js/search-controls.js"></script>
+		<script src="js/bulletin-media.js"></script>
 		<script src="js/admin.js"></script>
 		<script src="js/approval.js"></script>
 		<script src="js/calendar.js"></script>
