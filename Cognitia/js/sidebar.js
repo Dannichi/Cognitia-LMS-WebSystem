@@ -13,14 +13,15 @@
 
 	const role = document.body.dataset.role || "default";
 	const baseKey = `cognitia_sidebar_${role}`;
-	const small = window.matchMedia("(max-width: 768px)");
+	const small = window.matchMedia(
+		role === "admin" ? "(max-width: 768px)" : "(max-width: 900px)",
+	);
 	// Tablet/mobile keep their own preference, so a desktop choice never
 	// opens the overlay on load.
 	const storageKey = () => (small.matches ? `${baseKey}_small` : baseKey);
 
 	function applyState(isCollapsed) {
 		sidebar.classList.toggle("collapsed", isCollapsed);
-		toggleBtn.textContent = isCollapsed ? "Expand" : "Collapse";
 		toggleBtn.setAttribute(
 			"aria-label",
 			isCollapsed ? "Expand sidebar" : "Collapse sidebar",
@@ -28,7 +29,7 @@
 		toggleBtn.setAttribute("aria-expanded", String(!isCollapsed));
 	}
 
-	// Saved state wins; otherwise desktop starts expanded, ≤768px collapsed
+	// Saved state wins; otherwise the matching tablet/mobile breakpoint starts collapsed.
 	function loadState() {
 		const saved = localStorage.getItem(storageKey());
 		applyState(saved ? saved === "collapsed" : small.matches);
@@ -47,7 +48,7 @@
 		applyState(isCollapsed);
 	});
 
-	// ≤768px the expanded sidebar is an overlay: close on outside click / Escape
+	// On tablet and mobile, close an expanded sidebar on outside click / Escape.
 	// (the saved preference is only changed by the toggle itself)
 	document.addEventListener("click", (e) => {
 		if (small.matches && !sidebar.classList.contains("collapsed") && !sidebar.contains(e.target))

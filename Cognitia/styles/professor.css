@@ -40,6 +40,13 @@ img {
 	max-width: 100%;
 	display: block;
 }
+video,
+canvas {
+	max-width: 100%;
+}
+video {
+	height: auto;
+}
 button {
 	font-family: inherit;
 	cursor: pointer;
@@ -433,12 +440,15 @@ textarea {
 	background: var(--bg);
 	margin-left: var(--sidebar-w);
 	width: calc(100% - var(--sidebar-w));
+	min-width: 0;
 	padding: var(--sp-xl) var(--sp-xl) var(--sp-2xl);
 	min-height: 100vh;
-	overflow-x: clip;
 	transition:
 		margin-left var(--t-slow) var(--ease),
 		width var(--t-slow) var(--ease);
+}
+.page {
+	min-width: 0;
 }
 .sidebar.collapsed ~ .main {
 	margin-left: var(--sidebar-collapsed-w);
@@ -2652,28 +2662,13 @@ td {
 }
 
 @media (max-width: 900px) {
-	:root {
-		--sidebar-w: var(--sidebar-collapsed-w);
-	}
-	.sidebar {
-		width: var(--sidebar-collapsed-w);
-		padding: 18px 10px;
-	}
-	.sidebar .nav-text,
-	.sidebar .user-details {
-		opacity: 0;
-		pointer-events: none;
-	}
-	.sidebar .logo-full {
-		opacity: 0;
-		max-width: 0;
-	}
-	.sidebar .logo-icon {
-		display: block;
+	.sidebar-toggle {
+		right: -20px;
+		width: 40px;
+		height: 40px;
+		touch-action: manipulation;
 	}
 	.main {
-		margin-left: var(--sidebar-collapsed-w);
-		width: calc(100% - var(--sidebar-collapsed-w));
 		padding: var(--sp-lg);
 	}
 	.dashboard-grid {
@@ -2688,6 +2683,9 @@ td {
 }
 
 @media (max-width: 600px) {
+	.modal {
+		padding: 12px;
+	}
 	.sidebar {
 		display: none;
 	}
@@ -2699,6 +2697,10 @@ td {
 		width: 100%;
 		padding: 16px;
 		padding-bottom: 80px;
+	}
+	.sidebar.collapsed ~ .main {
+		margin-left: 0;
+		width: 100%;
 	}
 	.stat-grid {
 		grid-template-columns: 1fr 1fr;
@@ -2743,13 +2745,15 @@ td {
 		align-items: flex-start;
 	}
 	#bulletin .page-header {
-		flex-direction: row;
-		align-items: center;
-		justify-content: space-between;
+		flex-direction: column;
+		align-items: stretch;
+		justify-content: flex-start;
 	}
 	#bulletin-date-filter {
-		width: auto;
-		flex: 0 0 auto;
+		width: 100%;
+		max-width: none;
+		min-width: 0;
+		flex: 1 1 auto;
 		margin-left: 0;
 	}
 	.page-header h2 {
@@ -2762,8 +2766,30 @@ td {
 		max-width: 100%;
 	}
 	.modal-content {
+		width: 100%;
 		max-width: 100%;
+		max-height: calc(100vh - 24px);
+		max-height: calc(100dvh - 24px);
 		border-radius: var(--r-lg);
+	}
+	.modal-content--xl,
+	.modal-content--landscape {
+		width: 100%;
+		max-width: 100%;
+	}
+	.modal-header {
+		padding: 14px 16px 12px;
+	}
+	.modal-header h3 {
+		min-width: 0;
+		overflow-wrap: anywhere;
+	}
+	.modal-body {
+		padding: 16px;
+	}
+	.modal-footer,
+	.form-actions {
+		flex-wrap: wrap;
 	}
 	.table-wrap {
 		overflow-x: auto;
@@ -2841,6 +2867,10 @@ td {
 	bottom: 64px;
 	left: 0;
 	right: 0;
+	max-height: calc(100vh - 80px);
+	max-height: calc(100dvh - 80px);
+	overflow-y: auto;
+	overscroll-behavior: contain;
 	background: var(--surface);
 	border-top: 1px solid var(--border);
 	border-radius: var(--r-xl) var(--r-xl) 0 0;
@@ -3728,13 +3758,13 @@ body.sidebar-transitioning #courses-grid {
 	flex-direction: column;
 	gap: 0;
 }
-/* ── Quiz Attempts / Submissions Table — NO horizontal scroll ── */
+/* ── Quiz Attempts / Submissions Table — scrollable within its panel ── */
 .submissions-table-wrap {
 	height: 100%;
 	border-radius: 18px;
-	/* FIX: remove overflow-x: auto that caused horizontal scrolling */
-	overflow-x: hidden;
+	overflow-x: auto;
 	overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
 	border: 1px solid rgba(142, 27, 27, 0.08);
 	box-shadow: 0 16px 36px rgba(101, 22, 22, 0.08);
 	background: #fff;
@@ -3743,7 +3773,7 @@ body.sidebar-transitioning #courses-grid {
 .submissions-table-wrap table {
 	table-layout: fixed;
 	width: 100%;
-	/* FIX: remove min-width that was forcing the table wider than the container */
+	min-width: 760px;
 }
 
 /* Column priority sizing — percentages sum to 100 */
@@ -3846,11 +3876,6 @@ body.sidebar-transitioning #courses-grid {
 	#submissionsModal .modal-content {
 		width: min(96vw, 900px);
 	}
-	/* FIX: Do NOT re-enable overflow-x on submissions table at mobile sizes.
-	   Instead, use smaller font + tighter padding so all columns stay visible. */
-	.submissions-table-wrap {
-		overflow-x: hidden;
-	}
 	.submissions-table-wrap table {
 		font-size: 11.5px;
 	}
@@ -3868,6 +3893,24 @@ body.sidebar-transitioning #courses-grid {
 	.submissions-table-wrap th:nth-child(1),
 	.submissions-table-wrap td:nth-child(1) {
 		width: 20%;
+	}
+}
+
+@media (max-width: 600px) {
+	#submissionsModal .modal-content {
+		width: calc(100vw - 24px);
+		max-width: calc(100vw - 24px);
+		height: calc(100vh - 24px);
+		height: calc(100dvh - 24px);
+		max-height: calc(100vh - 24px);
+		max-height: calc(100dvh - 24px);
+		border-radius: var(--r-lg);
+	}
+	#submissionsModal .modal-header {
+		padding: 14px 16px 12px;
+	}
+	#submissionsModal .modal-body {
+		padding: 0 12px 12px;
 	}
 }
 
@@ -4416,7 +4459,7 @@ body.sidebar-transitioning #courses-grid {
 .topbar-avatar {
 	width: 38px;
 	height: 38px;
-	border: 1px solid var(--border);
+	border: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
 	border-radius: 50%;
 	cursor: pointer;
 	display: inline-flex;
@@ -4439,9 +4482,9 @@ body.sidebar-transitioning #courses-grid {
 }
 .topbar-avatar {
 	background: var(--brand);
-	border-color: var(--brand-dark);
+	border-color: transparent;
 	color: #fff;
-	font-size: 13px;
+	font-size: 20px;
 	font-weight: 700;
 }
 .topbar-avatar:hover,
@@ -4459,6 +4502,7 @@ body.sidebar-transitioning #courses-grid {
 	right: 0;
 	z-index: 70;
 	width: 220px;
+	max-width: calc(100vw - 24px);
 	background: var(--surface);
 	border: 1px solid var(--border);
 	border-radius: var(--r-md);
@@ -4469,7 +4513,7 @@ body.sidebar-transitioning #courses-grid {
 	display: none;
 }
 .topbar-menu-notif {
-	width: 320px;
+	width: min(320px, calc(100vw - 24px));
 }
 .topbar-menu-head {
 	padding: 12px 16px;
@@ -6129,6 +6173,11 @@ body[data-role="professor"] table th {
 @media (max-width: 768px) {
 	body[data-role="professor"] .page-header h2 {
 		font-size: 26px;
+	}
+}
+@media (max-width: 420px) {
+	body[data-role="professor"] .page-header h2 {
+		font-size: 22px;
 	}
 }
 @media (max-width: 600px) {

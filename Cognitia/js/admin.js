@@ -994,7 +994,8 @@ document.addEventListener("DOMContentLoaded", () => {
 		const open = group.classList.toggle("open");
 		const caret = document.getElementById("usersNavCaret");
 		caret?.setAttribute("aria-expanded", String(open));
-		if (caret) caret.textContent = open ? "Collapse" : "Expand";
+		caret?.setAttribute("aria-label", open ? "Collapse user list" : "Expand user list");
+		caret?.setAttribute("title", open ? "Collapse user list" : "Expand user list");
 	}
 
 	// ── Collapsed rail: Users flyout (reuses the existing .nav-sub links, so the
@@ -1011,12 +1012,13 @@ document.addEventListener("DOMContentLoaded", () => {
 		if (!usersGroup || !isRailCollapsed()) return;
 		clearTimeout(flyoutTimer);
 		const sub = usersGroup.querySelector(".nav-sub");
-		const top = usersTrigger.getBoundingClientRect().top - 8;
-		// keep the flyout inside the viewport on short screens
-		const max = window.innerHeight - (sub.scrollHeight || 100) - 24;
-		usersGroup.style.setProperty("--flyout-top", `${Math.max(8, Math.min(top, max))}px`);
 		usersGroup.classList.add("flyout-open");
 		sidebarEl.classList.add("flyout-open");
+		// Measure after revealing it so the menu height is accurate, then keep it
+		// inside the viewport even when the sidebar has many nested links.
+		const top = usersTrigger.getBoundingClientRect().top - 8;
+		const max = window.innerHeight - sub.getBoundingClientRect().height - 8;
+		usersGroup.style.setProperty("--flyout-top", `${Math.max(8, Math.min(top, max))}px`);
 		usersTrigger.setAttribute("aria-expanded", "true");
 	}
 	function closeFlyout() {
